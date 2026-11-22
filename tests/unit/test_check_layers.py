@@ -30,7 +30,10 @@ def test_this_repository_keeps_its_layers() -> None:
     ("files", "ok"),
     [
         ({"core/pipeline.py": "from ragdoctor.types import Chunk\nfrom . import metrics\n"}, True),
-        ({"stages/chunkers/a.py": "from ragdoctor.stages import chunker\nfrom ragdoctor.types import X\n"}, True),
+        (
+            {"stages/chunkers/a.py": "from ragdoctor.stages import chunker\nfrom ragdoctor.types import X\n"},
+            True,
+        ),
         ({"commands/rank.py": "from ragdoctor.core import search\nfrom ragdoctor.io import cache\n"}, True),
         ({"cli.py": "from ragdoctor.commands import rank\n"}, True),
         ({"__init__.py": "from ragdoctor.core.metrics import mrr\n"}, True),

@@ -64,7 +64,8 @@ def problem(source: tuple[str, ...], target: tuple[str, ...]) -> str | None:
     if src in ("", "testing"):
         return f"the public API does not import ragdoctor.{dst}" if dst == "commands" else None
     if layer_of(dst) >= layer_of(src):
-        return f"{src} (layer {layer_of(src)}) may not import {dst or 'the package root'} (layer {layer_of(dst)})"
+        name = dst or "the package root"
+        return f"{src} (layer {layer_of(src)}) may not import {name} (layer {layer_of(dst)})"
     return None
 
 
