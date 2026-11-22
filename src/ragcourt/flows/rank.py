@@ -36,7 +36,7 @@ from ragcourt.flows.run_plan import (
 )
 from ragcourt.io import run_files
 from ragcourt.io.project import Project
-from ragcourt.io.rank_output import board_text, plan_text
+from ragcourt.io.rank_output import board_text, failure_note, plan_text
 from ragcourt.io.result_data import board_data
 from ragcourt.types import Corpus
 from ragcourt.types.questions import Question
@@ -215,6 +215,8 @@ def _step(
     )
     state.boards.append(leaderboard)
     say(board_text(board_data(leaderboard), _chosen_note(choice)))
+    for evaluation in [item for item in evaluations if item.costs.rerank_failures]:
+        say(failure_note(evaluation.spec.label, evaluation.costs.rerank_failures))
     labels = [evaluation.spec.label for evaluation in evaluations]
     state.steps.append(
         {

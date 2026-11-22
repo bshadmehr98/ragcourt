@@ -12,7 +12,7 @@ import inspect
 import statistics
 import time
 from collections.abc import Callable
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from pathlib import Path
 
 from ragcourt import stages
@@ -20,6 +20,7 @@ from ragcourt.core.chunking import Chunked, chunk_corpus
 from ragcourt.core.pipeline import Rerank, Settings, Timing, run_pipeline
 from ragcourt.core.relevance import TokenMap
 from ragcourt.core.sizes import percentile
+from ragcourt.errors import EndpointError
 from ragcourt.io import run_files
 from ragcourt.io.client import ENDPOINT_PREFIX
 from ragcourt.io.project import Project
@@ -108,15 +109,17 @@ class Evaluator:
         )
         embed_query = self.query_vector(spec.embedder) if spec.embedder and needs_vectors else _no_vectors
         search_of = self._search_of(spec.retriever, embed_query)
+        failures: list[str] = []
         results, timing = run_pipeline(
             chunks,
             search_of,
             vectors,
-            self._rerank(spec.reranker),
+            _guarded(self._rerank(spec.reranker), failures),
             self.questions,
             (self.settings, self.tokens, time.perf_counter),
         )
-        evaluation = Evaluation(spec, results, self._costs(spec, (vectors, counts), results, timing))
+        costs = replace(self._costs(spec, (vectors, counts), results, timing), rerank_failures=len(failures))
+        evaluation = Evaluation(spec, results, costs)
         run_files.save_evaluation(self.folder, evaluation)
         return evaluation
 
@@ -193,3 +196,22 @@ def _no_vectors(text: str) -> Vector:
 
 def _at(ordered: list[float], share: float) -> float:
     return ordered[min(len(ordered) - 1, int(share * len(ordered)))] if ordered else 0.0
+
+
+def _guarded(rerank: Rerank | None, failures: list[str]) -> Rerank | None:
+    """A reranker whose call the server refused even after its retries (a 5xx, a timeout) keeps the
+    retrieval order for that question and is counted, so one refused call does not end an hour-long run
+    (D-057). A server that cannot be reached still stops the run."""
+    if rerank is None:
+        return None
+
+    def guarded(query: str, candidates: list[str]) -> list[float]:
+        try:
+            return rerank(query, candidates)
+        except EndpointError as error:
+            if not error.retryable:  # the server is gone: stop, `--resume` continues
+                raise
+            failures.append(str(error))
+            return [float(len(candidates) - position) for position in range(len(candidates))]
+
+    return guarded

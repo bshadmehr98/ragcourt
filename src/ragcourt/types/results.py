@@ -60,6 +60,7 @@ class Costs:
     latency_ms_p95: float = 0.0
     index_ms: int = 0
     cost_usd: float | None = None
+    rerank_failures: int = 0  # questions whose reranker call failed: their retrieval order was kept
 
 
 @dataclass(frozen=True)

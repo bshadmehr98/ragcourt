@@ -17,6 +17,7 @@ from ragcourt.core.question_checks import Context, Models, Outcome, check_questi
 from ragcourt.core.split import question_id
 from ragcourt.core.verdicts import Draft, fill, read_draft
 from ragcourt.core.windows import CorpusIndex
+from ragcourt.errors import EndpointError
 from ragcourt.types.questions import Dropped, Offer, Question, Span
 
 EARLY_LOOK = 60  # drafts of a category before its yield is judged
@@ -92,7 +93,7 @@ def generate(
             if number in tried:
                 continue
             kept = [item for item in outcomes if isinstance(item, Question)]
-            outcome = _attempt(category, number, offer, (index, prompts, models), kept)
+            outcome = _safe_attempt(category, number, offer, (index, prompts, models), kept)
             outcomes.append(outcome)
             journal.record(outcome)
             _count(progress, outcome)
@@ -120,6 +121,19 @@ def _count(progress: Progress, outcome: Outcome) -> None:
         progress.kept += 1
     else:
         progress.dropped[outcome.reason] = progress.dropped.get(outcome.reason, 0) + 1
+
+
+def _safe_attempt(
+    category: str, number: int, offer: Offer, context: Context, kept: list[Question]
+) -> Outcome:
+    """One draft; a call the server refused even after its retries (a 5xx, a timeout) drops that draft
+    with the reason instead of ending the run (D-057). A server that cannot be reached still stops it."""
+    try:
+        return _attempt(category, number, offer, context, kept)
+    except EndpointError as error:
+        if not error.retryable:
+            raise
+        return Dropped(category, "the model's server refused the call", str(error)[:200], "", (), number)
 
 
 def _attempt(category: str, number: int, offer: Offer, context: Context, kept: list[Question]) -> Outcome:

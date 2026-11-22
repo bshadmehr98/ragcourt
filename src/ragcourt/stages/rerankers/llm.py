@@ -2,7 +2,7 @@
 
 Ollama has no rerank route, so a local chat model ranks the passages; the prompt is ``reranker.llm.txt``,
 given by ragcourt. Candidates past ``top`` keep their order below the reranked ones. A reply that cannot be
-read keeps the retriever's order.
+read keeps the retriever's order; a refused call is tried once more with sampling (temperature 0.7).
 """
 
 from __future__ import annotations
@@ -11,6 +11,7 @@ import json
 import re
 from typing import cast
 
+from ragcourt.errors import EndpointError
 from ragcourt.stages import reranker
 from ragcourt.types import ChatRequest, ModelClient
 
@@ -51,7 +52,13 @@ def llm(
     head = candidates[:top]
     passages = "\n\n".join(f"[{number}] {text[:1200]}" for number, text in enumerate(head, start=1))
     text = prompt.replace("{{question}}", query).replace("{{passages}}", passages)
-    order = read_order(client.chat(ChatRequest(model, text)), len(head))
+    try:
+        reply = client.chat(ChatRequest(model, text))
+    except EndpointError as error:  # e.g. Ollama's "token repeat limit reached": another sample may pass
+        if not error.retryable:
+            raise
+        reply = client.chat(ChatRequest(model, text, temperature=0.7, seed=1))
+    order = read_order(reply, len(head))
     scores = [0.0] * len(candidates)
     for place, position in enumerate(order):
         scores[position] = float(len(candidates) * 2 - place)

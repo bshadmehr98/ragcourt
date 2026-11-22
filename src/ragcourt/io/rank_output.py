@@ -159,3 +159,11 @@ def causes_text(results: dict[str, Any]) -> list[str]:
         return [section("Misses"), "No held-out question was missed."]
     rows = [[mechanism, category, count] for (mechanism, category), count in sorted(counts.items())]
     return [section("Why questions were missed"), table(["cause", "category", "misses"], rows)]
+
+
+def failure_note(label: str, count: int) -> str:
+    """Said under a board when a reranker's calls were refused for some questions (D-057)."""
+    return (
+        f"Note: the reranker of {label} failed on {plural(count, 'question')} (the server "
+        "refused the call twice); their retrieval order was kept, so its score is a little low."
+    )
