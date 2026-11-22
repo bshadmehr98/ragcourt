@@ -156,3 +156,15 @@ def test_twin_spans_are_kept_for_distractors() -> None:
         "q2", "Q", "distractor", "d.md", START, END, QUESTION.quote, "held-out", twin=Span("d.md", 0, 50)
     )
     assert twin.twin is not None and twin.twin.end == 50
+
+
+def test_an_alternative_with_one_more_stage_changed_is_evidence_but_never_confirms() -> None:
+    chosen = PipelineSpec("c1", "e1", "bm25", "llm")
+    dense_plain = PipelineSpec("c1", "e1", "dense", "none")
+    level, fix = fix_for("retriever.keyword_only", "q1", chosen, [evaluation(dense_plain, 0.0)])
+    assert level == "indicated" and "misses the top k there too: retriever dense and reranker none" in fix
+    far = evaluation(PipelineSpec("c2", "e2", "dense", "none"), 1.0)  # three stages changed: not evidence
+    assert "not measured" in fix_for("retriever.keyword_only", "q1", chosen, [far])[1]
+    plain = evaluation(PipelineSpec("c2", "e1", "bm25", "none"), 1.0)
+    level, fix = fix_for("ranking.not_rescued", "q1", chosen, [plain])  # 'with reranker none' would mislead
+    assert level == "indicated" and "reranker none" not in fix

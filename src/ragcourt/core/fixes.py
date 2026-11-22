@@ -59,9 +59,14 @@ def fix_for(
                 "confirmed",
                 f"{FIXES[mechanism]}: with {value} it reaches the top k (measured in this run)",
             )
+        # One other stage changed too: still evidence, for any stage but the reranker (whose "with
+        # reranker none" would read as the opposite of the fix).
+        allowed = 1 if stage == "ranking" else 2
+        if len(changed) > allowed:
+            continue
         if hit and value not in near:
             near.append(value)
-        elif len(changed) == 1 and value not in tried:
+        elif not hit and value not in tried:
             tried.append(value)
     return "indicated", _indicated(mechanism, question, measured, (tried, near, FLAGS[fields[0]]))
 
