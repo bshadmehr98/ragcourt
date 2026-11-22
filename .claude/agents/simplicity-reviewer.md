@@ -7,9 +7,17 @@ tools: Read, Grep, Glob, Bash
 You review one ragcourt pull request for simplicity. The goal: a newcomer reads the whole codebase in an
 evening and adds a stage in one file. You have no context on purpose. Do not edit files.
 
-1. `gh pr view <n>`, `git diff <range>`; read `CONTRIBUTING.md` "Keep it simple" (the rules and the
-   limits table).
-2. Check the changed code against it:
+1. `gh pr view <n>`, `git diff <range>`; read `CONTRIBUTING.md` "Keep it simple" (the rules, "How it
+   grows" and the limits) and `.claude/skills/keep-it-simple/SKILL.md`.
+2. Check the changed code against it (the limits themselves are checked by `scripts/check_simple.py`
+   and ruff; look for what they cannot see):
+   - code split only to pass a limit (`_helper`, `step1`/`step2`, pieces that mean nothing alone);
+   - an extension that touches more than its file and its line in a list;
+   - a database, a server, a thread, `async`, a cache beyond the embedding cache, or a new kind of
+     configuration;
+   - expressions that are hard to read even within the limits: long chains, clever slicing, boolean
+     arithmetic, a comprehension that needs a comment;
+   - module-level mutable state other than the stage registry; I/O in `core`;
    - an abstraction with one use that the design doesn't name as an extension point (the four stage kinds
      and their registry, the model client's protocol);
    - layers that only forward calls; base classes with one subclass; manager / handler / factory layers;
@@ -22,8 +30,8 @@ evening and adds a stage in one file. You have no context on purpose. Do not edi
      `design/decisions.md`;
    - vague names (`data`, `info`, `util`, `manager`), comments that say *what* instead of *why*;
    - dead code, unused parameters, commented-out code.
-   You may run `uv run ruff check --select C901 <files>`, `uv run python scripts/check_layers.py` and
-   `wc -l`.
+   You may run `uv run ruff check <files>`, `uv run python scripts/check_simple.py <files>`,
+   `uv run python scripts/check_layers.py` and `wc -l`.
 3. For each finding give the simpler version concretely.
 
 **Output**: the same JSON list as the `pr-reviewer` agent (path, line, end_line, severity, rule,

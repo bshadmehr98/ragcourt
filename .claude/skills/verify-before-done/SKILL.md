@@ -14,7 +14,7 @@ Evidence first, claims after. "Should work" is not a result.
 3. `git status` shows nothing uncommitted.
 4. The `sync-docs` table has no unmet row.
 5. Report with the evidence: the command, and the lines that show the result (tests passed, coverage,
-   import layers, build and wheel smoke test). Say what was not verified.
+   import layers, simplicity, build and wheel smoke test). Say what was not verified.
 
 Adapted from the `verification-before-completion` skill of
 [obra/superpowers](https://github.com/obra/superpowers) (MIT).

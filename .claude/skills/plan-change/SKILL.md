@@ -33,7 +33,9 @@ description: Plan a design change as a change record in design/changes/ and get 
      subprocess with a timeout, or unvalidated;
    - **the core imports no extra**; a new dependency is an optional extra with a reason in
      `design/decisions.md`;
-   - is there a smaller option that meets the need? (CONTRIBUTING.md, "Keep it simple")
+   - **simplicity** (CONTRIBUTING.md, "Keep it simple"): does the change fit an extension point of "How it
+     grows" (one new file)? Does it add a dependency, a database, a thread, a class hierarchy or a new
+     kind of configuration? Is there a smaller option that meets the need?
 5. Commit: `docs(design): propose NNNN <short name>`.
 6. **Stop and ask.** Give the user the decision and the open questions in a few lines, with the file
    path. Only the project's maintainer accepts a record. If the user is the maintainer and approves, set

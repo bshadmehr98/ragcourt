@@ -26,7 +26,7 @@ say; a gap becomes a `D-` entry or a proposed change record.
 
 ```bash
 uv sync --all-extras                 # install everything (dev included)
-scripts/check.sh                     # all quality gates: lint, format, import layers, types, tests + coverage, build, wheel smoke test
+scripts/check.sh                     # all quality gates: lint, format, import layers, simplicity, types, tests + coverage, build, wheel smoke test
 uv run pytest                        # default suite (fast, offline, deterministic; fake embedder, scripted model)
 uv run pytest -m real_model          # real models: a local server or an endpoint; by hand (real-model-tests)
 uv run python scripts/check_layers.py   # the import layers of design §3.1 alone
@@ -48,16 +48,19 @@ src/ragcourt/
   cli.py                       the command line (layer 4)
   testing/                     the fake embedder, the scripted model, the bundled corpus
 tests/unit|contract|integration|e2e   default suite; tests/real: by hand, marked real_model
-scripts/check.sh  scripts/check_layers.py   the one gate; the import-layer check it runs
+scripts/check.sh                     the one gate
+scripts/check_layers.py  check_simple.py   the import layers; the simplicity rules ruff can't check
 design/                why and how: README, current.md, changes/, decisions.md, history/
 docs/  examples/       user docs and runnable examples, both executed by tests once they exist
 ```
 
 ## Rules
 
-1. **Simple first** ([CONTRIBUTING.md](CONTRIBUTING.md#keep-it-simple)): the plainest code that meets the
-   guarantees; complexity ≤ 10, functions ~40 lines, modules ~300 lines; a newcomer reads the whole
-   codebase in an evening and adds a stage in one file.
+1. **Simple first** ([CONTRIBUTING.md](CONTRIBUTING.md#keep-it-simple), the `keep-it-simple` skill): the
+   plainest code that meets the guarantees. The standard library, plain files (no database), sequential
+   code, functions and frozen dataclasses, no magic. Small modules of one concept (≤ 250 lines, aim
+   150), short flat functions (≤ 40 lines, ≤ 3 nested blocks), comprehensions with one `for` and at most
+   one `if`. Every extension is one new file. `scripts/check_simple.py` and ruff check it.
 2. **Layers import only downward** (design §3.1): types → stages → core and io → commands → cli. Stages
    never import each other; only the pipeline joins them. `scripts/check_layers.py` enforces it.
 3. **Numbers are measured:** every number in a ranking is computed on the user's documents, on the

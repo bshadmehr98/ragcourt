@@ -25,6 +25,8 @@ merged        -> finish-task
 - Once published, reviews run only on GitHub: `.github/workflows/claude-review.yml` has claude[bot]
   follow `.github/claude-review.md` with the reviewer agents on every push to a pull request. A branch
   pushed without a pull request gets a reminder from `.claude/hooks/after-push.sh`.
+- Write all code with `keep-it-simple` (CONTRIBUTING.md "Keep it simple"); `scripts/check_simple.py` and
+  ruff enforce most of it, the `simplicity-reviewer` agent the rest.
 - More skills: `debug-failure`, `add-example`, `add-stage`, `deprecate-and-migrate`,
   `real-model-tests`, `triage-issue`, `learn-from-reviews`, and `release` (only when the maintainer asks).
 - Reviewer agents in `.claude/agents/`: `pr-reviewer`, `test-auditor`, `simplicity-reviewer`. Until

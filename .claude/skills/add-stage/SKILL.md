@@ -24,11 +24,13 @@ signature; a new kind, a change to a signature, or a new extra is a design chang
    more. Add the extra in `pyproject.toml`, import the library only inside the function, so the core
    imports without it (`tests/unit/test_import_boundaries.py`), and give a clear `RagCourtError` naming
    the extra to install when it is missing.
-5. **Deterministic.** Same input, same output; no randomness without a fixed seed; no network in the
+5. **Simple** (`keep-it-simple`): the whole stage fits in its file, under 150 lines if it can; no class
+   unless the kind's contract asks for a dataclass (`Embedder`); a library adapter only translates.
+6. **Deterministic.** Same input, same output; no randomness without a fixed seed; no network in the
    default suite.
-6. **Tests.** A unit test of the stage on the bundled corpus (`tests/fixtures/corpus/`) with the fake
+7. **Tests.** A unit test of the stage on the bundled corpus (`tests/fixtures/corpus/`) with the fake
    embedder and the scripted model, including its edge cases (empty text, one long line, Unicode); the
    kind's contract test in `tests/contract/`; for an adapter or a model-backed stage, a marked test with
    the real library or model (`real-model-tests`).
-7. `sync-docs`: `docs/stages.md` (the table of built-in stages and what each needs), the extras in
+8. `sync-docs`: `docs/stages.md` (the table of built-in stages and what each needs), the extras in
    `README.md`, an example if it shows a new idea.

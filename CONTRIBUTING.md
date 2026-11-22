@@ -14,7 +14,8 @@ scripts/check.sh              # every quality gate; "green" means this exits 0
 
 The default test suite needs no model, no API key and no network.
 
-`scripts/check.sh` runs ruff (lint and format), the import-layer check (`scripts/check_layers.py`),
+`scripts/check.sh` runs ruff (lint and format), the import-layer check (`scripts/check_layers.py`), the
+simplicity check (`scripts/check_simple.py`),
 pyright (strict for `src/`), the default test suite with branch coverage of at least 90% on `src/`,
 `uv build`, and a smoke test that installs the built wheel alone in a fresh virtual environment (and runs
 the README quickstart once there is one). Pull requests must keep it green. Never weaken a test to make
@@ -28,43 +29,93 @@ uv run pytest tests/e2e                # the acceptance cases only
 uv run ruff check . && uv run ruff format .
 uv run pyright
 uv run python scripts/check_layers.py  # the import layers alone
+uv run python scripts/check_simple.py  # the simplicity rules ruff can't check
 uv run pytest -m real_model            # real models (see below)
 ```
 
 ## Keep it simple
 
-The first rule: **simple, easy to understand, maintainable and expandable.** When simplicity conflicts
-with anything except correctness and the guarantees in [`design/current.md`](design/current.md#16-guarantees-acceptance-cases),
-simplicity wins. A newcomer should be able to read the whole codebase in an evening and add a stage in one
-file.
+The first rule: **simple, easy to understand, maintainable and easy to extend.** When simplicity
+conflicts with anything except correctness and the guarantees in
+[`design/current.md`](design/current.md#16-guarantees-acceptance-cases), simplicity wins. A newcomer
+should read the whole codebase in an evening, understand any module in a few minutes, change it safely
+and add a stage in one file. The `keep-it-simple` skill in `.claude/skills/` is the same list as a working
+checklist.
 
-1. Build the simplest thing that passes the acceptance cases, not the most general thing.
-2. No speculative generality. Add an abstraction only when there are two real uses today, or the design
-   names it as an extension point (the four stage kinds and their registry, the model client's protocol).
-3. Extend through the few seams named in the design: a stage is one file with a decorator. Everything
-   else is ordinary concrete code.
-4. Plain Python first: functions and small dataclasses before classes, composition before inheritance,
-   the standard library before dependencies.
-5. Flat and explicit: short call chains, no metaclasses, import hooks, monkey-patching or deep decorator
-   stacks (the one registration decorator per stage is the only decorator the design asks for).
-6. One obvious way to configure and call each thing.
-7. Names over comments; comments say *why*.
-8. Delete freely: dead code, unused parameters and single-caller helper layers go.
+### What we build with
 
-Limits, checked in review (ruff enforces complexity, `scripts/check_layers.py` the layers):
+1. **The standard library.** No core dependency; an optional extra only with a written reason in
+   `design/decisions.md`.
+2. **Plain files, no database.** Text the user can open: JSON, JSONL, TOML, Markdown. The embedding cache
+   is a folder of files (design §10.2). No SQLite, no ORM, no server, no daemon, no background process
+   other than doctor's one subprocess.
+3. **Sequential code.** No `async`, no threads, no process pools. If a measurement ever shows the need,
+   it goes in one module behind a design decision.
+4. **Functions and dataclasses.** Data is a `@dataclass(frozen=True)` (or a plain dict read from a
+   file); behaviour is a function. A class with methods only where state truly belongs to it (the model
+   client holding its connection settings). The only inheritance: `typing.Protocol`, enums, and the errors
+   in `errors.py`.
+5. **No magic.** No metaclasses, `__getattr__` tricks, monkey-patching, `eval`/`exec`, `global`, import
+   hooks or code generation. The one dynamic import is the stage loader (design §7.2). The one decorator
+   the design asks for is a stage's registration.
+
+### How code is shaped
+
+6. **Small modules, one concept each.** A module holds one idea a reader can name in a few words, and its
+   docstring says which design sections it implements. Aim for under 150 lines; 250 is the limit. When a
+   module grows, split it by concept, not by size (one file per stage, per audit check, per question
+   category, per stage of blame).
+7. **Short, flat functions.** Aim for under 25 lines; 40 is the limit. At most three levels of nested
+   blocks; return early instead of nesting. At most six parameters; group more into a dataclass.
+   Boolean options are keyword-only (`*, dry_run: bool`).
+8. **Readable expressions.** A comprehension has one `for` and at most one `if`; anything more is a loop.
+   No nested conditional expressions, no walrus, no chained clever one-liners: name the intermediate
+   value. A lambda only as a short sort key.
+9. **Explicit over implicit.** Pass values in and return them; no module-level mutable state except the
+   stage registry; no hidden I/O in `core` (it is pure, design §3.1). One way to configure each thing:
+   `ragcourt.toml`, then flags.
+10. **Names that say what.** Full words (`chunk_spans`, not `cs`); the words of design §2; no module named
+    `utils`, `helpers`, `common`, `misc`, `manager` or `base`. Comments say *why*, never *what*; no
+    commented-out code.
+11. **No speculative generality.** Add an abstraction when there are two real uses today or the design
+    names an extension point. Delete freely: dead code, unused parameters, single-caller helper layers.
+
+### How it grows
+
+Every extension point is "add one file and, where order matters, one line in a list". Nothing else
+changes:
+
+| To add | Touch | Design |
+|---|---|---|
+| a chunker, embedder, retriever or reranker | one file in `src/ragcourt/stages/<kind>/` with its decorator (or in the user's `ragcourt_stages/`) | §7 |
+| an audit check | one file in `src/ragcourt/core/audit/` and its line in the list of checks | §5.1 |
+| a question category | one file in `src/ragcourt/core/categories/`, its prompt in `src/ragcourt/prompts/`, its line in the list | §6.7 |
+| a blame mechanism | one function in the file of its stage in `src/ragcourt/core/blame/`, its place in that stage's ordered list | §9.1 |
+| a metric | one function in `src/ragcourt/core/metrics.py` and its line in the metrics table | §8.3 |
+| a command | one file in `src/ragcourt/commands/` and its line in `cli.py` | §13.1 |
+| a prompt change | the text file in `src/ragcourt/prompts/` and its version | §6.6 |
+
+### Limits
+
+Checked by ruff and `scripts/check_simple.py` in `scripts/check.sh`; never silenced with `noqa`
+without a comment that says why, and never "fixed" by splitting code into pieces that mean nothing.
 
 | Thing | Limit |
 |---|---|
+| Module length | 250 lines (aim for under 150) |
+| Function length | 40 lines without the docstring (aim for under 25) |
+| Nested blocks in a function | 3 |
 | Cyclomatic complexity per function | 10 (`C901`) |
-| Function length | about 40 lines |
-| Module length | about 300 lines |
-| Parameters per function | 6; group more into a small dataclass |
-| Inheritance depth of own classes | 1 |
-| Variants | a dict of functions or a `match`, not a class hierarchy (stages are functions registered by name; audit checks are functions in a table) |
-| Core dependencies | the standard library; anything else is an optional extra, and a new one needs a written reason in `design/decisions.md` |
+| Branches, returns, statements per function | 10, 5, 30 |
+| Parameters per function | 6; boolean ones keyword-only |
+| Comprehension | one `for`, at most one `if`, none inside another |
+| Inheritance | `Protocol`, enums and the errors only |
+| Imports | downward only (design §3.1, `scripts/check_layers.py`) |
+| Core dependencies | the standard library |
 
-Avoid "manager / handler / processor" layers, base classes with one subclass, plugin systems beyond the
-stage registry, event buses and dependency-injection containers.
+Avoid "manager / handler / processor" layers, base classes, plugin systems beyond the stage registry,
+event buses, dependency-injection containers, caches beyond the embedding cache, and configuration
+beyond one TOML file and flags.
 
 ## Code conventions
 
