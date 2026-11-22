@@ -5,15 +5,13 @@ the designer's, open to the owner's review. Code comments refer to entries by nu
 
 ## Awaiting owner review
 
-Design 0001 is proposed and was revised after the owner's first answers (2026-11-22). Still open:
+Design 0001 is proposed and was revised after the owner's answers (2026-11-22). Still open, each written
+out in plain words below:
 
 | Id | The question | Status |
 |---|---|---|
-| [D-029](#d-029-milestone-1-includes-the-first-ranking) | Milestone 1 includes the first ranking with local models, not only the audit? | awaiting owner |
-| [D-026](#d-026-the-judge-and-its-self-test) | The judge must pass a self-test on labelled cases before its verdicts are used? | awaiting owner |
-| [D-027](#d-027-the-default-local-models-come-from-measurement) | Default local models chosen by measurement, `gemma4` on this machine? | awaiting owner |
-| [D-011](#d-011-the-split-and-the-intervals) | A 50/50 split by question and a paired bootstrap for ties? | awaiting owner |
-| [D-014](#d-014-retrieval-blame-is-one-stage) | Blame `retrieval` as one stage (embedder or retriever)? | awaiting owner |
+| [D-011](#d-011-choosing-on-one-half-of-the-questions-reporting-on-the-other) | Choose the winner on one half of the questions and report scores on the other half; call a tie when the difference is within the noise? | awaiting owner |
+| [D-014](#d-014-retrieval-blame-is-one-stage) | When the search does not find the right chunk, blame "retrieval" without saying whether the embedding model or the search method was at fault, unless a measurement shows which? | awaiting owner |
 
 ## The owner's answers (2026-11-22)
 
@@ -27,6 +25,10 @@ Design 0001 is proposed and was revised after the owner's first answers (2026-11
 | D-017 | Approval of generated code by answer or exact hash, with "not a sandbox" said plainly: accepted. | owner |
 | D-025 | User questions carry a quote and skip the closed-book filter: accepted. | owner |
 | D-004 | The repository lives under `bshadmehr98`, its name to follow the product's name. | owner |
+| D-029 | Milestone 1 is the whole project (0.1), not a part of it. | owner |
+| D-026 | The judge's self-test is accepted, and it must be explained to the user (D-030). | owner |
+| D-030 | Nothing happens blindly: a new user must know what is being judged, how, by which model, and why. | owner |
+| D-027 | The default local models are accepted; the user must be able to change them easily (D-031). | owner |
 
 ## D-001: The name: ragcourt  (2026-11-22)
 
@@ -118,15 +120,23 @@ Design 0001 is proposed and was revised after the owner's first answers (2026-11
   fuzzy match), so "verbatim" stays verbatim apart from line wrapping.
 - **Status:** designer's choice.
 
-## D-011: The split and the intervals  (2026-11-22)
+## D-011: Choosing on one half of the questions, reporting on the other  (2026-11-22)
 
-- **Choice:** split by question, 50/50, from a hash of the question id and the seed, stratified by
-  document. Intervals: a percentile bootstrap over held-out questions, 2,000 resamples, fixed seed. Ties:
-  a paired bootstrap of the per-question difference; "no significant difference" when its 95% interval
-  contains 0. No correction for comparing many entries; the leaderboard says the comparison is between
-  the top entries. A warning below 30 held-out questions.
-- **Why:** questions about the same document are not independent, but splitting by document is
-  impossible on small corpora; stratifying by document keeps both splits representative.
+- **In plain words:** ragcourt tries several options (say five embedding models) and picks the best. If it
+  picked the winner and reported its score on the same questions, the score would be flattered: some of
+  the winner's lead is luck on those particular questions. So the questions are split in two, like
+  practice questions and the real exam: the **dev** half is used to choose, the **held-out** half only to
+  report. With 40 questions, 20 choose and 20 report.
+- **Ties:** with 20 questions, 70% against 65% may be luck. ragcourt estimates the noise by re-drawing
+  the questions many times (a bootstrap, 2,000 times with a fixed seed) and looking at how the
+  difference between the top two moves; if "no difference" is within that range it prints "no
+  significant difference" and does not crown a winner. It compares the two options on the same questions
+  (paired), which separates them better than comparing two averages.
+- **The choices behind it:** half and half (`--holdout 0.5`), questions assigned to a half by a fixed hash,
+  each document's questions spread over both halves; a 95% range; a warning when fewer than 30 questions
+  are left for reporting, because the ranges get wide.
+- **The alternative:** report on all questions and accept a flattered score; simpler, but the brief asks
+  for the split (brief §3).
 - **Status:** awaiting owner review.
 
 ## D-012: The closed-book filter uses a judge  (2026-11-22)
@@ -151,9 +161,16 @@ Design 0001 is proposed and was revised after the owner's first answers (2026-11
 
 ## D-014: Retrieval blame is one stage  (2026-11-22)
 
-- **Question:** the brief's middle rule blames "embedder or retriever".
-- **Choice:** one cause, `retrieval`. The fix (§9.3) names the embedder or the retriever when a measured
-  alternative recovers the question; telling them apart without such a measurement would be guessing.
+- **In plain words:** when a question is missed, ragcourt names one cause. Two are clear: the answer was
+  cut in half by the chunker (`chunker`), or the right chunk was found but ranked too low to be shown
+  (`ranking`). The third case is when the right chunk exists but the search did not bring it into the top
+  50. Two things work together there: the **embedding model** (turns text into vectors) and the
+  **retriever** (the search method: vectors, keywords, or both). From one run ragcourt cannot tell which
+  of the two failed.
+- **Choice:** call that cause `retrieval`, and be specific only when a measurement says so: if, during the
+  search, another embedding model found the chunk, the fix names that model; if keyword or hybrid search
+  found it, the fix names that retriever; if nothing tested found it, the fix says so.
+- **The alternative:** always split it into "embedder" and "retriever", which would mean guessing.
 - **Status:** awaiting owner review.
 
 ## D-015: Rerankers  (2026-11-22)
@@ -248,7 +265,8 @@ Design 0001 is proposed and was revised after the owner's first answers (2026-11
   `setup` (and the first run with a new judge) grades the set; below 90% agreement the model is refused
   as judge with its errors shown, and the user picks another. The result is cached per model and prompt
   version and printed in every run's output.
-- **Status:** awaiting owner review.
+- **Owner (2026-11-22):** accepted; it must be explained to the user, case by case (D-030).
+- **Status:** owner's answer.
 
 ## D-027: The default local models come from measurement  (2026-11-22)
 
@@ -259,7 +277,8 @@ Design 0001 is proposed and was revised after the owner's first answers (2026-11
   `nomic-embed-text`, `embeddinggemma` and `mxbai-embed-large` as the quick embedders, and `bge-m3`,
   `all-minilm` and `qwen3-embedding:0.6b` added in the full search. Any Ollama model can be named instead;
   the judge self-test still applies.
-- **Status:** awaiting owner review.
+- **Owner (2026-11-22):** accepted; the user must be able to change them easily (D-031).
+- **Status:** owner's answer.
 
 ## D-028: Question rules by code before the judge  (2026-11-22)
 
@@ -268,11 +287,34 @@ Design 0001 is proposed and was revised after the owner's first answers (2026-11
   words for `paraphrase`, a missing or unknown `style`. Each drop is counted by reason.
 - **Status:** designer's choice; thresholds in `ragcourt.toml`.
 
-## D-029: Milestone 1 includes the first ranking  (2026-11-22)
+## D-029: Milestone 1 is the whole project  (2026-11-22)
 
-- **Question:** the brief's milestones put the audit alone in M1; the owner does not want the first
-  version to be model-free.
-- **Choice:** M1 delivers the audit and the first-minute ranking (Ollama client, `setup`, questions with
-  the judge, the default embedders on the default chunker, metrics with intervals, blame). M2 completes
-  the search (all four stages, greedy order, budget, fixes, `explain`, extras).
-- **Status:** awaiting owner review.
+- **Question:** the brief split 0.1 into four milestones (audit; rank and explain; the HTML report;
+  doctor); the first revision moved the first ranking into milestone 1.
+- **Owner (2026-11-22):** milestone 1 is the full project.
+- **Choice:** one milestone, built on one branch in the order of the change record (each step tested and
+  committed, reviewed by the reviewer agents at the end), shown to the owner once, when all 30 guarantees
+  pass.
+- **Status:** owner's answer.
+
+## D-030: Nothing happens blindly  (2026-11-22)
+
+- **Owner (2026-11-22):** "Imagine a new user using this product. Nothing should happen blindly." The
+  user calling ragcourt must know what is being judged, how, and by which model.
+- **Choice:** before any model call, a plan in plain words (each step, its role, its model and where that
+  choice came from, what the model is shown and returns, the estimate). Before the first judge call, a
+  paragraph on what the judge is asked and shown and what it never decides. Every prompt and the judge's
+  labelled cases are readable files (`ragcourt prompts show`). The self-test is shown case by case. Every
+  verdict keeps its reason (`ragcourt questions show`). Leaderboards and blame lists end with a legend of
+  their words and rules. `docs/judge.md` and `docs/models.md` explain it with real output (design §6.6,
+  §10.3, §11.4, §13.2; guarantees 28 to 30).
+- **Status:** owner's requirement; the shape is the designer's.
+
+## D-031: Changing a model is one command  (2026-11-22)
+
+- **Owner (2026-11-22):** the defaults are fine, but the user must be able to configure them easily.
+- **Choice:** five named roles (`writer`, `judge`, `embedders`, `reranker`, `doctor`); `ragcourt models`
+  shows them with where each came from; `ragcourt models set <role> <model>` writes `ragcourt.toml` and,
+  for a judge, runs the self-test; per-run flags override; `setup` writes a commented `ragcourt.toml`.
+  Precedence: flag, file, default, printed in the plan (design §11.4).
+- **Status:** designer's choice.
