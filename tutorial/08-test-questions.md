@@ -30,7 +30,8 @@ aimed at a known weakness:
 
 The passages offered for each kind are chosen by code: a `negation` question is only asked about passages
 that contain a negation, a `distractor` only about pairs of similar passages from different documents.
-Headers and footers repeated across your documents are never offered.
+Headers and footers repeated across your documents are never offered. Passages are taken one document at a
+time, so a very long file (a changelog, say) does not supply most of the questions.
 
 ## How many
 
@@ -41,7 +42,9 @@ question, so it never changes between runs.
 
 A kind with fewer than 30 held-out questions is shown as **too few to rank** and left out of the overall
 score. Small document sets often can't support every kind (there may be no similar passages for
-distractors), and ragcourt says so rather than guess.
+distractors), and ragcourt says so rather than guess. A kind that keeps fewer than 1 in 20 drafts after 60
+tries stops there and says so: on documentation that repeats itself, the look-alike passage often answers
+the question too, and asking on would cost an hour for a kind that stays too few to rank.
 
 ## Every question is checked, in order
 
