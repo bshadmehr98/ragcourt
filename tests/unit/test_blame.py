@@ -117,6 +117,12 @@ def test_confirmed_needs_a_measured_alternative_differing_only_in_that_stage() -
     assert level == "confirmed" and "with chunker c2 it reaches the top k" in fix
     two_changes = evaluation(PipelineSpec("c2", "e2", "dense", "none"), 1.0)
     level, fix = fix_for("chunker.split", "q1", chosen, [two_changes])
+    assert level == "indicated" and "with chunker c2 and embedder e2 it reaches the top k" in fix
+    assert "another stage differs too" in fix  # evidence, not a confirmation
+    bm25 = PipelineSpec("c1", None, "bm25", "none")  # BM25 has no embedder: dense against it is one change
+    level, fix = fix_for("retriever.keyword_only", "q1", bm25, [evaluation(chosen, 1.0)])
+    assert level == "confirmed" and "with retriever dense it reaches the top k" in fix
+    level, fix = fix_for("chunker.split", "q1", chosen, [])
     assert level == "indicated" and "--chunkers" in fix and "not measured" in fix
     level, fix = fix_for(
         "chunker.over_limit", "q1", chosen, [evaluation(PipelineSpec("c1", "e2", "dense", "none"), 1.0)]

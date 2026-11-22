@@ -77,7 +77,9 @@ things for each miss:
   as a measurement gets.
 - **indicated**: the probes point to the cause, but no such pipeline was measured. The fix says "not
   measured" and gives the command that would measure it, or "measured here, and it misses the top k there too"
-  when the alternatives tried did not help.
+  when the alternatives tried did not help. When a measured pipeline that changes the blamed stage *and* another
+  one finds the answer ("with retriever hybrid and reranker none it reaches the top k (another stage
+  differs too)"), that is strong evidence but not a confirmation, so the level stays `indicated`.
 
 The share of confirmed causes is printed. More candidates per step means more confirmed causes.
 

@@ -91,7 +91,12 @@ def test_ac13_and_ac14_every_miss_has_one_cause_a_level_and_a_fix(ran: tuple[Pat
         if blame["level"] == "indicated":
             assert any(
                 words in blame["fix"]
-                for words in ("not measured", "no tested embedder", "misses the top k there too")
+                for words in (
+                    "not measured",
+                    "no tested embedder",
+                    "misses the top k there too",
+                    "differs too",
+                )
             )
     overall = results["ceilings"]["overall"]
     assert overall["chunker"] >= overall["retrieval"] >= overall["hit_at_k"]

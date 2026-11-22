@@ -47,28 +47,50 @@ def fix_for(
     stage = mechanism.split(".", maxsplit=1)[0]
     fields = ("chunker", "embedder") if mechanism == "chunker.over_limit" else FIELDS[stage]
     tried: list[str] = []
+    near: list[str] = []
     for evaluation in measured:
-        changed = chosen.differs_only_in(evaluation.spec)
-        if len(changed) != 1 or changed[0] not in fields:
+        changed = _changed(chosen, evaluation.spec, fields)
+        if not changed or changed[0] not in fields:
             continue
-        value = f"{changed[0]} {getattr(evaluation.spec, changed[0])}"
-        result = evaluation.results.get(question)
-        if result and result.metrics["hit_at_k"] == 1.0:
+        value = " and ".join(f"{name} {getattr(evaluation.spec, name)}" for name in changed)
+        hit = _hits(evaluation, question)
+        if hit and len(changed) == 1:
             return (
                 "confirmed",
                 f"{FIXES[mechanism]}: with {value} it reaches the top k (measured in this run)",
             )
-        if value not in tried:
+        if hit and value not in near:
+            near.append(value)
+        elif len(changed) == 1 and value not in tried:
             tried.append(value)
+    return "indicated", _indicated(mechanism, question, measured, (tried, near, FLAGS[fields[0]]))
+
+
+def _indicated(
+    mechanism: str, question: str, measured: list[Evaluation], found: tuple[list[str], list[str], str]
+) -> str:
+    tried, near, flag = found
     if mechanism == "embedder.meaning" and _no_embedder_finds(question, measured):
-        return "indicated", "no tested embedder connects this question to its answer"
+        return "no tested embedder connects this question to its answer"
+    if near:  # measured, but with another stage changed too: evidence, not a confirmation
+        return f"{FIXES[mechanism]}: with {near[0]} it reaches the top k (another stage differs too)"
     if tried:
-        return (
-            "indicated",
-            f"{FIXES[mechanism]}; measured here, and it misses the top k there too: {', '.join(tried)}",
-        )
-    flag = FLAGS[fields[0]]
-    return "indicated", f"{FIXES[mechanism]} (not measured: `ragcourt rank DOCS {flag} …` would measure it)"
+        return f"{FIXES[mechanism]}; measured here, and it misses the top k there too: {', '.join(tried)}"
+    return f"{FIXES[mechanism]} (not measured: `ragcourt rank DOCS {flag} …` would measure it)"
+
+
+def _changed(chosen: PipelineSpec, other: PipelineSpec, fields: tuple[str, ...]) -> list[str]:
+    """The stages that differ, the blamed ones first; the embedder is left out when one side has none
+    (BM25 uses no embedder, so BM25 against dense is a change of retriever alone)."""
+    changed = chosen.differs_only_in(other)
+    if chosen.embedder is None or other.embedder is None:
+        changed = [name for name in changed if name != "embedder"]
+    return sorted(changed, key=lambda name: name not in fields)
+
+
+def _hits(evaluation: Evaluation, question: str) -> bool:
+    result = evaluation.results.get(question)
+    return result is not None and result.metrics["hit_at_k"] == 1.0
 
 
 def _no_embedder_finds(question: str, measured: list[Evaluation]) -> bool:
