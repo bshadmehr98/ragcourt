@@ -1,10 +1,11 @@
 """A reranker call the server refuses does not end the run (D-057)."""
 
+import pytest
+
 from ragcourt import EndpointError
 from ragcourt.flows.evaluate import _guarded  # pyright: ignore[reportPrivateUsage]
 from ragcourt.stages.rerankers.llm import llm
 from ragcourt.types import ChatRequest
-from ragcourt.types.questions import Dropped
 
 
 class Refusing:
@@ -39,8 +40,6 @@ def test_a_call_refused_twice_keeps_the_retrieval_order_and_is_counted() -> None
 
 
 def test_a_server_that_is_gone_still_stops_the_run() -> None:
-    import pytest
-
     def gone(query: str, candidates: list[str]) -> list[float]:
         raise EndpointError("could not be reached", retryable=False)
 
@@ -50,11 +49,11 @@ def test_a_server_that_is_gone_still_stops_the_run() -> None:
         guarded("q", ["a"])
 
 
-def test_a_refused_draft_is_dropped_with_its_reason() -> None:
+def test_a_refused_draft_is_skipped_not_dropped_and_five_in_a_row_stop() -> None:
     from ragcourt.core import generate
 
     def refuse(*_: object) -> generate.Outcome:
-        raise EndpointError("answered 500: token repeat limit reached", retryable=True)
+        raise EndpointError("answered 500: out of memory", retryable=True)
 
     original = generate._attempt  # pyright: ignore[reportPrivateUsage]
     generate._attempt = refuse  # type: ignore[assignment]  # pyright: ignore[reportPrivateUsage]
@@ -62,5 +61,23 @@ def test_a_refused_draft_is_dropped_with_its_reason() -> None:
         outcome = generate._safe_attempt("keyword", 3, None, None, [])  # type: ignore[arg-type]  # pyright: ignore[reportPrivateUsage]
     finally:
         generate._attempt = original  # pyright: ignore[reportPrivateUsage]
-    assert isinstance(outcome, Dropped)
-    assert outcome.reason == "the model's server refused the call" and outcome.offer == 3
+    assert outcome == "answered 500: out of memory"  # nothing journaled: a later run asks again
+    progress = generate.Progress("keyword", 90)
+    for _ in range(generate.MAX_REFUSED - 1):
+        generate._refused(progress, "500")  # pyright: ignore[reportPrivateUsage]
+    with pytest.raises(EndpointError, match="refused 5 calls in a row"):
+        generate._refused(progress, "500")  # pyright: ignore[reportPrivateUsage]
+
+
+def test_a_reranker_refused_five_times_in_a_row_stops_the_run() -> None:
+    def broken(query: str, candidates: list[str]) -> list[float]:
+        raise EndpointError("answered 500", retryable=True)
+
+    failures: list[str] = []
+    guarded = _guarded(broken, failures)
+    assert guarded is not None
+    for _ in range(4):
+        guarded("q", ["a"])
+    with pytest.raises(EndpointError):
+        guarded("q", ["a"])
+    assert len(failures) == 4

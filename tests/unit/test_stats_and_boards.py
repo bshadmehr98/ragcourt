@@ -146,3 +146,13 @@ def test_a_kind_of_question_the_choice_fails_is_found() -> None:
     spots = weak_spots([keyword_only, both], keyword_only, Scoring(members, "m", 30, draws))
     assert [(spot.category, spot.better) for spot in spots] == [("paraphrase", both.spec.label)]
     assert weak_spots([keyword_only, both], both, Scoring(members, "m", 30, draws))[0].category == "keyword"
+
+
+def test_no_weak_spot_on_a_kind_too_few_to_rank() -> None:
+    from ragcourt.core.leaderboard import weak_spots
+
+    members = questions("paraphrase", 1)
+    draws = draws_for(members)
+    a = evaluation("a", {"paraphrase": 0.0}, members)
+    b = evaluation("b", {"paraphrase": 1.0}, members)
+    assert weak_spots([a, b], a, Scoring(members, "m", 30, draws)) == []

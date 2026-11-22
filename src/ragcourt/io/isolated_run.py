@@ -71,6 +71,9 @@ def _run(
         raise GeneratedCodeRejected(
             f"It ran longer than {timeout:g} s on one document and was stopped."
         ) from error
+    except BaseException:  # Ctrl-C: its own process group does not get the terminal's signal
+        _stop(process)
+        raise
     return process.returncode
 
 

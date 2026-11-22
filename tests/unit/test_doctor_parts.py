@@ -78,3 +78,33 @@ def test_the_isolated_run_gets_no_keys(tmp_path: Path, monkeypatch: pytest.Monke
     path = tmp_path / "chunk.py"
     path.write_text("import os\ndef chunk(text):\n    return [str(sorted(os.environ))]\n")
     assert "OPENAI_API_KEY" not in str(run_chunker(path, "x", timeout=5.0))
+
+
+def test_ctrl_c_stops_the_generated_chunker_too(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    import subprocess
+
+    from ragcourt.io import isolated_run
+
+    code = tmp_path / "loop.py"
+    code.write_text("def chunk(text):\n    while True:\n        pass\n")
+    started: list[subprocess.Popen[bytes]] = []
+    real = subprocess.Popen.communicate
+
+    def interrupted(self: subprocess.Popen[bytes], *args: object, **kwargs: object) -> object:
+        started.append(self)
+        raise KeyboardInterrupt
+
+    monkeypatch.setattr(subprocess.Popen, "communicate", interrupted)
+    with pytest.raises(KeyboardInterrupt):
+        isolated_run.run_chunker(code, "text", timeout=30)
+    monkeypatch.setattr(subprocess.Popen, "communicate", real)
+    assert started and started[0].poll() is not None  # stopped, not left running
+
+
+def test_json_output_has_nothing_the_terminal_escaping_would_change() -> None:
+    import json
+
+    from ragcourt.io.terminal import printable
+
+    text = json.dumps({"question": "a\x85b\x1b[2K"})  # ASCII JSON escapes every control character itself
+    assert printable(text) == text and json.loads(text)["question"] == "a\x85b\x1b[2K"

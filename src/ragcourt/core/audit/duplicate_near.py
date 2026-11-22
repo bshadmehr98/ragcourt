@@ -53,8 +53,8 @@ def _best_earlier(
         for earlier in seen.get(gram, ()):
             shared[earlier] += 1
     best: tuple[int, float] | None = None
-    for earlier, count in shared.items():
-        similarity = count / (len(own) + len(sets[earlier]) - count)
+    for earlier in shared:  # the capped index finds candidates; each is scored exactly
+        similarity = len(own & sets[earlier]) / len(own | sets[earlier])
         if best is None or similarity > best[1]:
             best = (earlier, similarity)
     return best

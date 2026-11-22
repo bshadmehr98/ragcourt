@@ -104,6 +104,7 @@ def _generated(
     if code is None:
         say("The model wrote no usable chunker (no `def chunk(text)`).")
         return None
+    code = code.replace("\r\n", "\n")  # Windows line endings are not hidden text
     if printable(code) != code:
         say("Rejected: the code holds control or bidirectional characters, which could hide part of it.")
         return None

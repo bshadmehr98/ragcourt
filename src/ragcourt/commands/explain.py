@@ -32,7 +32,7 @@ def run(args: argparse.Namespace) -> int:
     folder = run_files.find_run(project.workdir, args.run_id)
     results = run_files.read_results(folder)
     if args.json:
-        print(json.dumps(results["blames"], indent=1, ensure_ascii=False))
+        print(json.dumps(results["blames"], indent=1))  # ASCII: still valid JSON after terminal escaping
     elif args.show:
         print(show_text(results, args.show), end="")
     else:

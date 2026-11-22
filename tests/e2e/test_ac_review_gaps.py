@@ -211,3 +211,24 @@ def test_terminal_escapes_from_documents_or_questions_are_shown_not_run(
     out = run("questions", "show")[1]
     assert "\x1b" not in out and RLO not in out
     assert "\\x1b[2K" in out and "\\u202e" in out
+
+
+def test_the_note_compares_whole_labels_not_prefixes() -> None:
+    scoring = Scoring(HELD, "m", 30, {"keyword": resamples(40, 500, "0:keyword")})
+    top = Evaluation(
+        PipelineSpec("good", "e", "dense", "llm:top=10"), pipeline("x", [1.0] * 40).results, Costs()
+    )
+    below = Evaluation(PipelineSpec("good", "e", "dense", "llm"), pipeline("y", [0.0] * 40).results, Costs())
+    text = board_text(board_data(board("reranker", [top, below], scoring)), top.spec.label)
+    assert "Note:" not in text
+
+
+def test_only_the_models_a_run_will_call_must_be_installed(
+    rank_project: tuple[Path, FakeOllamaState], corpus: Path, run: Run
+) -> None:
+    _, state = rank_project
+    assert run("rank", corpus, "--yes", "--rerankers", "none")[0] == 0
+    del state.models["fake-chat"]  # writer and judge: the question set is complete, so neither is called
+    assert run("rank", corpus, "--yes", "--rerankers", "none")[0] == 0
+    code, _, err = run("rank", corpus, "--yes", "--rerankers", "llm:model=other-chat")
+    assert code == 1 and "Not installed in Ollama: other-chat" in err

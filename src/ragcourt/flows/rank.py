@@ -68,7 +68,7 @@ def run_rank(project: Project, corpus: Corpus, options: RankOptions, say: Say) -
     if not ready_to_go(project, yes=options.yes, minutes=guess.minutes, cost=cost):
         say("Not started. Run again with --yes to start without asking.")
         return None
-    check_models(project, options, candidates)
+    check_models(project, options, candidates, int(plan["questions"]["to_write"]))  # type: ignore[index]
     folder = _folder(project, plan, resume=options.resume, say=say)
     run_files.log_progress(folder, {"step": "questions", "event": "start"})
     questions = ensure_questions(project, corpus, options.questions, say)

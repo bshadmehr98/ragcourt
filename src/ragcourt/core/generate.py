@@ -21,6 +21,7 @@ from ragcourt.errors import EndpointError
 from ragcourt.types.questions import Dropped, Offer, Question, Span
 
 EARLY_LOOK = 60  # drafts of a category before its yield is judged
+MAX_REFUSED = 5  # refused calls in a row before the run stops (D-057)
 HOPELESS_RATIO = 20  # under 1 kept in 20 drafts: the category stops (D-057)
 
 
@@ -54,6 +55,7 @@ class Progress:
     dropped: dict[str, int] = field(default_factory=dict[str, int])
     finished: bool = False
     stopped_early: bool = False
+    refused: int = 0  # calls refused in a row
 
     def hopeless(self) -> bool:
         """After ``EARLY_LOOK`` drafts, fewer than one in ``HOPELESS_RATIO`` kept: these documents hold too
@@ -94,6 +96,10 @@ def generate(
                 continue
             kept = [item for item in outcomes if isinstance(item, Question)]
             outcome = _safe_attempt(category, number, offer, (index, prompts, models), kept)
+            if isinstance(outcome, str):  # refused: not journaled, so a later run asks again
+                _refused(progress, outcome)
+                continue
+            progress.refused = 0
             outcomes.append(outcome)
             journal.record(outcome)
             _count(progress, outcome)
@@ -125,15 +131,27 @@ def _count(progress: Progress, outcome: Outcome) -> None:
 
 def _safe_attempt(
     category: str, number: int, offer: Offer, context: Context, kept: list[Question]
-) -> Outcome:
-    """One draft; a call the server refused even after its retries (a 5xx, a timeout) drops that draft
-    with the reason instead of ending the run (D-057). A server that cannot be reached still stops it."""
+) -> Outcome | str:
+    """One draft, or why the server refused it even after its retries (a 5xx, a timeout): that passage is
+    skipped, not dropped, so it is asked again on a later run (D-057). A server that cannot be reached
+    still stops the run."""
     try:
         return _attempt(category, number, offer, context, kept)
     except EndpointError as error:
         if not error.retryable:
             raise
-        return Dropped(category, "the model's server refused the call", str(error)[:200], "", (), number)
+        return str(error)
+
+
+def _refused(progress: Progress, reason: str) -> None:
+    """Count a refused call; ``MAX_REFUSED`` in a row stop the run (``--resume`` continues)."""
+    progress.refused += 1
+    if progress.refused >= MAX_REFUSED:
+        raise EndpointError(
+            f"The model's server refused {MAX_REFUSED} calls in a row (last: {reason[:200]}). Nothing was "
+            "lost: fix the server, then `--resume` continues.",
+            retryable=False,
+        )
 
 
 def _attempt(category: str, number: int, offer: Offer, context: Context, kept: list[Question]) -> Outcome:

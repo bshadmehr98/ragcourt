@@ -8,6 +8,7 @@ longer exists is taken over.
 from __future__ import annotations
 
 import os
+import time
 from collections.abc import Generator
 from contextlib import contextmanager
 from pathlib import Path
@@ -15,6 +16,7 @@ from pathlib import Path
 from ragcourt.errors import ConfigError
 
 LOCK = "lock"
+STARTING_SECONDS = 10.0
 
 
 @contextmanager
@@ -40,11 +42,13 @@ def _take(path: Path) -> None:
 
 
 def _refuse_or_clear(path: Path) -> None:
-    text = path.read_text(encoding="utf-8").strip()
+    text = path.read_text(encoding="utf-8", errors="replace").strip()
     pid = int(text) if text.isdigit() else 0
-    if pid and _alive(pid):
+    starting = not text and time.time() - path.stat().st_mtime < STARTING_SECONDS  # its id is being written
+    if starting or (pid and _alive(pid)):
         raise ConfigError(
-            f"Another ragcourt (process {pid}) is using {path.parent}; wait for it to finish, or give this "
+            f"Another ragcourt (process {pid or 'starting'}) is using {path.parent}; wait for it to finish, "
+            "or give this "
             f"one another --workdir. If no other ragcourt runs, delete {path}."
         )
     path.unlink(missing_ok=True)

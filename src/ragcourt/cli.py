@@ -83,7 +83,7 @@ def _run(argv: list[str] | None) -> int:
 
 
 def _command(args: argparse.Namespace) -> int:
-    if args.command not in WRITERS:
+    if args.command not in WRITERS or str(getattr(args, "folder", "")) == "show":  # `questions show` reads
         return int(args.run(args))
     with workdir_lock(args.workdir or Path.cwd() / WORKDIR):
         return int(args.run(args))

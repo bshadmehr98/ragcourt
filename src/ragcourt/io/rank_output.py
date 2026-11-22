@@ -103,7 +103,8 @@ def board_text(board: dict[str, Any], chosen: str | None) -> str:
 def _disagreement(board: dict[str, Any], chosen: str) -> list[str]:
     """Said when the pipeline chosen on dev is separably worse on held-out than the top (D-057)."""
     rows = board["rows"]
-    behind = [row for row in rows[1:] if chosen.startswith(row["label"]) and not row["tied_with_top"]]
+    label = chosen.split(" (tied on dev", maxsplit=1)[0]
+    behind = [row for row in rows[1:] if row["label"] == label and not row["tied_with_top"]]
     if not rows or not behind:
         return []
     return [

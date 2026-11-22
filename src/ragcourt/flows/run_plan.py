@@ -20,6 +20,7 @@ from ragcourt.flows.questions import QuestionOptions, question_plan
 from ragcourt.io.ask import confirm
 from ragcourt.io.project import Project
 from ragcourt.io.question_file import corpus_hash
+from ragcourt.stages.specs import parse_spec
 from ragcourt.types import Corpus
 
 
@@ -149,25 +150,25 @@ def check_run(project: Project, options: RankOptions, candidates: Candidates) ->
     check_budget_values(*budgets(project, options))
 
 
-def check_models(project: Project, options: RankOptions, candidates: Candidates) -> None:
+def check_models(project: Project, options: RankOptions, candidates: Candidates, to_write: int) -> None:
     """After the plan is shown and before any model is called: every Ollama model it names is installed."""
-    check_installed(project, _ollama_models(project, options, candidates))
+    check_installed(project, _ollama_models(project, options, candidates, to_write))
 
 
-def _ollama_models(project: Project, options: RankOptions, candidates: Candidates) -> list[str]:
-    """The Ollama models this run may call: writer and judge (when questions are to be written), the
-    embedders that are model names, and the reranker's model for the llm reranker."""
+def _ollama_models(
+    project: Project, options: RankOptions, candidates: Candidates, to_write: int
+) -> list[str]:
+    """The Ollama models this run will call: writer and judge when questions are still to be written, the
+    embedders that are model names, and the model of each llm reranker."""
     questions = options.questions
     names: list[str] = []
-    settings = project.config.questions
-    count = settings.per_category if questions.per_category is None else questions.per_category
-    if count and settings.categories:
+    if to_write:
         names += [
             *project.role("writer", questions.writer).models,
             *project.role("judge", questions.judge).models,
         ]
     stage_names = stages.names("embedder")
     names += [name for name in candidates.embedders if name.split(":", maxsplit=1)[0] not in stage_names]
-    if any(name.split(":", maxsplit=1)[0] == "llm" for name in candidates.rerankers):
-        names += project.role("reranker").models
+    llm = [parse_spec(name) for name in candidates.rerankers if parse_spec(name).name == "llm"]
+    names += [str(spec.kwargs().get("model", project.role("reranker").models[0])) for spec in llm]
     return [name for name in dict.fromkeys(names) if not name.startswith("endpoint:")]

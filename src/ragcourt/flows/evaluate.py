@@ -17,6 +17,7 @@ from pathlib import Path
 
 from ragcourt import stages
 from ragcourt.core.chunking import Chunked, chunk_corpus
+from ragcourt.core.generate import MAX_REFUSED
 from ragcourt.core.pipeline import Rerank, Settings, Timing, run_pipeline
 from ragcourt.core.relevance import TokenMap
 from ragcourt.core.sizes import percentile
@@ -205,13 +206,18 @@ def _guarded(rerank: Rerank | None, failures: list[str]) -> Rerank | None:
     if rerank is None:
         return None
 
+    streak: list[str] = []  # refusals in a row
+
     def guarded(query: str, candidates: list[str]) -> list[float]:
         try:
-            return rerank(query, candidates)
+            scores = rerank(query, candidates)
         except EndpointError as error:
-            if not error.retryable:  # the server is gone: stop, `--resume` continues
+            if not error.retryable or len(streak) + 1 >= MAX_REFUSED:  # the server is gone or broken
                 raise
+            streak.append(str(error))
             failures.append(str(error))
             return [float(len(candidates) - position) for position in range(len(candidates))]
+        streak.clear()
+        return scores
 
     return guarded
