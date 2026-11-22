@@ -38,6 +38,8 @@ Design 0001 is proposed and was revised after the owner's first answers (2026-11
 - **Candidates** free on PyPI, npm and GitHub repository names, with no web use found for those searched
   (research §3, second round): `ragculprit`, `ragsleuth`, `ragbisector`, `ragpinpoint`, `ragcaliper`,
   `ragscout`, `ragsift`, `ragtally`, `ragprove`, `ragstage`, `ragseam`, `ragbiopsy`, and more in the note.
+  Judge-themed (third round): `ragjury`, `ragarbiter`, `ragreferee`, `ragumpire`, `ragtribunal`,
+  `ragcoroner`, `ragassessor`; `ragjudge` and `ragverdict` are taken.
 - **Meanwhile:** `ragdoctor` stays as the package, import and command; a rename is one search-and-replace
   before publishing.
 - **Status:** awaiting the owner's pick; must be settled before the first publish.

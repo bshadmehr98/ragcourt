@@ -118,6 +118,15 @@ rank stage variants, attribute misses to a stage, or use span gold with interval
   `sourced`. Taken or crowded: `ragtrace`, `ragbench`, `raglens`, `ragscope`, `ragprobe`, `ragrank`,
   `ragdiag`, `ragkit`, `ragxray` (on PyPI or as GitHub repository names), and `ragmedic` (20 repositories),
   `ragtune` (10). `sourced`. Domains and trademarks were not checked.
+- **Third round (2026-11-22, judge-themed names at the owner's suggestion):** `ragjudge` is taken (PyPI
+  0.1.0 "Evals for RAG pipelines", an npm package, and three GitHub repositories of LLM-as-judge RAG
+  evaluation); `ragverdict` is taken on PyPI ("pytest for RAG agents"); `ragcritic` and `ragoracle` are
+  taken as `rag-critic` and `rag-oracle`; `ragauditor`, `raginspector`, `ragexaminer`, `raggrader`,
+  `ragrubric` and `ragexam` appear in GitHub repository names. Free on PyPI, npm and GitHub repository
+  names: `ragjury`, `ragreferee`, `ragumpire`, `ragarbiter`, `ragtribunal`, `ragcourt`, `ragassessor`,
+  `ragcoroner`, `ragmagistrate`, `ragadjudicator`, `ragappraiser`, `ragmarshal`, `ragbailiff`, `ragjuror`,
+  `ragjustice`, `ragtestify`, `ragcrossexam`, `ragsentence`, `ragproctor`, `ragverdicts`, `ragruling`.
+  A web search for the exact names of the first nine found no use. `sourced`
 - Conclusion: "ragdoctor" is crowded by three RAG-diagnosis projects of nearly the same name. Raised as
   [D-001](../decisions.md#d-001-the-name-ragdoctor). `inferred`
 
