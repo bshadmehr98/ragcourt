@@ -108,7 +108,9 @@ def test_sizes() -> None:
 
 def test_an_exact_copy_is_found_even_behind_a_footer_in_every_chunk() -> None:
     footer = " ".join(f"footer{n}" for n in range(26)) + ". "
-    pieces = [" ".join(f"t{chunk}w{n}" for n in range(30)) + ". " + footer for chunk in range(80)]
+    pieces: list[str] = []
+    for chunk in range(80):
+        pieces.append(" ".join(f"t{chunk}w{n}" for n in range(30)) + ". " + footer)
     pieces.append(pieces[70])  # the 81st chunk repeats the 71st exactly
     found = findings({"a.md": pieces})
     assert ("duplicate.near", "a.md", 80) in found
