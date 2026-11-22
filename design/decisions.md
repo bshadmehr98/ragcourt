@@ -5,40 +5,42 @@ the designer's, open to the owner's review. Code comments refer to entries by nu
 
 ## Awaiting owner review
 
-Design 0001 is proposed. These are the choices the owner should look at first; every other entry below is
-open to review too.
+Design 0001 is proposed and was revised after the owner's first answers (2026-11-22). Still open:
 
 | Id | The question | Status |
 |---|---|---|
-| [D-001](#d-001-the-name-ragdoctor) | Keep the working name `ragdoctor`, crowded by three RAG-diagnosis projects? | awaiting owner |
-| [D-006](#d-006-the-first-minute-is-audit) | Is `audit` the "first useful result in under a minute with no API key"? | awaiting owner |
-| [D-007](#d-007-one-client-local-means-a-local-server-or-the-local-extra) | "Local models" as local OpenAI-compatible servers, plus an optional in-process extra? | awaiting owner |
+| [D-001](#d-001-the-name) | Which name? Candidates with "rag" that are used nowhere are listed | awaiting the owner's pick |
+| [D-029](#d-029-milestone-1-includes-the-first-ranking) | Milestone 1 includes the first ranking with local models, not only the audit? | awaiting owner |
+| [D-026](#d-026-the-judge-and-its-self-test) | The judge must pass a self-test on labelled cases before its verdicts are used? | awaiting owner |
+| [D-027](#d-027-the-default-local-models-come-from-measurement) | Default local models chosen by measurement, `gemma4` on this machine? | awaiting owner |
 | [D-011](#d-011-the-split-and-the-intervals) | A 50/50 split by question and a paired bootstrap for ties? | awaiting owner |
-| [D-012](#d-012-the-closed-book-check-by-code) | Deciding "answerable without the documents" by word overlap, not by a judge? | awaiting owner |
 | [D-014](#d-014-retrieval-blame-is-one-stage) | Blame `retrieval` as one stage (embedder or retriever)? | awaiting owner |
-| [D-017](#d-017-approving-generated-code) | Approval by `y/N` or by the code's hash; the subprocess is not a sandbox? | awaiting owner |
-| [D-025](#d-025-user-questions-need-a-quote) | User questions must carry a quote and are never dropped as closed-book? | awaiting owner |
-| [D-004](#d-004-repository-url) | The repository URL in `pyproject.toml`? | awaiting owner |
 
 ## The owner's answers (2026-11-22)
 
 | Id | Decision | Who |
 |---|---|---|
 | D-002 | Python; the owner's toolchain (uv, hatchling, ruff with line length 110 and complexity 10, pyright strict for `src/`, pytest with 90% branch coverage, `scripts/check.sh` as the one gate) and the k8s-holmes workflow adapted (add-stage, real-model-tests, `RAGDOCTOR_ALLOW_MAIN`). | owner (the brief) |
+| D-001 | The name will contain "rag" and be used nowhere else; the owner picks from the candidates later. | owner |
+| D-006 | The first version is not model-free: the first useful result uses a model. Any local model that fits the machine may be used. | owner |
+| D-007 | Ollama is the local model runtime (installed on the owner's machine). | owner |
+| D-012 | A model judge is required. The brief's "not in 0.1: model judges" was wrong. Blame stays code. | owner |
+| D-017 | Approval of generated code by answer or exact hash, with "not a sandbox" said plainly: accepted. | owner |
+| D-025 | User questions carry a quote and skip the closed-book filter: accepted. | owner |
+| D-004 | The repository lives under `bshadmehr98`, its name to follow the product's name. | owner |
 
-## D-001: The name `ragdoctor`  (2026-11-22)
+## D-001: The name  (2026-11-22)
 
-- **Question:** the brief calls `ragdoctor` a working name and asks for a clash check
-  ([history/0000-research.md](history/0000-research.md) §3). PyPI `ragdoctor` is free, but `rag-doctor`
-  is a published RAG failure-diagnosis tool (1.0.0, March 2026), and GitHub has
-  thehalleyyoung/ragdoctor (RAG diagnostics with intervals and "prescriptions"), hanhanwu/RagDoctor
-  (archived, root-cause tracing) and an npm `rag-doctor`. Users searching for one will find the others.
-- **Choice:** keep `ragdoctor` as the package, import and command while the design is reviewed; every
-  file uses it consistently so a rename is one search-and-replace before publishing. If the owner wants a
-  clear name, candidates free on PyPI: `retrievalscope` (no GitHub repositories either), `chunkdoctor`
-  (an unrelated Minecraft tool on GitHub). `ragblame` is free on PyPI but clashes in concept with
-  pulkitnagpal/ragblame.
-- **Status:** awaiting owner review; must be settled before the first publish.
+- **Question:** the brief calls `ragdoctor` a working name. It is crowded: `rag-doctor` is a published RAG
+  failure-diagnosis tool on PyPI, and thehalleyyoung/ragdoctor and hanhanwu/RagDoctor are RAG-diagnosis
+  repositories ([history/0000-research.md](history/0000-research.md) §3).
+- **Owner (2026-11-22):** a name with "rag" that is not used anywhere; the owner picks later.
+- **Candidates** free on PyPI, npm and GitHub repository names, with no web use found for those searched
+  (research §3, second round): `ragculprit`, `ragsleuth`, `ragbisector`, `ragpinpoint`, `ragcaliper`,
+  `ragscout`, `ragsift`, `ragtally`, `ragprove`, `ragstage`, `ragseam`, `ragbiopsy`, and more in the note.
+- **Meanwhile:** `ragdoctor` stays as the package, import and command; a rename is one search-and-replace
+  before publishing.
+- **Status:** awaiting the owner's pick; must be settled before the first publish.
 
 ## D-003: The core is the standard library alone  (2026-11-22)
 
@@ -52,9 +54,10 @@ open to review too.
 
 ## D-004: Repository URL  (2026-11-22)
 
-- **Choice:** `https://github.com/bshadmehr98/ragdoctor` in `pyproject.toml` and `@bshadmehr98` in
-  `CODEOWNERS`, as for k8s-holmes, until the owner says where the project lives.
-- **Status:** awaiting owner review.
+- **Owner (2026-11-22):** a repository under `bshadmehr98`, named after the product.
+- **Meanwhile:** `https://github.com/bshadmehr98/ragdoctor` in `pyproject.toml` and `@bshadmehr98` in
+  `CODEOWNERS`; both change with the name (D-001).
+- **Status:** owner's answer; the URL follows D-001.
 
 ## D-005: No GPU lock script  (2026-11-22)
 
@@ -63,33 +66,42 @@ open to review too.
   work, the test can take the family's lock itself later.
 - **Status:** designer's choice.
 
-## D-006: The first minute is `audit`  (2026-11-22)
+## D-006: The first minute uses a local model  (2026-11-22)
 
-- **Question:** "a first useful result in under a minute, with no API key" (brief §1). `rank` needs
-  questions, and generated questions need a chat model; without a key that means a local model server,
-  which a newcomer may not have, and a model download takes longer than a minute.
-- **Choice:** `ragdoctor audit <folder>` is the first useful result: no model, no network, seconds on
-  thousands of documents. `rank` with no key works with a local server (Ollama and the like), or with
-  the user's own questions, `bm25` and the `local` extra. The README quickstart is `audit`.
-- **Status:** awaiting owner review.
+- **Question:** "a first useful result in under a minute, with no API key" (brief §1).
+- **First proposal (rejected by the owner):** `audit`, with no model at all.
+- **Owner (2026-11-22):** the first version is not model-free; any local model that fits the machine may
+  be used; Ollama is installed.
+- **Choice:** the first-minute result is `ragdoctor rank <folder>` with nothing configured: it finds
+  Ollama on `localhost`, uses the default local models (D-027), writes about 40 questions with quotes,
+  filters them with the judge, and ranks the default embedders on the default chunker with blame for
+  every miss. `ragdoctor setup` (run once, not counted in the minute) checks Ollama, recommends models that
+  fit the machine, pulls them after asking, and runs the judge's self-test (D-026). `audit` stays
+  model-free when no model is available, and uses the embedder's measured token counts and limit through
+  Ollama when it is. The minute is a target to be measured (an end-to-end real-model test on the bundled
+  corpus); [history/0002-local-models.md](history/0002-local-models.md) §6 estimates about 60 s on the
+  owner's machine before any concurrency.
+- **Status:** owner's answer; the shape is the designer's.
 
-## D-007: One client; "local" means a local server or the `local` extra  (2026-11-22)
+## D-007: One client, Ollama first  (2026-11-22)
 
 - **Question:** "local models and any OpenAI-compatible endpoint … through one client" (brief §8).
-- **Choice:** one `ModelClient` protocol (in `types`) with one HTTP implementation over `urllib` for the
-  OpenAI-compatible API. Local servers (Ollama, llama.cpp, vLLM, LM Studio) speak that API, so they need
-  nothing else. For people without a server, the `local` extra adds in-process `sentence-transformers`
-  embedders and cross-encoder rerankers behind the same protocol. There is no in-process chat model in
-  0.1: question generation and doctor need a server or an endpoint.
-- **Status:** awaiting owner review.
+- **Owner (2026-11-22):** Ollama is the local runtime.
+- **Choice:** one `ModelClient` protocol (in `types`) and one HTTP client over `urllib` with two
+  dialects: `ollama` (native routes: chat, embed with token counts, show for input limits, pull with the
+  user's consent) and `openai` (any OpenAI-compatible endpoint, including llama.cpp, vLLM and LM Studio,
+  plus the `/rerank` shape of D-015). With no configuration the client looks for Ollama at
+  `http://localhost:11434` and nowhere else. The `local` extra (in-process `sentence-transformers`
+  cross-encoders) stays for reranking, which Ollama does not offer.
+- **Status:** owner's answer; the shape is the designer's.
 
-## D-008: Token counts: the embedder's tokenizer, or labelled estimates  (2026-11-22)
+## D-008: Token counts: the embedder's own, or labelled estimates  (2026-11-22)
 
-- **Choice:** an embedder names its tokenizer (`tiktoken:<encoding>` or `hf:<id>`, through the `tokens`
-  extra). A small built-in table maps well-known embedding models to their tokenizer and input limit, so
-  `audit --embedder <name>` works without configuration. When the tokenizer cannot be loaded the size is
-  characters / 4, labelled `estimated` everywhere it appears. A downloaded tokenizer is fetched only when
-  the user runs a command that needs it, and the first time this is said on screen.
+- **Choice:** for an Ollama embedder, sizes come from the token counts Ollama reports when embedding
+  (`prompt_eval_count`) and the limit from `/api/show` (both measured in
+  [history/0002-local-models.md](history/0002-local-models.md) §3). For other embedders, from their
+  tokenizer (`tiktoken:<encoding>` or `hf:<id>`, the `tokens` extra). Otherwise characters / 4,
+  labelled `estimated` everywhere it appears.
 - **Status:** designer's choice.
 
 ## D-009: A fixed reference tokenization for token metrics  (2026-11-22)
@@ -118,14 +130,18 @@ open to review too.
   impossible on small corpora; stratifying by document keeps both splits representative.
 - **Status:** awaiting owner review.
 
-## D-012: The closed-book check by code  (2026-11-22)
+## D-012: The closed-book filter uses a judge  (2026-11-22)
 
-- **Question:** "drop questions the model answers without the documents" (brief §3), while model judges
-  are not in 0.1 (brief §11).
-- **Choice:** the model answers with no documents; code drops the question when the answer contains at
-  least half of the quote's content words. This is crude (it misses paraphrased answers and can drop a
-  question whose quote is made of common words), but it is a rule the user can read and test, not a judge.
-- **Status:** awaiting owner review.
+- **Question:** "drop questions the model answers without the documents" (brief §3).
+- **First proposal (rejected by the owner):** word overlap by code, because the brief excluded judges.
+- **Owner (2026-11-22):** a model judge is required; the brief was wrong to exclude it.
+- **Choice:** the answerer gets the question with no documents and is told to reply `UNKNOWN` when it does
+  not know; an `UNKNOWN` keeps the question without asking the judge (code); otherwise the judge grades
+  the answer against the quote with a strict rubric and gives a reason, and a correct answer drops the
+  question. A second judge call checks validity (a real question, answered by the quote). Every verdict,
+  its reason, the judge's model and the prompt version are stored with the question. Judges filter
+  questions and (as a stage) may rerank; they never decide blame or any metric.
+- **Status:** owner's answer; the shape is the designer's.
 
 ## D-013: What counts as a hit  (2026-11-22)
 
@@ -141,12 +157,14 @@ open to review too.
   alternative recovers the question; telling them apart without such a measurement would be guessing.
 - **Status:** awaiting owner review.
 
-## D-015: Rerankers through a `/rerank` route  (2026-11-22)
+## D-015: Rerankers  (2026-11-22)
 
-- **Question:** the OpenAI API has no rerank route.
-- **Choice:** the client also speaks the `/rerank` request shape shared by Jina, Cohere, vLLM, llama.cpp
-  and Hugging Face TEI; in-process cross-encoders come with the `local` extra. No reranking by asking a
-  chat model to score (that is a model judge).
+- **Question:** the OpenAI API has no rerank route, and Ollama 0.34.4 has none either (measured,
+  [history/0002-local-models.md](history/0002-local-models.md) §7).
+- **Choice:** three rerankers: `llm` (a chat model orders the top 20 candidates in one listwise call; local
+  through Ollama), `endpoint` (the `/rerank` shape shared by Jina, Cohere, vLLM, llama.cpp and TEI) and
+  `cross-encoder` (in-process, the `local` extra). Now that judges are allowed (D-012), a chat model may
+  rank; it still never decides blame.
 - **Status:** designer's choice.
 
 ## D-016: Files, the cache and the configuration  (2026-11-22)
@@ -164,7 +182,7 @@ open to review too.
   `python -I` in a subprocess with a temporary working folder, no keys in its environment, a timeout and
   an output limit. Python offers no portable sandbox; the docs say plainly that approval, not the
   subprocess, is the safety step.
-- **Status:** awaiting owner review.
+- **Status:** accepted by the owner (2026-11-22).
 
 ## D-018: The user's own stages run in-process  (2026-11-22)
 
@@ -186,11 +204,11 @@ open to review too.
   minutes. Local models cost 0 when the configuration says so.
 - **Status:** designer's choice.
 
-## D-021: Two small commands beyond the brief  (2026-11-22)
+## D-021: Small commands beyond the brief  (2026-11-22)
 
-- **Choice:** `ragdoctor questions` (make or validate the question set alone, so it can be reviewed
-  before spending on a run) and `ragdoctor report` (rebuild the HTML from a results file), plus
-  `cache clear`. Each is a thin call into what `rank` already does.
+- **Choice:** `ragdoctor setup` (find Ollama, recommend and pull models after asking, test the judge;
+  D-006), `ragdoctor questions` (make or validate the question set alone, so it can be reviewed before
+  spending on a run) and `ragdoctor report` (rebuild the HTML from a results file), plus `cache clear`. Each is a thin call into what `rank` already does.
 - **Status:** designer's choice; cheap to drop.
 
 ## D-022: No PDF in 0.1  (2026-11-22)
@@ -219,4 +237,43 @@ open to review too.
 - **Question:** the brief accepts the user's own questions; scoring needs a gold quote.
 - **Choice:** a user question must carry a quote found in the documents (with `document` when the quote
   is ambiguous). User questions are not dropped by the closed-book check: the user chose them.
+- **Status:** accepted by the owner (2026-11-22).
+
+## D-026: The judge and its self-test  (2026-11-22)
+
+- **Question:** small local models grade a refusal as a correct answer
+  ([history/0002-local-models.md](history/0002-local-models.md) §5); unchecked, such a judge keeps
+  questions the model can answer from memory and drops good ones.
+- **Choice:** a bundled set of about 40 labelled cases (closed-book answers that are correct, wrong,
+  generic, refusals and `UNKNOWN`; valid and invalid questions). Before a model is used as judge,
+  `setup` (and the first run with a new judge) grades the set; below 90% agreement the model is refused
+  as judge with its errors shown, and the user picks another. The result is cached per model and prompt
+  version and printed in every run's output.
+- **Status:** awaiting owner review.
+
+## D-027: The default local models come from measurement  (2026-11-22)
+
+- **Choice:** `setup` recommends models by what fits the machine (VRAM and RAM as Ollama reports them),
+  from a small table kept in the code and justified by measurements like
+  [history/0002-local-models.md](history/0002-local-models.md). On the owner's machine (8 GB VRAM):
+  `gemma4` as question writer and judge (19 of 20 quotes verbatim, sensible strict verdicts),
+  `nomic-embed-text`, `embeddinggemma` and `mxbai-embed-large` as the quick embedders, and `bge-m3`,
+  `all-minilm` and `qwen3-embedding:0.6b` added in the full search. Any Ollama model can be named instead;
+  the judge self-test still applies.
+- **Status:** awaiting owner review.
+
+## D-028: Question rules by code before the judge  (2026-11-22)
+
+- **Choice:** cheap code rules drop what the measurement showed is common, before any judge call: a quote
+  of fewer than 6 words or with no sentence (a bare name or a code line), a question of fewer than 3
+  words for `paraphrase`, a missing or unknown `style`. Each drop is counted by reason.
+- **Status:** designer's choice; thresholds in `ragdoctor.toml`.
+
+## D-029: Milestone 1 includes the first ranking  (2026-11-22)
+
+- **Question:** the brief's milestones put the audit alone in M1; the owner does not want the first
+  version to be model-free.
+- **Choice:** M1 delivers the audit and the first-minute ranking (Ollama client, `setup`, questions with
+  the judge, the default embedders on the default chunker, metrics with intervals, blame). M2 completes
+  the search (all four stages, greedy order, budget, fixes, `explain`, extras).
 - **Status:** awaiting owner review.
