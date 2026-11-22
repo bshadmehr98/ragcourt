@@ -17,8 +17,8 @@ from ragcourt.io.cache import CachedEmbedder, EmbeddingStore, identity_of
 from ragcourt.io.client import Client
 from ragcourt.io.config import load_config
 from ragcourt.io.embedders import make_embedder
-from ragcourt.types import Embedder
-from ragcourt.types.config import Config
+from ragcourt.types import ChatRequest, Embedder
+from ragcourt.types.config import Config, Role
 
 WORKDIR = ".ragcourt"
 # How a command adds its parser: ``subparsers.add_parser`` of the command line.
@@ -52,6 +52,20 @@ class Project:
             return built
         store = EmbeddingStore.open(self.workdir / "cache" / "embeddings", identity_of(built))
         return CachedEmbedder(built, store)
+
+    def role(self, name: str, flag: str | None = None) -> Role:
+        """A role's models: the flag for this run, else ``ragcourt.toml``, else the default (D-031)."""
+        if flag:
+            return Role(name, tuple(part.strip() for part in flag.split(",") if part.strip()), "flag")
+        return self.config.role(name)
+
+    def chat(self, model: str, *, json_reply: bool = True) -> Callable[[str], str]:
+        """A prompt-in, reply-out function for ``model``, with the run's seed."""
+
+        def ask(prompt: str) -> str:
+            return self.client.chat(ChatRequest(model, prompt, json_reply, 0.0, self.config.seed))
+
+        return ask
 
     def user_stage_names(self, kind: str) -> list[str]:
         """The names of the user's own stages of one kind."""

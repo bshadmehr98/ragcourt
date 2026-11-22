@@ -1,0 +1,14 @@
+You write one hard test question for a search system. Write a question that is answered by the PASSAGE, but
+is worded with the vocabulary of the OTHER passage, which does NOT answer it, so that a search engine could
+be misled to the other passage.
+
+Then copy an exact quote from the PASSAGE (not from the other one) that answers the question: one to three
+consecutive sentences, character for character, nothing added or changed.
+
+Reply with JSON only: {"question": "...", "quote": "..."}
+
+PASSAGE:
+"""{{passage}}"""
+
+OTHER passage (does not answer the question):
+"""{{twin}}"""

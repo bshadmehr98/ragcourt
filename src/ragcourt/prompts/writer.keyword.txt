@@ -1,0 +1,10 @@
+You write one test query for a search system. Write a keyword search of 2 to 5 words, with no question
+mark, the way a person types into a search box, looking for what the PASSAGE below says.
+
+Then copy an exact quote from the PASSAGE that the search is looking for: one to three consecutive
+sentences, character for character, nothing added or changed.
+
+Reply with JSON only: {"question": "...", "quote": "..."}
+
+PASSAGE:
+"""{{passage}}"""

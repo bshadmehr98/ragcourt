@@ -1,0 +1,9 @@
+You rank passages for a search system. Order the PASSAGES below from the most to the least useful for
+answering the QUESTION. Use every passage number exactly once.
+
+QUESTION: {{question}}
+
+PASSAGES:
+{{passages}}
+
+Reply with JSON only: {"order": [numbers, most useful first]}

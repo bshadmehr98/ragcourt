@@ -9,6 +9,7 @@ from ragcourt.testing.fake_embedder import FakeEmbedder, fake_tokens
 from ragcourt.testing.fake_endpoint import FakeEndpointState, fake_endpoint
 from ragcourt.testing.fake_ollama import FakeOllamaState, fake_ollama
 from ragcourt.testing.scripted_model import ScriptedModel
+from ragcourt.testing.scripted_replies import ScriptedReplies
 
 
 def corpus_path() -> Path:
@@ -31,6 +32,7 @@ __all__ = [
     "FakeEndpointState",
     "FakeOllamaState",
     "ScriptedModel",
+    "ScriptedReplies",
     "corpus_path",
     "fake_embedder",
     "fake_endpoint",

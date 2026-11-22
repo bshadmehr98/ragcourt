@@ -1,0 +1,7 @@
+You check a test question whose answer is a number. Decide whether the QUOTE states the specific number the
+QUESTION asks for (a default, a limit, a count, a duration, a version or a date).
+
+QUESTION: {{question}}
+QUOTE: """{{quote}}"""
+
+Reply with JSON only: {"verdict": "yes" or "no", "reason": "one sentence"}

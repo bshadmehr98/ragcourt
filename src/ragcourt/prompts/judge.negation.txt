@@ -1,0 +1,7 @@
+You check a test question about what is NOT done, never allowed, or the exception to a rule. Decide whether
+the QUESTION really asks about such a negation or exception, and whether the QUOTE answers exactly that.
+
+QUESTION: {{question}}
+QUOTE: """{{quote}}"""
+
+Reply with JSON only: {"verdict": "yes" or "no", "reason": "one sentence"}

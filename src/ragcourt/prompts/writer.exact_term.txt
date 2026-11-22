@@ -1,0 +1,10 @@
+You write one test question for a search system. Write a question that a person could ask about the
+PASSAGE below, and that contains this exact term, written exactly like this: {{term}}
+
+Then copy an exact quote from the PASSAGE that answers the question and contains the same term: one to three
+consecutive sentences, character for character, nothing added or changed.
+
+Reply with JSON only: {"question": "...", "quote": "..."}
+
+PASSAGE:
+"""{{passage}}"""

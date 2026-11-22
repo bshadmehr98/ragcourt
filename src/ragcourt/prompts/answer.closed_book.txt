@@ -1,0 +1,4 @@
+Answer the question below from what you already know, in one or two sentences. You have no documents.
+If you do not know the specific answer, reply with exactly: UNKNOWN
+
+Question: {{question}}

@@ -1,0 +1,11 @@
+You advise on how to chunk documents for a retrieval system. Below are samples of the user's documents.
+Describe their structure and recommend up to three chunkers from this list, with parameters:
+
+{{chunkers}}
+
+Reply with JSON only:
+{"structure": {"headings": "...", "tables": "...", "code": "...", "lists": "...", "boilerplate": "...",
+"paragraph_length": "..."}, "recommendations": [{"chunker": "name:key=value,...", "why": "one sentence"}]}
+
+SAMPLES:
+{{samples}}

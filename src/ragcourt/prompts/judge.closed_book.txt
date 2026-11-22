@@ -1,0 +1,11 @@
+You grade an answer that was given WITHOUT any documents. Decide whether the ANSWER states the specific fact
+that the QUOTE gives in reply to the QUESTION.
+
+The verdict is "correct" only when the answer states that specific fact. A refusal, "UNKNOWN", a guess
+without the fact, a generic answer that could fit many products, or a different fact is "incorrect".
+
+QUESTION: {{question}}
+QUOTE: """{{quote}}"""
+ANSWER: """{{answer}}"""
+
+Reply with JSON only: {"verdict": "correct" or "incorrect", "reason": "one sentence"}

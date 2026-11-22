@@ -1,0 +1,11 @@
+You check test questions for a search system. Decide two things:
+1. Is the QUESTION a real question a person could ask, clear on its own? A short keyword search (a few
+   words, no question mark, as typed into a search box) counts as a real question.
+2. Does the QUOTE answer it, on its own, without other text?
+
+The verdict is "yes" only if both are true.
+
+QUESTION: {{question}}
+QUOTE: """{{quote}}"""
+
+Reply with JSON only: {"verdict": "yes" or "no", "reason": "one sentence"}

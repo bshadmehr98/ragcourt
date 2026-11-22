@@ -1,14 +1,14 @@
 #!/usr/bin/env python3
 """Check the import layers of design/current.md §3.1; exit 1 and name every import that breaks them.
 
-    types, errors, text_units  ->  stages  ->  core | io  ->  commands  ->  cli
+    types, errors, text_units  ->  stages  ->  core | io  ->  flows  ->  commands  ->  cli
 
 A module imports only from layers below its own. core and io sit side by side and never import each
-other. Within stages, an implementation (``stages/<kind>/<name>.py``) imports only the registry
-(``ragcourt.stages`` and its shared modules such as ``stages/splitting``), never another
-implementation: only the pipeline joins stages. A command
-never imports another command. Nothing imports ``cli`` or ``testing``; the package root (the public API)
-and ``testing`` may import anything except ``cli`` and ``commands``.
+other; a flow (a part of a command that several commands share, D-045) joins them. Within stages, an
+implementation (``stages/<kind>s/<name>.py``) imports only the registry and its shared modules (such as
+``stages/splitting``), never another implementation: only the pipeline joins stages. A command never
+imports another command. Nothing imports ``cli`` or ``testing`` (``__main__`` runs the cli); the package
+root (the public API) and ``testing`` may import anything except ``cli``, ``flows`` and ``commands``.
 
 Usage: ``python scripts/check_layers.py [--root src/ragcourt]``.
 """
@@ -22,8 +22,9 @@ from pathlib import Path
 
 PACKAGE = "ragcourt"
 Imported = list[tuple[int, tuple[str, ...]]]  # (line, dotted module path)
-LAYER = {"types": 0, "errors": 0, "text_units": 0, "stages": 1, "core": 2, "io": 2, "commands": 3, "cli": 4}
-TOP = 5  # the package root (__init__, __main__) and testing
+LAYER = {"types": 0, "errors": 0, "text_units": 0, "stages": 1, "core": 2, "io": 2, "flows": 3, "commands": 4}
+LAYER["cli"] = 5
+TOP = 6  # the package root (__init__, __main__) and testing
 STAGE_KINDS = ("chunkers", "embedders", "retrievers", "rerankers")
 
 
@@ -71,7 +72,7 @@ def problem(source: tuple[str, ...], target: tuple[str, ...]) -> str | None:
     if src == dst:
         return same_unit_problem(source, target)
     if src in ("", "testing"):
-        return f"the public API does not import ragcourt.{dst}" if dst == "commands" else None
+        return f"the public API does not import ragcourt.{dst}" if dst in ("commands", "flows") else None
     if layer_of(dst) >= layer_of(src):
         name = dst or "the package root"
         return f"{src} (layer {layer_of(src)}) may not import {name} (layer {layer_of(dst)})"

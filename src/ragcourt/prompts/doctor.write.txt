@@ -1,0 +1,10 @@
+Write a Python chunker for documents like the samples below. Rules:
+- one function, exactly: def chunk(text: str) -> list[str]
+- the standard library only; no file, network or process access
+- every string it returns must be a slice of text, unchanged (no added headings, no rewriting)
+- deterministic
+
+Reply with the Python code only, nothing else.
+
+SAMPLES:
+{{samples}}

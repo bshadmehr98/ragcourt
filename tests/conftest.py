@@ -13,7 +13,7 @@ import pytest
 
 from ragcourt import stages
 from ragcourt.cli import main
-from ragcourt.testing import FakeOllamaState, corpus_path, fake_ollama, register_fakes
+from ragcourt.testing import FakeOllamaState, ScriptedReplies, corpus_path, fake_ollama, register_fakes
 
 stages.load_builtins()
 register_fakes()
@@ -86,3 +86,26 @@ def no_network(monkeypatch: pytest.MonkeyPatch) -> list[str]:
 
     monkeypatch.setattr(socket.socket, "connect", refuse)
     return tried
+
+
+SCRIPTED_TOML = """ollama_url = "{url}"
+[models]
+writer = "fake-chat"
+judge = "fake-chat"
+embedders = ["fake-embed"]
+reranker = "fake-chat"
+doctor = "fake-chat"
+[questions]
+per_category = {per_category}
+min_held_out = 2
+"""
+
+
+@pytest.fixture
+def scripted(project: Path, ollama: tuple[str, FakeOllamaState]) -> ScriptedReplies:
+    """A project whose models are a fake Ollama answering with ``ScriptedReplies`` (edit it in the test)."""
+    url, state = ollama
+    replies = ScriptedReplies()
+    state.reply = replies
+    (project / "ragcourt.toml").write_text(SCRIPTED_TOML.format(url=url, per_category=3))
+    return replies

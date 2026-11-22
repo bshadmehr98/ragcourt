@@ -1,0 +1,11 @@
+You write one test question for a search system. Write a question about what something does NOT do, is
+never allowed to do, cannot do, or about the exception to a rule, that the PASSAGE below answers. The
+question itself must contain a negation (not, never, no, without, except, unless, cannot).
+
+Then copy an exact quote from the PASSAGE that answers the question and contains the negation: one to three
+consecutive sentences, character for character, nothing added or changed.
+
+Reply with JSON only: {"question": "...", "quote": "..."}
+
+PASSAGE:
+"""{{passage}}"""

@@ -1,0 +1,11 @@
+You write one test question for a search system. Write a question that a person could ask about the
+PASSAGE below, using DIFFERENT words from the passage: no distinctive word of your quote may appear in the
+question; use synonyms and rephrasing.
+
+Then copy an exact quote from the PASSAGE that answers the question: one to three consecutive sentences,
+character for character, nothing added or changed.
+
+Reply with JSON only: {"question": "...", "quote": "..."}
+
+PASSAGE:
+"""{{passage}}"""
