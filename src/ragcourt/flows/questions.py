@@ -196,14 +196,16 @@ def _user_questions(project: Project, corpus: Corpus, path: Path, done: list[Out
 
 
 def _reporter(say: Say) -> Callable[[Progress], None]:
-    started = time.monotonic()
+    first_seen: dict[str, tuple[float, int]] = {}  # per category: when this run first saw it, and its asks
 
     def report(progress: Progress) -> None:
+        since, asked_before = first_seen.setdefault(progress.category, (time.monotonic(), progress.asked))
         if not progress.finished and progress.asked % REPORT_EVERY:
             return
         dropped = sum(progress.dropped.values())
-        pace = (time.monotonic() - started) / max(progress.asked, 1)
-        left = max(progress.wanted - progress.kept, 0) * pace * 2
+        pace = (time.monotonic() - since) / max(progress.asked - asked_before, 1)
+        asks_per_kept = progress.asked / progress.kept if progress.kept else 2.0  # this category's own yield
+        left = max(progress.wanted - progress.kept, 0) * pace * asks_per_kept
         counts = f"{progress.kept}/{progress.wanted} kept, {dropped} dropped, {progress.asked} asked"
         tail = "done" if progress.finished else f"about {left / 60:.0f} min left in this category"
         say(f"  {progress.category}: {counts}; {tail}")
