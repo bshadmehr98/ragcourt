@@ -118,7 +118,7 @@ own file and the package's `__init__.py` holds the ordered list.
 | `core/blame/<stage>.py` | the mechanisms of one stage, in order; `__init__.py` runs the stages in order and picks the cause | §9.1 |
 | `core/probes.py`, `core/fixes.py` | what blame measures besides ranks; fixes and evidence levels | §9.3, §9.4 |
 | `core/search.py`, `core/plan.py` | the greedy steps; the plan and its estimate | §10 |
-| `io/documents.py`, `io/config.py` | reading documents; `ragcourt.toml` | §4.1, §3.3 |
+| `io/documents.py`, `io/html_text.py`, `io/config.py` | reading documents; the text of an HTML file; `ragcourt.toml` | §4.1, §3.3 |
 | `io/client.py`, `io/ollama.py`, `io/openai_compat.py` | the one client (retries, JSON replies) and its two dialects | §11.1 |
 | `io/cache.py` | the embedding cache in plain files | §10.2 |
 | `io/writer.py`, `io/judge.py` | asking the writer for a question; asking the judge, and its self-test | §6.1, §6.6 |
@@ -756,9 +756,12 @@ deterministic), real models by hand (`real_model`).
 
 ### 15.2 The bundled corpus and the fakes
 
-`tests/fixtures/corpus/` (also shipped as `ragcourt.testing.corpus`): a dozen short documents written for
-the tests, each with cases on purpose (a table, a code block, a running header, a near-duplicate, a long
-section, plain prose), and a hand-checked `questions.jsonl`. `FakeEmbedder`: deterministic vectors from
+`src/ragcourt/testing/corpus/`, shipped with the package (`ragcourt.testing.corpus_path()`, one copy,
+D-037): thirteen short documents about a made-up job queue, written for the tests, in Markdown, plain
+text, reStructuredText and HTML, each with cases on purpose (Markdown and HTML tables, fenced and
+indented code, a running header and footer, a near-duplicate paragraph, a section longer than the fake
+embedder's limit, setext headings, abbreviations, twin passages, rare terms, negations and numbers,
+plain prose), and a hand-checked `questions.jsonl` beside it in `ragcourt.testing`. `FakeEmbedder`: deterministic vectors from
 hashed word n-grams with a tokenizer and a limit, so similar texts are close and results are stable.
 `ScriptedModel`: returns scripted replies per request in order and records what it was sent, for
 question generation, the closed-book answer, the judge (including its self-test) and doctor. A fake
@@ -871,10 +874,15 @@ is removed, except guarantee 26, which needs real models and is a marked test in
 
 Updated as the milestone's steps land.
 
-**Implemented:** nothing of the product yet. The repository, its gate (with the import-layer check of
-§3.1) and its workflow exist.
+**Implemented** (step 1 of 9, foundations): the `types` package (documents, stage signatures, the
+`ModelClient` protocol); the errors of §14; the stage registry with its four decorators, the built-in
+folders and the user's `ragcourt_stages/` (§7.2); reading documents, HTML included (§4.1);
+`ragcourt.toml` with its first setting, `stages_dir` (§3.3, D-039); `ragcourt.testing` with
+`FakeEmbedder`, `ScriptedModel` and the bundled corpus (§15.2). Guarantee 22 passes; guarantee 18 passes
+for the registry and is extended when `audit` (step 2) and `rank` (step 5) exist. The repository, its gate
+(with the import-layer and simplicity checks) and its workflow exist.
 
-**Planned:** milestone 1 is the whole of 0.1 (owner, D-029), built in the order of
+**Planned:** steps 2 to 9 of milestone 1, the whole of 0.1 (owner, D-029), in the order of
 [`changes/0001-initial-design.md`](changes/0001-initial-design.md).
 
 ## 18. Known limits (0.1)

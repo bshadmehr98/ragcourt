@@ -40,13 +40,13 @@ milestone by milestone:
 ```
 src/ragcourt/
   __init__.py  errors.py       the public API with an explicit __all__; RagCourtError and its subclasses
-  types.py                     dataclasses and protocols, no logic (layer 0)
+  types/                       dataclasses and protocols, no logic (layer 0)
   stages/                      the registry and its decorators (__init__); chunkers/, embedders/, retrievers/, rerankers/: one file per stage (layer 1)
   core/                        pure functions: offsets, pipeline, metrics, stats, blame, search, audit (layer 2)
-  io/                          loaders, the model client, the cache, questions, the report, config (layer 2)
+  io/                          documents, config, the model client, the cache, questions, the report (layer 2)
   commands/                    setup, audit, rank, explain, doctor: one file each (layer 3)
   cli.py                       the command line (layer 4)
-  testing/                     the fake embedder, the scripted model, the bundled corpus
+  testing/                     the fake embedder, the scripted model, the bundled corpus (corpus/)
 tests/unit|contract|integration|e2e   default suite; tests/real: by hand, marked real_model
 scripts/check.sh                     the one gate
 scripts/check_layers.py  check_simple.py   the import layers; the simplicity rules ruff can't check

@@ -401,3 +401,30 @@ the designer's, open to the owner's review. Code comments refer to entries by nu
     command, with the package's `__init__.py` holding the ordered list.
 - **Kept from the brief:** complexity 10 (brief §9 and the toolchain); the line length of 110.
 - **Status:** accepted by the owner (2026-11-22).
+
+## D-037: One copy of the bundled corpus, in the package  (2026-11-22)
+
+- **Question:** design §15.2 had the corpus in `tests/fixtures/corpus/` and "also shipped as
+  `ragcourt.testing.corpus`": two copies that could drift apart.
+- **Choice:** one copy in `src/ragcourt/testing/corpus/`, found with `ragcourt.testing.corpus_path()`, so
+  tests, examples and users trying ragcourt read the same files. `tests/fixtures/` keeps the other saved
+  fixtures (old file versions, recorded model replies). The documents describe a made-up job queue,
+  Larkspur, so no real product's text is copied.
+- **Status:** designer's choice.
+
+## D-038: `HTMLParser` is the one allowed base class outside protocols, enums and errors  (2026-11-22)
+
+- **Question:** HTML files are read with the standard library (design §4.1), and `html.parser` works only
+  by subclassing `HTMLParser`; the simplicity rules allowed no inheritance beyond protocols, enums and
+  errors (D-036).
+- **Choice:** allow `HTMLParser` by name in `scripts/check_simple.py` and in CONTRIBUTING.md, used once in
+  `io/html_text.py`. Any further base class needs its own entry here.
+- **Status:** designer's choice.
+
+## D-039: An unknown key in `ragcourt.toml` is an error  (2026-11-22)
+
+- **Question:** what to do with a key ragcourt does not know, such as a misspelled `stage_dir`.
+- **Choice:** stop with a message that names the unknown key and lists every known one with what it does.
+  A typo that is silently ignored would run with a setting the user believes is off (D-030: nothing
+  happens blindly). Each step of the milestone adds its settings to the one list in `io/config.py`.
+- **Status:** designer's choice.

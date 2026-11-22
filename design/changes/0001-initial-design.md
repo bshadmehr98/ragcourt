@@ -91,7 +91,7 @@ tests and its commits:
 
 | Step | Builds | Guarantees it makes pass |
 |---|---|---|
-| 1. Foundations | `types`, `errors`, the stage registry and the user's folder, `io/loaders`, `io/config`, the bundled corpus, `FakeEmbedder`, `ScriptedModel` | 18, 22 |
+| 1. Foundations | `types`, `errors`, the stage registry and the user's folder, `io/documents`, `io/config`, the bundled corpus, `FakeEmbedder`, `ScriptedModel` | 18, 22 |
 | 2. Audit | the four native chunkers, `core/offsets`, `core/audit` with the eight checks, `commands/audit` | 1, 2, 3 |
 | 3. Local models | `io/client` (`ollama` dialect, a fake Ollama server for tests), the `ollama` embedder with measured token counts, `setup`, `models`, `prompts`, `ragcourt.toml` with roles | 4, 19, 27, 30 |
 | 4. Questions and the judge | `io/questions`: the six categories with their passage rules and code checks, generation, code rules, the judge with its prompts, labelled cases and self-test, the explanations of §6.6, user questions, splits, the question file, `questions show` | 5, 6, 7, 8, 25, 29, 31 |
