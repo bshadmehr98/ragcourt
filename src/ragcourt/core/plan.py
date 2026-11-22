@@ -1,7 +1,8 @@
 """The estimate of a run, printed with the plan before any model call (design §10.3).
 
 Times come from measurements on the owner's machine (design/history/0002, 0004): embedding speeds per
-model and about 1.5 s per chat call with gemma4 on an 8 GB GPU. They are estimates and are labelled so.
+model, and chat and reranking times measured with gemma4 on an 8 GB GPU (D-057). They are estimates
+and are labelled so.
 """
 
 from __future__ import annotations
@@ -18,10 +19,11 @@ EMBED_RATE = {
     "qwen3-embedding:0.6b": 8,
 }
 DEFAULT_EMBED_RATE = 40.0
-CHAT_SECONDS = 1.5
-CALLS_PER_QUESTION = (
-    8.0  # a write, the judge's checks and a closed-book answer, for about two drafts per kept question
-)
+CHAT_SECONDS = 0.5  # a short call (write, judge, closed-book answer) with gemma4 on an 8 GB GPU
+# About 4.6 drafts per kept question and 2.6 calls per draft: 6 s per kept question, measured on the FastAPI
+# docs (1,985 drafts, 434 kept, 44 minutes; D-057).
+CALLS_PER_QUESTION = 12.0
+RERANK_SECONDS = 2.7  # one llm-reranker call over 20 chunks, measured on the same run
 
 
 @dataclass(frozen=True)
@@ -69,7 +71,7 @@ def estimate(work: Workload) -> Estimate:
         "embedder": embed_step_one / 60,
         "chunker": embed_step_two / 60,
         "retriever": 0.1,
-        "reranker": rerank_calls * CHAT_SECONDS / 60,
+        "reranker": rerank_calls * RERANK_SECONDS / 60,
     }
     texts = (
         first_chunker * len(work.embedders)

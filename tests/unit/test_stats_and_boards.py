@@ -134,3 +134,15 @@ def test_among_ties_a_higher_dev_score_beats_a_few_tokens_less() -> None:
     choice = choose([lower_small, higher_big], dev, "m", draws)
     assert choice.tied, "the two must be tied on dev for the tie-break to matter"
     assert choice.best.chunker == "higher_big"
+
+
+def test_a_kind_of_question_the_choice_fails_is_found() -> None:
+    from ragcourt.core.leaderboard import weak_spots
+
+    members = questions("keyword", 40) + questions("paraphrase", 40)
+    draws = draws_for(members)
+    keyword_only = evaluation("bm25", {"keyword": 1.0, "paraphrase": 0.0}, members)
+    both = evaluation("hybrid", {"keyword": 0.9, "paraphrase": 0.5}, members)
+    spots = weak_spots([keyword_only, both], keyword_only, Scoring(members, "m", 30, draws))
+    assert [(spot.category, spot.better) for spot in spots] == [("paraphrase", both.spec.label)]
+    assert weak_spots([keyword_only, both], both, Scoring(members, "m", 30, draws))[0].category == "keyword"

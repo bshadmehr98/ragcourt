@@ -175,7 +175,45 @@ trying `markdown` at 256 tokens next:
 ragcourt rank k8s_docs/ --chunkers "markdown:size=256,overlap=32;recursive:size=256,overlap=32" --rerankers llm
 ```
 
-## 8. What the real runs changed in ragcourt
+## 8. Chroma's benchmark, with its own gold questions
+
+A test where ragcourt's question writer plays no part: Chroma's chunking benchmark (5 texts, 1.4 million
+characters: a State of the Union speech, Wikipedia articles, chat logs, finance reports, PubMed papers)
+comes with 472 questions whose answers are exact character spans. Converted to `--questions-file` (the
+first gold span of each question as its quote) and run with `--questions 0`, so no question was written or
+judged. 31 minutes in all, 400 MB of memory at most.
+
+```text
+embedders    embeddinggemma 0.56 [0.51, 0.62]  = mxbai-embed-large 0.55  = nomic-embed-text 0.53    no winner
+chunkers     recursive 256 0.70 [0.64, 0.75]  = fixed 256 0.69  = sentence 256 0.68
+             recursive 512 0.53, markdown 512 0.53 (clearly worse)                                 no winner
+retrievers   hybrid 0.78 [0.73, 0.82]  = bm25 0.77;  dense 0.70 (clearly worse)                      no winner
+rerankers    llm 0.81 [0.77, 0.86];  none 0.70                                                    winner: llm
+```
+
+What it showed:
+- **Again, chunk size first**: 256-token chunks of any kind beat 512-token ones by 0.15 to 0.17. These
+  texts have few headings, so `markdown` behaves like the 512-token `recursive`.
+- **The embedders were within 0.03 of each other** on 270 held-out questions, and the intervals say so.
+  Picking an embedder by leaderboard reputation would have been noise here.
+- **A bug in ragcourt**: at the retriever step, `dense` was carried forward although `hybrid` and `bm25`
+  were separably better on held-out questions. On dev all three were tied, and the tie-break put "fewer
+  tokens per question" before the dev score. Fixed: among ties the higher dev score now comes first, and a
+  choice that held-out questions show to be behind is pointed out (chapter 11).
+- **The `llm` reranker helps overall and hurts sometimes**: it lifted the score by 0.11 but pushed 7
+  answers out of the top 5 (`ranking.reranker_demoted`, confirmed: without the reranker they were found),
+  several from rank 1 to below 15 on dense PubMed passages.
+- **67 of the 472 questions were dropped as ambiguous**: their quote appears twice in the same file. User
+  questions may now give `start`, the quote's character offset, so a dataset with gold spans converts
+  whole (chapter 14).
+- **The estimate was far off**: it said 2 minutes and took 31, because it did not count your own questions
+  for reranking. Fixed.
+
+## 9. FastAPI documentation, the full default run
+
+FASTAPI_PLACEHOLDER
+
+## 10. What the real runs changed in ragcourt
 
 Every problem below was found by these runs, then fixed and covered by a test:
 
@@ -188,7 +226,7 @@ Every problem below was found by these runs, then fixed and covered by a test:
 - A second run made one needless call to measure the input limit: the limit is now remembered.
 - An interrupted run and a resumed one now give exactly the same results (checked with real models).
 
-## 9. Public datasets for testing RAG
+## 11. Public datasets for testing RAG
 
 If you want to test retrieval on data with known answers (not your own), these public sets have gold
 answers as exact quotes in whole documents ([0005](../design/history/0005-rag-datasets.md)):

@@ -142,3 +142,29 @@ def _leaders(
         if separable(difference):
             leaders[name] = rows[best].spec.label
     return leaders
+
+
+@dataclass(frozen=True)
+class WeakSpot:
+    """A category where the chosen pipeline is separably below another entry of its step (held-out)."""
+
+    category: str
+    chosen_mean: float
+    better: str
+    better_mean: float
+
+
+def weak_spots(evaluations: list[Evaluation], chosen: Evaluation, scoring: Scoring) -> list[WeakSpot]:
+    """Categories (that can be ranked) where an entry beats the chosen one, separably (D-057): the overall
+    mean can hide a kind of question the choice fails, as BM25 fails paraphrases."""
+    ranked, _ = ranked_categories(scoring.questions, scoring.min_per_category)
+    groups = by_category(scoring.questions)
+    spots: list[WeakSpot] = []
+    for name in ranked:
+        mine = values(chosen, groups[name], scoring.metric)
+        best = max(evaluations, key=lambda item: sum(values(item, groups[name], scoring.metric)))
+        theirs = values(best, groups[name], scoring.metric)
+        difference = paired_difference({name: theirs}, {name: mine}, scoring.draws)
+        if best is not chosen and separable(difference) and difference.mean > 0:
+            spots.append(WeakSpot(name, sum(mine) / len(mine), best.spec.label, sum(theirs) / len(theirs)))
+    return spots

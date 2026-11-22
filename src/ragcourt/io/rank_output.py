@@ -167,3 +167,11 @@ def failure_note(label: str, count: int) -> str:
         f"Note: the reranker of {label} failed on {plural(count, 'question')} (the server "
         "refused the call twice); their retrieval order was kept, so its score is a little low."
     )
+
+
+def weak_spot_note(category: str, chosen_mean: float, better: str, better_mean: float) -> str:
+    """Said under a board when the choice is separably behind another entry on one kind of question."""
+    return (
+        f"Note: on {category} questions this choice scores {chosen_mean:.2f}, separably below {better} "
+        f"({better_mean:.2f}). If those questions matter to you, prefer it."
+    )

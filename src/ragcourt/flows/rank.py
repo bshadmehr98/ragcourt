@@ -11,7 +11,7 @@ from collections.abc import Callable
 from dataclasses import dataclass, field, replace
 from pathlib import Path
 
-from ragcourt.core.leaderboard import Scoring, board, by_category
+from ragcourt.core.leaderboard import Scoring, board, by_category, weak_spots
 from ragcourt.core.plan import Estimate
 from ragcourt.core.relevance import token_map
 from ragcourt.core.search import STEPS, Candidates, Choice, choose, step_specs
@@ -36,7 +36,7 @@ from ragcourt.flows.run_plan import (
 )
 from ragcourt.io import run_files
 from ragcourt.io.project import Project
-from ragcourt.io.rank_output import board_text, failure_note, plan_text
+from ragcourt.io.rank_output import board_text, failure_note, plan_text, weak_spot_note
 from ragcourt.io.result_data import board_data
 from ragcourt.types import Corpus
 from ragcourt.types.questions import Question
@@ -210,13 +210,15 @@ def _step(
     state.measured += evaluations
     choice = choose(evaluations, split.dev, metric, split.dev_draws)
     state.best = choice.best
-    leaderboard = board(
-        step, evaluations, Scoring(split.held_out, metric, config.questions.min_held_out, split.held_draws)
-    )
+    leaderboard_scoring = Scoring(split.held_out, metric, config.questions.min_held_out, split.held_draws)
+    leaderboard = board(step, evaluations, leaderboard_scoring)
     state.boards.append(leaderboard)
     say(board_text(board_data(leaderboard), _chosen_note(choice)))
     for evaluation in [item for item in evaluations if item.costs.rerank_failures]:
         say(failure_note(evaluation.spec.label, evaluation.costs.rerank_failures))
+    chosen = next(item for item in evaluations if item.spec == choice.best)
+    for spot in weak_spots(evaluations, chosen, leaderboard_scoring):
+        say(weak_spot_note(spot.category, spot.chosen_mean, spot.better, spot.better_mean))
     labels = [evaluation.spec.label for evaluation in evaluations]
     state.steps.append(
         {

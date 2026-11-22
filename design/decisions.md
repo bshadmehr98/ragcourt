@@ -608,6 +608,15 @@ the designer's, open to the owner's review. Code comments refer to entries by nu
      and asking on would have taken an hour for a category that stays too few to rank.
   5. A user question may give `start`, its quote's character offset, so a quote found twice in one
      document is not dropped as ambiguous (67 of Chroma's 472 gold questions were).
+  6. Under each board, a kind of question on which the chosen pipeline is separably behind another entry
+     is named. On the FastAPI docs `bm25` was chosen (tied overall with `hybrid`) while scoring 0.02 on
+     paraphrase questions against `hybrid`'s 0.18; the overall mean hid it.
+  7. A model call the server refuses even after its retries (a 5xx, a timeout) costs one question, not
+     the run: a question draft is dropped with the reason; an llm-reranker call is tried once more with
+     sampling, then keeps the retrieval order and is counted under the board. Ollama answered 500
+     ("token repeat limit reached") to one reranker call after 30 minutes of the FastAPI run.
+  8. The time estimate uses the FastAPI run's measurements: 6 s per kept question, 2.7 s per reranker
+     call (it estimated 125 minutes for a run that took about 71).
 - **Kept as limits:** plain `http://` with a key is allowed (servers on a local network) and documented;
   the generated chunker's isolation is not a sandbox (approval is the safety step); on Windows a stale
   lock is not detected automatically (the message says which file to delete); Windows and macOS run in CI
