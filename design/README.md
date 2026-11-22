@@ -53,7 +53,7 @@ Answer generation and judging answers, vector databases, images, audio, video, a
 | File | What it holds |
 |---|---|
 | [`current.md`](current.md) | the design as it stands: concepts, rules, the guarantees the tests check, what is implemented |
-| [`changes/0001-initial-design.md`](changes/0001-initial-design.md) | the first design, from the owner's brief (proposed), with its milestones and open questions |
+| [`changes/0001-initial-design.md`](changes/0001-initial-design.md) | the first design, from the owner's brief (proposed), with its build order and open questions |
 | [`history/0001-owner-brief.md`](history/0001-owner-brief.md) | the owner's brief, word for word |
 | [`history/0000-research.md`](history/0000-research.md) | what exists already (AutoRAG, Chroma's chunking study, chunkvet, ragblame, Ragas and others), the name checks, what is still to research |
 | [`history/0002-local-models.md`](history/0002-local-models.md) | local models measured on the owner's machine: embedders, question writers, judges, the first-minute estimate |

@@ -7,8 +7,8 @@ check; §17 says what is built and what is still planned. The smaller choices ar
 [`decisions.md`](decisions.md). Section numbers are stable: code comments and the skills refer to them
 ("design §9.1").
 
-**Status:** proposed, and revised after the owner's first answers (2026-11-22: a local model from the
-first run, a model judge, Ollama); nothing is built.
+**Status:** proposed, and revised after the owner's answers (2026-11-22: a local model from the first run,
+a model judge, Ollama, the name ragcourt, nothing happens blindly, one milestone); nothing is built.
 
 ## 1. What it does
 
@@ -28,6 +28,9 @@ writes questions, a **judge** model filters them, and in `doctor` a model makes 
 - Numbers measured on the user's documents, with their uncertainty, never general advice (brief §1, §5).
 - Every failed question has one named cause and a suggested fix (brief §1, §4).
 - A newcomer reads the whole codebase in an evening and adds a stage in one file (brief §1, §7, §9).
+- **Nothing happens blindly** (owner, D-030): before a model is called, the user is told in plain words
+  which model does what, what it is shown, how it is judged and how to change it; every verdict keeps its
+  reason; every number and every blame comes with the rule that produced it.
 
 ### Non-goals (0.1)
 
@@ -114,7 +117,8 @@ Stages that need a model (an endpoint embedder, an endpoint reranker) receive a 
 | `io/cache.py` | the embedding cache | §10.2 |
 | `io/questions.py` | generating, filtering (code rules and the judge) and storing questions; the judge's self-test | §6 |
 | `io/report.py` | the results file, terminal tables, the HTML report | §13 |
-| `commands/setup.py`, `audit.py`, `rank.py`, `explain.py`, `doctor.py` | one command each | §11.3, §5, §8–§10, §9, §12 |
+| `commands/setup.py`, `models.py`, `prompts.py`, `audit.py`, `questions.py`, `rank.py`, `explain.py`, `report.py`, `doctor.py` | one command each | §11.3, §11.4, §6.6, §5, §6, §8–§10, §9, §13.4, §12 |
+| `prompts/*.txt`, `prompts/judge_cases.jsonl` | every prompt a model is given, and the judge's labelled self-test cases, as readable files | §6.6 |
 | `cli.py` | `ragcourt …` | §13.1 |
 | `testing/` | `FakeEmbedder`, `ScriptedModel`, the bundled corpus | §15.2 |
 
@@ -270,6 +274,27 @@ candidates. The result is cached per model and prompt version and printed in eve
 
 Judges filter questions and, as the `llm` reranker (§7.3), may order candidates. They never decide blame
 (§9) or compute a metric (§8).
+
+**What the user sees** (D-030). A new user is never left to guess what the judge did:
+
+- **Before the first judge call** of a run, a short paragraph in plain words: which model is the judge and
+  why (default, `ragcourt.toml` or a flag); the two things it is asked; exactly what it is shown (the
+  question, the quote, and for the closed-book check the answer given without the documents) and what it
+  is never shown or asked (the chunks, the scores, the blame); and the commands to read more.
+- **The prompts are readable files** shipped in the package (`prompts/*.txt`), printed with
+  `ragcourt prompts show judge.validity` and `judge.closed_book`. A user may replace them (`prompts_dir`
+  in `ragcourt.toml`); a replaced prompt is named in every output with its hash, and the self-test runs
+  again on it.
+- **The self-test is shown case by case** the first time a judge is used and whenever asked
+  (`ragcourt models test judge`): each labelled case, the expected verdict, the judge's verdict and reason,
+  agree or disagree, then the score against the 90% bar. The cases are a readable file too.
+- **Every verdict keeps its reason.** After filtering, the output shows a table of kept and dropped
+  questions by reason with two examples of each; `ragcourt questions show [--dropped] [--reason R]` lists
+  every question with its verdicts and reasons.
+- [`docs/judge.md`](../docs/judge.md) explains all of this with real output from the bundled corpus.
+
+The same applies to every model role (§11.4): the question writer, the `llm` reranker and doctor each say
+what they are given and what they return before they are first called in a run.
 
 ## 7. Stages
 
@@ -431,12 +456,12 @@ the first listed is kept and the tie is reported. Candidates come from `ragcourt
 default every available built-in. Every evaluated configuration's held-out numbers appear in that stage's
 leaderboard; the "best overall pipeline" is the last step's choice, reported on held-out questions.
 
-**The quick run** is what `rank` does when there is no `ragcourt.toml` and no `--full`: about 40
+**The quick run** is what `rank` does unless `--full` is given: about 40
 questions, step 1 only (the default local embedders on the default chunker, `dense`, no reranker), the
 leaderboard with intervals, the ceilings and the blame of every held-out miss, then one line saying what
 the full search would add and its estimate. It is the first-minute result (D-006); its time is measured by
-a real-model test on the bundled corpus (§16, guarantee 26). The full search is `rank --full`, or any run
-with a configuration.
+a real-model test on the bundled corpus (§16, guarantee 26). The full search is `rank --full` (or
+`rank.mode = "full"` in `ragcourt.toml`).
 
 ### 10.2 The cache
 
@@ -446,14 +471,17 @@ the vector is stored as packed float32 with its dimension. A cached embedding is
 second identical run makes no embedding calls. The cache has its own version; a layout change starts a
 new file. `--no-cache` and `ragcourt cache clear` exist (D-016).
 
-### 10.3 Estimate and budget
+### 10.3 The plan, the estimate and the budget
 
-Before any model call, `rank` prints the plan (stages and candidates per step), the number of chunks and
-tokens to embed after the cache, the number of chat calls for questions, and an estimate of time and cost:
+Before any model call, `rank` prints **the plan** in plain words (D-030): each step in order; for each, the
+role and the model that does it, where that choice came from (default, `ragcourt.toml`, flag), what the
+model is shown and what it returns; the stages and candidates per search step; the number of chunks and
+tokens to embed after the cache, the number of chat and judge calls, and an estimate of time and cost:
 time from a calibration call (one small batch per endpoint, timed) or from the last run's timing; cost from
 the configured prices, or `unknown`. `--budget-usd` and `--budget-minutes` stop the run before a step
 that would exceed them: the steps done are reported, the step not run is named, and nothing is presented
-as complete. Without `--yes`, a run estimated over one minute or over $0 asks before starting.
+as complete. Without `--yes`, the first run in a project, and any run estimated over one minute or over
+$0, asks before starting; the plan is printed either way.
 
 ## 11. Models
 
@@ -490,8 +518,25 @@ no update check. Logs never contain document text or keys. `docs/privacy.md` lis
 and start it), reads the GPU memory and RAM Ollama reports, recommends models that fit from a small table
 justified by measurement (D-027; on an 8 GB GPU: `gemma4` as question writer and judge,
 `nomic-embed-text`, `embeddinggemma` and `mxbai-embed-large` as the quick embedders), shows their download
-sizes, pulls the missing ones only after the user agrees, and runs the judge's self-test (§6.6). It writes
-nothing but the self-test result in the cache. Any Ollama model can be named instead.
+sizes, pulls the missing ones only after the user agrees, and runs the judge's self-test, shown case by
+case (§6.6). It writes `ragcourt.toml` with the chosen model for each role, each line under a comment that
+says what the role does and how to change it (§11.4), and the self-test result in the cache. Any Ollama
+model can be named instead, at the prompt or later.
+
+### 11.4 Roles and how to change them
+
+Every model has a **role**: `writer` (writes questions and quotes), `judge` (§6.6), `embedders` (the
+candidates of the search; the quick run uses the first three), `reranker` (the chat model of the `llm`
+reranker) and `doctor` (§12). Changing one is one command or one line (D-031):
+
+- `ragcourt models` shows each role: the model, where the choice came from, why it is the default,
+  whether it is installed and its size, and for the judge its self-test score.
+- `ragcourt models set judge qwen3:4b` (or `set embedders nomic-embed-text,bge-m3`) writes `ragcourt.toml`,
+  keeping its comments; setting a judge runs its self-test at once and shows it.
+- For one run: `--writer`, `--judge`, `--embedders`, `--reranker-model`.
+- Precedence: a flag, then `ragcourt.toml`, then the built-in default; the plan (§10.3) prints which
+  applied. An endpoint model is named `endpoint:<name>/<model>` after the endpoint is defined in
+  `ragcourt.toml`.
 
 ## 12. Doctor
 
@@ -522,8 +567,11 @@ nothing but the self-test result in the cache. Any Ollama model can be named ins
 
 ```text
 ragcourt setup [--yes]
+ragcourt models [set ROLE MODEL[,MODEL…]] [test judge]
+ragcourt prompts [show NAME]
 ragcourt audit <folder> [--chunker SPEC]… [--embedder NAME] [--show DOC] [--json] [--fail-on CODE…]
 ragcourt questions <folder> [--questions N] [--questions-file FILE]
+ragcourt questions show [--dropped] [--reason R]
 ragcourt rank <folder> [--full] [--questions-file FILE] [--judge MODEL] [--metric NAME] [--k N] [--budget-usd X] [--budget-minutes M] [--yes] [--html]
 ragcourt explain [RUN] [--show QUESTION-ID]
 ragcourt doctor <folder> [--approve SHA256]
@@ -536,7 +584,9 @@ usage, 3 a `--fail-on` check fired, 4 stopped by the budget.
 ### 13.2 Terminal output
 
 Plain text tables, no colour when not a terminal, every number with its interval and its label
-(measured, estimated, unknown).
+(measured, estimated, unknown). Every leaderboard and every blame list ends with a short legend of the
+words it uses (hit, ceiling, `chunker`, `retrieval`, `ranking`, "no significant difference") and the rule
+behind each, unless `-q`; `--help` of each command says what it will call and what it sends (D-030).
 
 ### 13.3 The results file
 
@@ -583,7 +633,8 @@ Ollama server on a free port (integration tests) answers the `ollama` dialect's 
 One file per concept, in reading order, run by `tests/e2e/`: `quickstart.py` (audit a folder),
 `boundaries.py` (see the cuts), `own_chunker.py` (a stage in one file), `questions.py` (gold quotes,
 drops, splits), `rank.py` (a leaderboard with intervals and ties), `budget_recall.py` (why size cannot
-win), `blame.py` (one miss per cause), `cache_and_budget.py`, `report.py` (M3), `doctor.py` (M4).
+win), `blame.py` (one miss per cause), `cache_and_budget.py`, `judge.py` (what the judge is asked and shown, its self-test, its verdicts),
+`models.py` (changing a role), `report.py`, `doctor.py`.
 
 ### 15.4 Docs
 
@@ -660,17 +711,25 @@ is removed, except guarantee 26, which needs real models and is a marked test in
     (an 8 GB RTX 4060 laptop); the measured time is printed and recorded.
 27. **Setup asks before pulling.** `setup` never downloads a model without the user's yes (or `--yes`), and
     shows each model's size first.
+28. **The plan comes before any model call.** `rank` prints every step with its role, model, the source of
+    that choice and what the model is shown, before the first model call; a run whose output lacks the
+    plan fails the test.
+29. **The judge is explained.** Before the first judge call the output names the judge, what it is asked
+    and shown and what it never decides; `prompts show` prints the exact prompts used; the self-test is
+    shown case by case; `questions show --dropped` gives every dropped question with the judge's reason; a
+    replaced prompt is named with its hash and retested.
+30. **Models are easy to change.** `models set judge M` changes the judge in `ragcourt.toml` (keeping its
+    comments) and runs the self-test; a flag overrides it for one run; the plan shows which applied.
 
 ## 17. Implemented and planned
 
-Updated as milestones land.
+Updated as the milestone's steps land.
 
 **Implemented:** nothing of the product yet. The repository, its gate (with the import-layer check of
 §3.1) and its workflow exist.
 
-**Planned** (the milestones of [`changes/0001-initial-design.md`](changes/0001-initial-design.md)):
-M1 audit and the first ranking on local models; M2 the full search and explain; M3 the HTML report; M4
-doctor.
+**Planned:** milestone 1 is the whole of 0.1 (owner, D-029), built in the order of
+[`changes/0001-initial-design.md`](changes/0001-initial-design.md).
 
 ## 18. Known limits (0.1)
 

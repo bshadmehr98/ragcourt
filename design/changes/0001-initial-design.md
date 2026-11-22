@@ -59,7 +59,7 @@ filters, user questions and a dev/held-out split (§6); four stage kinds, one fi
 decorator, with native stages and thin adapters as extras (§7); the pipeline, relevance, metrics and
 intervals with ties (§8); blame, ceilings and measured fixes (§9); greedy search, the cache, the estimate
 and the budget (§10); one model client and privacy (§11); doctor with approval, isolation, validation and
-measurement (§12); output (§13); errors (§14); tests, docs and examples (§15); 27 guarantees (§16).
+measurement (§12); output (§13); errors (§14); tests, docs and examples (§15); 30 guarantees (§16).
 
 The owner's answers: the first minute is a quick `rank` on local models (D-006); Ollama is the local
 runtime (D-007); a model judge filters questions (D-012). Designer's choices: no core dependencies
@@ -70,17 +70,30 @@ Ollama or a tokenizer, otherwise labelled (D-008); a fixed reference tokenizatio
 measurement, `gemma4` on an 8 GB GPU (D-027); code rules before the judge (D-028); the first ranking in
 milestone 1 (D-029).
 
-### Milestones
+After the second round: milestone 1 is the whole project (D-029); nothing happens blindly, so every model
+role, prompt, judge verdict and rule is shown to the user in plain words (D-030); changing a model is one
+command (D-031).
 
-| Milestone | Delivers | Guarantees |
+### Milestone
+
+One milestone, the whole of 0.1 (owner, D-029), built on one branch in this order, each step with its
+tests and its commits:
+
+| Step | Builds | Guarantees it makes pass |
 |---|---|---|
-| M1: audit and the first ranking | `types`, `errors`, the stage registry and user folder, the four native chunkers, `core/offsets`, `core/audit` with the eight checks, `io/loaders`, `io/config`, `io/client` (the `ollama` dialect), `setup`, the `ollama` embedder with measured token counts, `io/questions` (generation, code rules, the judge and its self-test, splits, the question file), `io/cache`, the `dense` retriever, `core/pipeline`, `metrics`, `stats`, `blame` (ceilings and causes), the quick run of `rank`, `cli` (`setup`, `audit`, `rank`), the bundled corpus, `FakeEmbedder`, `ScriptedModel` and a fake Ollama server, examples `quickstart`, `boundaries`, `own_chunker`, `questions`, `rank`, `docs/audit.md`, `stages.md`, `questions.md`, `privacy.md`, the first-minute real-model test | 1–13, 15, 18, 19, 21, 22, 25, 26, 27 |
-| M2: the full search and explain | the `openai` dialect, the `endpoint` embedder, `bm25` and `hybrid`, the `llm`, `endpoint` and `cross-encoder` rerankers, the `tokens`, `local`, `chonkie` and `langchain` extras, `core/search` (greedy, all four steps), the estimate and budget, measured fixes, `explain`, `questions` and `cache clear`, the results file in full, the remaining examples but two, `docs/metrics.md` and `one-question.md` | 14, 16, 17, 24 |
-| M3: the HTML report | `io/report` HTML from the results file, `rank --html`, `report`, the audit summary in it, example `report` | 23 |
-| M4: doctor | `commands/doctor`: sampling, description, recommendations, the generated chunker with approval, the subprocess runner, validation and measurement against the baselines; example `doctor` | 20 |
+| 1. Foundations | `types`, `errors`, the stage registry and the user's folder, `io/loaders`, `io/config`, the bundled corpus, `FakeEmbedder`, `ScriptedModel` | 18, 22 |
+| 2. Audit | the four native chunkers, `core/offsets`, `core/audit` with the eight checks, `commands/audit` | 1, 2, 3 |
+| 3. Local models | `io/client` (`ollama` dialect, a fake Ollama server for tests), the `ollama` embedder with measured token counts, `setup`, `models`, `prompts`, `ragcourt.toml` with roles | 4, 19, 27, 30 |
+| 4. Questions and the judge | `io/questions`: generation, code rules, the judge with its prompts, labelled cases and self-test, the explanations of §6.6, user questions, splits, the question file, `questions show` | 5, 6, 7, 8, 25, 29 |
+| 5. The first ranking | `io/cache`, the `dense` retriever, `core/pipeline`, `metrics`, `stats`, `blame`, the plan, the quick run of `rank`, the legend | 9, 10, 11, 12, 13, 15, 26, 28 |
+| 6. The full search and explain | the `openai` dialect, the `endpoint` embedder, `bm25` and `hybrid`, the `llm`, `endpoint` and `cross-encoder` rerankers, the `tokens`, `local`, `chonkie` and `langchain` extras, `core/search`, the estimate and budget, measured fixes, `explain`, the results file in full | 14, 16, 17, 21 |
+| 7. The HTML report | `io/report` HTML, `rank --html`, `report` | 23 |
+| 8. Doctor | `commands/doctor`: sampling, description, recommendations, the generated chunker with approval, the subprocess runner, validation and measurement | 20 |
+| 9. Docs and examples | every page of `docs/` (with `judge.md`, `models.md` and the walk-through), every example, the README quickstart | 24 |
 
-Each milestone ends with `scripts/check.sh` green, its guarantees passing, `design/current.md` §17
-updated, the docs and the changelog in step, and a short demo for the owner on the bundled corpus.
+The milestone ends with `scripts/check.sh` green, all 30 guarantees passing, the first-minute test run on
+the reference machine, the reviewer agents run on the branch, `design/current.md` §17 updated, the
+changelog in step, and one demo for the owner on the bundled corpus and a corpus of the owner's choice.
 
 ## Consequences
 
@@ -107,14 +120,14 @@ public Python API is `ragcourt` with an explicit `__all__`.
 
 ## Open questions for the owner
 
-Answered on 2026-11-22: the name is `ragcourt` (D-001), the first result uses a
-local model, Ollama, a model judge, generated-code approval, user questions, the repository under
-`bshadmehr98`. Still open:
+Answered on 2026-11-22: the name is `ragcourt` (D-001); the first result uses a local model through Ollama
+(D-006, D-007); a model judge (D-012) with a self-test that is explained to the user (D-026, D-030);
+generated-code approval (D-017); user questions (D-025); the repository under `bshadmehr98` (D-004);
+milestone 1 is the whole project (D-029); the default models, easy to change (D-027, D-031). Still open,
+both written out in plain words in [decisions.md](../decisions.md):
 
-1. **Milestone 1** (D-029): it now includes the first ranking on local models (question writing, the
-   judge, the default embedders, intervals, blame), not only the audit. Agreed?
-2. **The judge's self-test** (D-026): refuse a judge below 90% agreement on bundled labelled cases?
-3. **Default local models** (D-027): `gemma4` as question writer and judge, `nomic-embed-text`,
-   `embeddinggemma` and `mxbai-embed-large` for the quick run, chosen from today's measurements?
-4. **Still from the first round:** the 50/50 split with a paired bootstrap for ties (D-011), and `retrieval`
-   as one blame stage (D-014).
+1. **Choosing and reporting on different questions** (D-011): pick the winner on half the questions,
+   report its score on the other half, and say "no significant difference" when the gap is within the
+   noise?
+2. **The `retrieval` cause** (D-014): when the right chunk exists but the search misses it, name
+   `retrieval` and point at the embedding model or the search method only when a measurement shows which?
