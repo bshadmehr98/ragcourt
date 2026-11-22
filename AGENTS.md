@@ -72,8 +72,12 @@ docs/  examples/       user docs and runnable examples, both executed by tests o
 6. **Nothing leaves the machine** unless the user configured that endpoint (Ollama on `localhost` is the
    default); one client for every model; no model is downloaded without the user's yes;
    keys only from the environment; no telemetry; document text never goes to logs.
-7. **Generated code is asked, isolated and validated:** code a model wrote is shown, runs only after the
-   user approves it, only in a subprocess with a timeout, and its output is validated before it is used.
+7. **Nothing happens blindly** (design D-030): before a model is called, the user sees the plan (each
+   role, its model, where that choice came from, what the model is shown); before the first judge call,
+   what the judge is asked and shown and what it never decides; prompts and the judge's test cases are
+   readable files; every verdict keeps its reason; outputs carry a legend of their rules. Code a model
+   wrote is shown, runs only after the user approves it, only in a subprocess with a timeout, and its
+   output is validated before it is used.
 8. **Design before code:** a new need or change starts as `design/changes/NNNN-<name>.md` with status
    `proposed`; the maintainer accepts it before it is built. Small choices go into `design/decisions.md`.
 9. **The default suite is offline and deterministic:** the fake embedder, the scripted model, the bundled

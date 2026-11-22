@@ -16,6 +16,7 @@ Look at `git diff main...HEAD --stat` and the diff itself, then apply every row 
 | changes a metric, the split or the uncertainty | `docs/metrics.md`, `design/current.md` §8 |
 | changes a blame rule or a suggested fix | `docs/one-question.md` (the walk-through), `design/current.md` §9 |
 | changes how questions or gold quotes are made | `docs/questions.md`, `design/current.md` §6 |
+| changes a prompt, a model role, the judge or its test cases | `docs/judge.md` or `docs/models.md`, the prompt's version, `design/current.md` §6.6 or §11.4, the plan's wording (nothing happens blindly) |
 | changes what is sent to a model or an endpoint | `docs/privacy.md`, `design/current.md` §11.2 |
 | changes the question or the results file | `docs/questions.md` or `docs/cli.md`, `design/current.md` §6.5 or §13.3, `format_version` if needed (`deprecate-and-migrate`) |
 | adds an extra or a dependency | `pyproject.toml`, the install section of `README.md`, `docs/stages.md`, the reason in `design/decisions.md` |

@@ -27,6 +27,8 @@ description: Plan a design change as a change record in design/changes/ and get 
      telemetry; no document text in logs;
    - **files** (§6.5, §13.3): new optional keys keep the `format_version`; anything else follows
      `deprecate-and-migrate`; stage names and check codes never change meaning;
+   - **nothing happens blindly** (§6.6, §10.3, §11.4): a new model call or verdict is shown to the user
+     in the plan, with its prompt readable and its reasons kept;
    - **generated code** (§12): nothing a model wrote runs without the user's approval, outside a
      subprocess with a timeout, or unvalidated;
    - **the core imports no extra**; a new dependency is an optional extra with a reason in

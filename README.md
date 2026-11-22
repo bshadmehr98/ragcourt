@@ -26,7 +26,10 @@ say which stage caused each miss.
   the code and approve it before it runs, isolated, and it is ranked against the baselines like any
   other.
 
-Any OpenAI-compatible endpoint works too, if you configure one. No telemetry.
+Nothing happens blindly: before any model is called you see which model does what and what it is shown;
+the judge's prompts, its test cases and every verdict's reason are yours to read; `ragcourt models set`
+changes any model in one command. Any OpenAI-compatible endpoint works too, if you configure one. No
+telemetry.
 
 ## Install and run
 

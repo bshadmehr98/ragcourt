@@ -29,6 +29,9 @@ code, the rules and the design. Do not edit files.
      `cli` or `testing`;
    - **privacy** (rule 6, §11.2): no network except through the one client, to an endpoint the user
      configured; no telemetry; keys only from the environment; no document text in logs;
+   - **nothing happens blindly** (rule 7, §6.6, §10.3, §11.4): a new model call, prompt or judge verdict
+     that the plan, `prompts show`, `questions show` or the legend does not reveal to the user; a prompt
+     changed without its version;
    - **generated code** (rule 7, §12): never run without approval, always in a subprocess with a timeout,
      its output validated before use;
    - the core imports no extra at import time;
