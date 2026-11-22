@@ -53,13 +53,14 @@ a chunker, an embedding model, a retriever and a reranker, and wants evidence fr
 | **stage** | one implementation of one of four **kinds**: chunker, embedder, retriever, reranker (§7) |
 | **pipeline** | one chunker, one embedder (or none, for a lexical retriever), one retriever and one reranker (or none) |
 | **question** | a question with its **gold quote**: a span of one document that answers it (§6) |
-| **style** | how a question is phrased: `paraphrase`, `keyword` or `user` |
 | **split** | `dev` (used to choose) or `held-out` (used to report) (§6.4) |
 | **hit** | a chunk whose span contains the whole gold quote (§8.2) |
 | **depth** | how many candidates the retriever returns: 50 (brief §4) |
 | **k** | how many chunks the pipeline returns in the end: 5 by default |
 | **miss** | a question with no hit in the top k |
-| **blame** | the stage a miss is attributed to: `chunker`, `retrieval` or `ranking` (§9) |
+| **category** | the kind of question, each testing one weakness: `paraphrase`, `keyword`, `exact_term`, `distractor`, `negation`, `numeric`, `user` (§6.7) |
+| **blame** | why a miss happened: a stage (`chunker`, `embedder`, `retriever`, `ranking`), a mechanism inside it, its evidence and an evidence level (§9) |
+| **twin passage** | for a `distractor` question, the similar passage that does not answer it (§6.7) |
 | **ceiling** | the best Hit@k a pipeline could reach if every stage after a given one were perfect (§9.2) |
 | **check** | one audit rule with a stable code, such as `cut.mid_sentence` (§5.1) |
 | **measured / estimated** | a token count from the embedder's own tokenizer, or from the fallback estimate (§4.3) |
@@ -207,12 +208,13 @@ checks fires (for CI).
 
 `ragcourt rank` (or `ragcourt questions` alone) asks the question writer to write questions: the
 default local chat model (D-027), or the configured one.
-Passages are sampled from the documents (not from any chunker's output: brief §3), with a fixed seed,
-proportional to document length: windows of about 2,000 characters cut at paragraph boundaries. For
-each window the model returns JSON: a list of `{question, quote, style}` with `style` in `paraphrase`
-(different words from the source) or `keyword` (the terms a user would type into a search box). The
-prompt asks for a quote of one to three sentences that answers the question on its own. The target is
-100 questions by default, about 40 in a quick run (`--questions N`).
+Questions are written **by category** (§6.7), because one mixed set cannot say which embedder is good
+at what. For each category, passages are chosen from the documents by code (not from any chunker's
+output: brief §3), with a fixed seed: windows of about 2,000 characters cut at paragraph boundaries that
+can support that category (§6.7). For each window the writer gets the category's prompt and returns JSON
+`{question, quote}` (and, for some categories, the term or the twin passage it used). The prompt asks for
+a quote of one to three sentences that answers the question on its own. How many questions are wanted,
+per category, is in §6.8.
 
 ### 6.2 Validation and filters
 
@@ -221,13 +223,14 @@ Applied in order, each drop counted by reason and reported:
 1. **Not verbatim:** the quote is searched in the window's document, first exactly, then with
    whitespace runs treated as equal (D-010). Not found: dropped (brief §3). Found: the gold is the span.
 2. **Code rules** (D-028): a quote of fewer than 6 words, with no sentence (a bare name, a single line of
-   code) or over 120 reference tokens; a `paraphrase` question of fewer than 3 words; a missing or unknown
-   `style`.
-3. **Duplicate:** a question whose quote overlaps an earlier question's quote by more than half, or whose
+   code) or over 120 reference tokens; a question of fewer than 3 words outside `keyword`.
+3. **Not of its category:** the code check of the category fails (§6.7); for `negation` and `distractor`
+   the judge must also confirm it.
+4. **Duplicate:** a question whose quote overlaps an earlier question's quote by more than half, or whose
    text is a near-duplicate of an earlier question.
-4. **Not valid** (judge, §6.6): the judge is asked whether the question is a real question a user could
+5. **Not valid** (judge, §6.6): the judge is asked whether the question is a real question a user could
    ask and whether the quote answers it; "no" drops it.
-5. **Answerable without the documents** (judge, §6.6): the question writer answers with no documents and
+6. **Answerable without the documents** (judge, §6.6): the question writer answers with no documents and
    is told to reply `UNKNOWN` when it does not know. `UNKNOWN` keeps the question without a judge call;
    any other answer goes to the judge with the quote, and an answer graded correct drops the question
    (D-012).
@@ -241,21 +244,23 @@ its questions are revalidated against the new text and dropped when the quote is
 
 `--questions-file my.jsonl`: one JSON object per line with `question` and `quote`, and optionally
 `document` (otherwise every document is searched; a quote found in more than one place is rejected as
-ambiguous unless `document` is given). They are validated by rule 1 only and tagged `style: user`; user
+ambiguous unless `document` is given). They are validated by rule 1 only and tagged `category: user`; user
 questions are never dropped by the judge (D-025). A question without a quote
 cannot be scored and is rejected with that reason (D-025).
 
 ### 6.4 Splits
 
-Each question gets a split from a hash of its id and the run's seed: half `dev`, half `held-out`
-(`--holdout 0.5`), stratified by document so both splits cover the corpus. The search (§10) reads only
-dev results; every number in a leaderboard, every interval and every blame in `explain` is from held-out
-questions. With fewer than 30 held-out questions the output warns that intervals will be wide (D-011).
+Each question gets a split from a hash of its id and the run's seed: one third `dev`, two thirds
+`held-out` (30 and 60 of the default 90 per category, §6.8), within each category and spread over the
+documents. The search (§10) reads only dev results: choosing needs fewer questions than measuring
+precisely, and ties on dev are broken by cost. Every number in a leaderboard, every interval and every
+blame in `explain` is from held-out questions (D-011, D-032).
 
 ### 6.5 The question file
 
 `.ragcourt/questions.jsonl`, first line a header `{"format_version": "1", "corpus_hash": …, "model": …,
-"seed": …, "dropped": {reason: count}}`, then one question per line: `id`, `question`, `style`,
+"seed": …, "dropped": {category: {reason: count}}}`, then one question per line: `id`, `question`, `category`, `term` or `twin` where the
+category has one,
 `document`, `start`, `end`, `quote`, `split`. Reused by later runs while the corpus hash matches; a newer
 `format_version` is refused with a message.
 
@@ -295,6 +300,44 @@ Judges filter questions and, as the `llm` reranker (§7.3), may order candidates
 
 The same applies to every model role (§11.4): the question writer, the `llm` reranker and doctor each say
 what they are given and what they return before they are first called in a run.
+
+### 6.7 Question categories
+
+Each category targets a known weakness of retrieval, so a leaderboard can say "this embedder loses
+exact identifiers" instead of one blurred average (D-032; tried with a local model in
+[`history/0003-question-categories.md`](history/0003-question-categories.md)). Passages that cannot
+support a category are not offered for it, and membership is checked, not assumed:
+
+| Category | Tests | Passages offered (by code) | Membership checked by |
+|---|---|---|---|
+| `paraphrase` | the same meaning in different words | any | code: content-word overlap of question and quote below 0.15 |
+| `keyword` | a few search terms, no sentence | any | code: 2 to 6 words, no question mark |
+| `exact_term` | a rare identifier, name, code or number with its unit, which embedders blur | windows holding a term found in one document only and shaped like an identifier, a name or a number with a unit; the term is chosen by code and given to the writer | code: the term is in the question and the quote |
+| `distractor` | a question worded like another passage that does not answer it (misleading) | pairs of windows with high word overlap (twins), chosen by code; the writer gets both | code: the question shares more words with the twin than with its own passage; judge: the twin does not answer it |
+| `negation` | what is not done, never allowed, the exception | windows with a negation or an exception in the text | code: a negation in question and quote; judge: the quote answers the negated question |
+| `numeric` | a number, default, limit, version or date | windows with a number in prose | code: the number in the quote answers it (the quote holds a number); judge: it is the asked value |
+| `user` | the user's own questions (§6.3) | — | quote found |
+
+The twin passage of a `distractor` question and the term of an `exact_term` question are stored with the
+question, so blame can name them (§9.1). Categories are switched on and off in `ragcourt.toml`
+(`questions.categories`); adding one is a small design change: a prompt file, a passage rule and a
+check.
+
+### 6.8 How many questions
+
+The default is **90 questions per category** (30 dev, 60 held-out; `questions.per_category`), for every
+category the corpus can support: about 540 for six categories. Generation runs until each category has
+its count or its passages are used up (at most 6 requests per wanted question, since hard categories
+are accepted 1 to 3 times in 8 without passage selection). The output says, per category, how many were
+asked for, written, dropped by reason and kept; a category with fewer than 30 held-out questions is
+reported as **too few to rank** with its count, never folded into the average. Questions are written once
+per corpus and reused; the plan (§10.3) shows the time this takes before it starts (about 15 to 25
+minutes on the owner's machine for a full set, `inferred`).
+
+Every leaderboard also prints, per category, the **smallest difference it can tell apart** at that size
+(from the paired bootstrap of §8.4: half the width of the interval of the difference between the top
+two), so "no significant difference" comes with "differences under N points cannot be seen with 60
+questions".
 
 ## 7. Stages
 
@@ -393,51 +436,124 @@ not given, never 0; D-020).
 
 ### 8.4 Uncertainty and ties
 
-Every averaged metric is reported with a 95% interval from a bootstrap over held-out questions (2,000
-resamples, fixed seed). The leaderboard is sorted by the chosen metric (`recall_at_budget` by default;
+Every averaged metric is reported **per category** (§6.7) and **overall**, with a 95% interval from a
+bootstrap over held-out questions (2,000 resamples, fixed seed). Overall is the mean of the category
+means, so every category weighs the same whatever its size; a category too few to rank is left out and
+named. The leaderboard is sorted by the chosen metric (`recall_at_budget` by default;
 `--metric`). The top two are compared with a **paired** bootstrap of the per-question difference: if its
 95% interval contains 0, the output says "no significant difference" between them, lists every entry
 not separable from the top the same way, and calls none of them the winner. A smaller or cheaper entry
-among the tied is pointed out as such (D-011).
+among the tied is pointed out as such (D-011). Ties are decided per category too: an entry can be tied
+overall and clearly better on `exact_term`, and the output says so.
 
 ## 9. Blame and explain
 
-### 9.1 Blame rules
+Telling a user *why* a question was missed is the reason to use ragcourt, so blame is more than a stage
+name (D-033). For every held-out miss it gives a **stage**, a **mechanism** inside that stage, the
+**evidence** (numbers from the run), an **evidence level**, and a **fix**. All of it is computed by code
+from spans, ranks, scores and a few extra measurements (the probes of §9.4); no model is asked.
 
-For each held-out miss of the chosen pipeline, computed by code from spans and ranks (brief §4):
+### 9.1 Blame: a stage and a mechanism
 
-1. **`chunker`**: the quote is intact in no chunk (no chunk's span contains it). Evidence: the chunks
-   that hold parts of it, with the cut positions.
-2. **`retrieval`** (the embedder or the retriever): a hit exists but is not in the retriever's top 50.
-   Evidence: the hit's retrieval rank (computed over all chunks) and the score gap to the 50th.
-3. **`ranking`**: a hit is in the top 50 but below k after reranking (or after retrieval when there is no
-   reranker). Evidence: its rank before and after the reranker.
+The checks run in this order; the first that holds is the **cause**, and every later one that also holds
+is listed as **also seen**. A miss always gets exactly one cause.
 
-Exactly one applies to each miss. `retrieval` is one stage for the embedder and the retriever together;
-§9.3 separates them when the measurements can (D-014).
+**Stage `chunker`: no chunk holds the whole quote, or the chunk that holds it hides it.**
+
+| Mechanism | Holds when | Evidence shown |
+|---|---|---|
+| `chunker.too_small` | the quote is longer than the chunker's largest chunk | quote and chunk sizes in tokens |
+| `chunker.split` | the quote is cut across a chunk boundary | the boundary on the text, the words each side |
+| `chunker.dropped` | part of the quote is in no chunk at all | the characters no chunk covers |
+| `chunker.over_limit` | a chunk holds the quote, but the quote lies past the embedder's input limit inside it, so the embedder never read it | the quote's token position, the limit (measured, §4.3) |
+| `chunker.diluted` | a chunk holds the quote, but the quote embedded on its own would reach the top 50 while the chunk does not: the answer is drowned in a long or mixed chunk | similarity of query to quote, to chunk, and of the 50th result |
+
+**Stage `embedder`: the chunk is clean, but the embedding model does not bring it into the top 50**
+(with a dense or hybrid retriever).
+
+| Mechanism | Holds when | Evidence shown |
+|---|---|---|
+| `embedder.exact_words` | keyword search (BM25 on the same chunks) puts the chunk in the top 50 and the embedder does not: the embedder blurs the exact words (typical of `exact_term` and `keyword` questions) | the chunk's BM25 rank and dense rank; the term, if any |
+| `embedder.distracted` | the question's twin passage (a `distractor` question) or chunks very similar to it fill the ranks above the chunk | the twin's rank, the chunk's rank |
+| `embedder.meaning` | neither the chunk nor the quote alone reaches the top 50 with this embedder, and keyword search does not find it either: the model does not connect the question to its answer | the quote-alone rank, the ranks under every other measured embedder |
+
+**Stage `retriever`: the search method, not the vectors.**
+
+| Mechanism | Holds when | Evidence shown |
+|---|---|---|
+| `retriever.keyword_only` | the retriever is `bm25`, it misses the chunk, and dense search with a measured embedder finds it | both ranks |
+| `retriever.fusion` | the retriever is `hybrid`, one of its two lists has the chunk in the top 50, and the fused list does not | the rank in each list and after fusion |
+| `retriever.crowded` | more than half of the top 50 are near-duplicates (audit `duplicate.near`) and the chunk is just below | the duplicates' count, the chunk's rank |
+
+**Stage `ranking`: the chunk is in the top 50 but below k.**
+
+| Mechanism | Holds when | Evidence shown |
+|---|---|---|
+| `ranking.reranker_demoted` | the chunk was in the top k before the reranker, and the reranker pushed it out | ranks before and after |
+| `ranking.distracted` | the chunks above it include the question's twin passage | the twin's rank and the chunk's |
+| `ranking.duplicates` | the k slots are taken by near-duplicates of one another | the duplicates |
+| `ranking.not_rescued` | the chunk was below k before reranking and stayed there (or no reranker is set) | ranks before and after (or "no reranker") |
+
+The search is exact (no approximate index in 0.1), so the retriever can lose a chunk only by its method,
+never by approximation.
 
 ### 9.2 Ceilings
 
-For the chosen pipeline, on held-out questions: the **chunker ceiling** (share with an intact quote in
-some chunk), the **retrieval ceiling** (share with a hit in the top 50) and **Hit@k**. They are
-non-increasing by construction, and the gaps between them are the share of questions each stage lost.
-Each has its interval.
+For the chosen pipeline, per category and overall, on held-out questions: the **chunker ceiling** (an
+intact, readable quote in some chunk: no `chunker` cause), the **retrieval ceiling** (that chunk in the top
+50) and **Hit@k**. They are non-increasing by construction, and each gap is the share lost to a stage, with
+its interval. Counts per mechanism are shown per category ("of 60 `exact_term` questions, 21 lost to
+`embedder.exact_words`").
 
-### 9.3 Fixes
+### 9.3 Fixes and evidence levels
 
-A fix is suggested from measurements already made in the run, never from a model:
+A fix comes from the mechanism and, wherever possible, from a measurement already made in the run:
 
-- For each miss, the configurations from the search (§10) that hit this question, preferring the one that
-  changes only the blamed stage, then the cheapest. "Chunker `sentence:size=384` keeps this quote whole
-  (measured on this question)". For `retrieval`, a measured embedder that ranks the hit in the top 50
-  names the embedder; a measured retriever (`bm25`, `hybrid`) that does names the retriever.
-- When no measured configuration hits it, the stage's general fix is given and labelled "not measured":
-  a chunker that respects sentences or headings, a larger depth, a reranker. `explain` always names one
-  cause and one fix (brief §1).
+| Mechanism | Fix |
+|---|---|
+| `chunker.too_small`, `chunker.split`, `chunker.dropped` | the measured chunker that keeps this quote whole and readable, preferring the one that changes least |
+| `chunker.over_limit` | a smaller chunk size, or a measured embedder with a longer input limit |
+| `chunker.diluted` | a smaller or section-aware chunker that measured better on this question |
+| `embedder.exact_words` | `hybrid` retrieval, or the measured embedder that finds it |
+| `embedder.distracted`, `ranking.distracted` | a reranker, or the measured embedder that ranks the right passage above its twin |
+| `embedder.meaning` | the measured embedder that finds it; if none does, "no tested embedder connects this question to its answer" |
+| `retriever.keyword_only`, `retriever.fusion` | the measured retriever that finds it (`dense`, `hybrid`, fusion weights) |
+| `retriever.crowded`, `ranking.duplicates` | remove the near-duplicates (the audit lists them) |
+| `ranking.reranker_demoted` | no reranker, or the measured one that keeps it |
+| `ranking.not_rescued` | the measured reranker that lifts it, or a larger k |
 
-`ragcourt explain [RUN]` prints, per miss: the question, the quote and its place, the cause with its
-evidence, the fix; then the counts per cause. `--show ID` prints the quote's surroundings with the chunk
-boundaries marked (§5.2).
+Every blame carries an **evidence level**:
+
+- **`confirmed`**: a configuration measured in this run that differs from the chosen pipeline *only in
+  the blamed stage* hits this question. The fix names it with its result on this question.
+- **`indicated`**: the probes point to the mechanism, but no configuration differing only in that stage
+  was measured. The fix is labelled "not measured", with the command that would measure it.
+
+`ragcourt explain [RUN]` prints, per miss: the question, its category, the quote and its place, the
+cause (stage and mechanism) with its evidence and level, anything also seen, and the fix; then counts
+per stage and mechanism, per category, with intervals. `--show ID` prints the quote's surroundings with the
+chunk boundaries marked (§5.2). A legend explains each mechanism in one line (§13.2).
+
+### 9.4 The probes
+
+The extra measurements blame needs, all cheap and cached:
+
+- **Quote alone**: the gold quote embedded with each embedder (one embedding per question per embedder),
+  for `chunker.diluted` and `embedder.meaning`. Used only for diagnosis, never in a score.
+- **Keyword rank**: BM25 over the same chunks for every question, whatever the retriever.
+- **Every measured embedder's rank** of the hit, from the search (§10).
+- **Ranks before and after the reranker**, and in each list of a hybrid retriever before fusion.
+- **The quote's token position** in its chunk, measured only for chunks longer than the embedder's
+  limit.
+- **Near-duplicates** from the audit (`duplicate.near`) and the **twin passage** of `distractor`
+  questions (§6.7).
+
+### 9.5 Trusting the blame
+
+Each mechanism has a planted case in the bundled corpus (with the fake embedder scripted to show it) and a
+near miss that must not trigger it; the order of §9.1 is tested so a question never gets two causes. On a
+real run, the share of `confirmed` blames is printed, so the user sees how much of the diagnosis rests on
+measurement and how much on probes.
 
 ## 10. Search, cache, estimate and budget
 
@@ -451,17 +567,22 @@ Greedy by stage, embedders first (brief §6), on dev questions, by the chosen me
 3. **Retrievers:** `dense`, `bm25`, `hybrid` with the best chunker and embedder.
 4. **Rerankers:** `none` and each candidate reranker on the best so far.
 
-A stage's best is the top entry on dev; when entries are tied (§8.4), the cheaper, then the smaller, then
+A stage's best is the top entry on dev by the overall score (the mean of the categories, §8.4); when
+entries are tied (§8.4), the cheaper, then the smaller, then
 the first listed is kept and the tie is reported. Candidates come from `ragcourt.toml` or flags; by
 default every available built-in. Every evaluated configuration's held-out numbers appear in that stage's
 leaderboard; the "best overall pipeline" is the last step's choice, reported on held-out questions.
+When a category has a different winner from the overall one ("`bm25` leads on `exact_term`"), the output
+says so with both intervals. Because each step varies one stage, the search also gives blame its
+`confirmed` alternatives (§9.3).
 
-**The quick run** is what `rank` does unless `--full` is given: about 40
-questions, step 1 only (the default local embedders on the default chunker, `dense`, no reranker), the
-leaderboard with intervals, the ceilings and the blame of every held-out miss, then one line saying what
-the full search would add and its estimate. It is the first-minute result (D-006); its time is measured by
-a real-model test on the bundled corpus (§16, guarantee 26). The full search is `rank --full` (or
-`rank.mode = "full"` in `ragcourt.toml`).
+**The quick run** is what `rank` does unless `--full` is given: 8 questions per category (about 50),
+step 1 only (the default local embedders on the default chunker, `dense`, no reranker), the leaderboard
+with intervals, the ceilings and the blame of every held-out miss. It is labelled **a first look**: every
+category is too few to rank (§6.8), so it names no winner per category and its overall intervals are
+wide; it ends with the plan and estimate of the full run, whose questions it reuses. It is the first-minute
+result (D-006); its time is measured by a real-model test on the bundled corpus (§16, guarantee 26). The
+full search is `rank --full` (or `rank.mode = "full"` in `ragcourt.toml`).
 
 ### 10.2 The cache
 
@@ -585,7 +706,8 @@ usage, 3 a `--fail-on` check fired, 4 stopped by the budget.
 
 Plain text tables, no colour when not a terminal, every number with its interval and its label
 (measured, estimated, unknown). Every leaderboard and every blame list ends with a short legend of the
-words it uses (hit, ceiling, `chunker`, `retrieval`, `ranking`, "no significant difference") and the rule
+words it uses (hit, ceiling, each stage and mechanism, `confirmed` and `indicated`, "no significant
+difference") and the rule
 behind each, unless `-q`; `--help` of each command says what it will call and what it sends (D-030).
 
 ### 13.3 The results file
@@ -673,11 +795,12 @@ is removed, except guarantee 26, which needs real models and is a marked test in
     chunks fit, and does not lead on `recall_at_budget`.
 12. **Ties are said.** When the paired interval of the top two contains 0, the output says "no significant
     difference" and names no winner; when it does not, it names the winner.
-13. **Blame is code and complete.** Every held-out miss has exactly one cause by the rules of §9.1; the
-    planted cases give `chunker`, `retrieval` and `ranking` each; ceilings are non-increasing and their
-    gaps equal the counts per cause.
-14. **Every miss has a fix**, and a fix that names a configuration cites its measured result on that
-    question; one that does not is labelled "not measured".
+13. **Blame is code and complete.** Every held-out miss has exactly one cause (stage and mechanism) by the
+    order of §9.1; each mechanism's planted case gives that mechanism and its near miss does not; ceilings
+    are non-increasing and their gaps equal the counts per stage.
+14. **Every miss has a fix and an evidence level.** A `confirmed` blame names a measured configuration
+    that differs only in the blamed stage and hits the question; an `indicated` one says "not measured"
+    and gives the command that would measure it.
 15. **The cache works.** A second identical run makes zero embedding calls; changing one document embeds
     only its chunks.
 16. **The estimate comes first and the budget holds.** The estimate is printed before the first model
@@ -720,6 +843,15 @@ is removed, except guarantee 26, which needs real models and is a marked test in
     replaced prompt is named with its hash and retested.
 30. **Models are easy to change.** `models set judge M` changes the judge in `ragcourt.toml` (keeping its
     comments) and runs the self-test; a flag overrides it for one run; the plan shows which applied.
+31. **Categories are real.** Every kept question passed its category's code check (and the judge where
+    §6.7 says so); a question that fails it is dropped and counted, never kept under that category.
+32. **Categories are reported apart.** Leaderboards, intervals, ties and blame counts are given per
+    category and overall (the mean of categories); a category with fewer than 30 held-out questions is
+    shown as too few to rank, with its count; the smallest difference each category can tell apart is
+    printed.
+33. **Blame uses its probes.** On the planted cases, `chunker.diluted` is told from `embedder.meaning` by
+    the quote-alone probe, `embedder.exact_words` from `embedder.meaning` by the keyword rank, and
+    `chunker.over_limit` by the quote's token position.
 
 ## 17. Implemented and planned
 
@@ -736,8 +868,9 @@ Updated as the milestone's steps land.
 Chunkers must return text found in the source (no added context or rewriting); text formats only (no
 PDF, no images); one language's stop words and sentence rules (English) for the closed-book check and
 `cut.mid_sentence`; exact in-memory search (fine to about 200k chunks); intervals are wide with few
-held-out questions; the greedy search can miss a combination that only wins jointly; `retrieval` blame
-does not separate the embedder from the retriever unless the search measured an alternative; question
+held-out questions; the greedy search can miss a combination that only wins jointly; blame that is only
+`indicated` rests on probes, not on a measured alternative; questions need one quote (no question that
+needs two passages); a small corpus may not support every category; question
 quality and the judge's verdicts are only as good as the local model (the self-test guards the judge, not
 the writer); the first minute assumes the models are already pulled and a GPU like the owner's (8 GB);
 on CPU only it will be slower.
