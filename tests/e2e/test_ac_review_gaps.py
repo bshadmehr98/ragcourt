@@ -112,6 +112,7 @@ def test_ac23_no_address_of_any_kind_in_the_report(
     assert run("rank", corpus, "--yes", "--html")[0] == 0
     report = next((project / ".ragcourt" / "runs").glob("*/report.html")).read_text()
     assert not re.search(r"(src|href|url)\s*[=(]\s*['\"]?(https?:)?//", report, re.I)
+    assert " on" + "click=" not in report and "data-only=" in report  # names never become JavaScript
     tied_boards = [b for b in results_of(project)["boards"] if not b["winner"]]
     if tied_boards:
         assert "No significant difference at the top" in report or "indicative" in report
@@ -191,3 +192,22 @@ def test_a_run_on_your_own_questions_only_calls_no_writer_or_judge(
     assert f"use your {len(rows)} questions; none to write" in out
     assert "only your own questions are used" in out and "Judge self-test" not in out
     assert set(results_of(project)["questions"]["by_category"]) == {"user"}
+
+
+RLO = chr(0x202E)  # right-to-left override
+
+
+def test_terminal_escapes_from_documents_or_questions_are_shown_not_run(
+    rank_project: tuple[Path, FakeOllamaState], corpus: Path, run: Run, tmp_path: Path
+) -> None:
+    sentence = next(
+        line for line in (corpus / "retries.md").read_text().splitlines() if len(line.split()) > 8
+    )
+    mine = tmp_path / "mine.jsonl"
+    mine.write_text(
+        json.dumps({"question": "Hidden \x1b[2K\x1b]0;title\x07 " + RLO + " text?", "quote": sentence}) + "\n"
+    )
+    assert run("questions", corpus, "--questions", "0", "--questions-file", mine)[0] == 0
+    out = run("questions", "show")[1]
+    assert "\x1b" not in out and RLO not in out
+    assert "\\x1b[2K" in out and "\\u202e" in out

@@ -109,3 +109,24 @@ def test_suffixes_ignore_case_nested_hidden_folders_are_left_out_and_empty_files
         ("UPPER.MD", "upper"),
         ("empty.txt", ""),
     ]
+
+
+def test_a_link_out_of_the_folder_is_skipped_and_huge_html_too(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from ragcourt.io import documents
+
+    secret = tmp_path / "secret.txt"
+    secret.write_text("sk-live-key")
+    docs = tmp_path / "docs"
+    docs.mkdir()
+    (docs / "real.md").write_text("A real document.")
+    (docs / "inside.md").symlink_to(docs / "real.md")
+    (docs / "env.txt").symlink_to(secret)
+    monkeypatch.setattr(documents, "MAX_HTML_BYTES", 10)
+    (docs / "page.html").write_text("<p>" + "x" * 50 + "</p>")
+    corpus = load_documents(docs)
+    assert [d.id for d in corpus.documents] == ["inside.md", "real.md"]
+    reasons = {entry.path: entry.reason for entry in corpus.skipped}
+    assert reasons["env.txt"] == "a link to a file outside the folder, not followed"
+    assert reasons["page.html"].startswith("HTML over")
