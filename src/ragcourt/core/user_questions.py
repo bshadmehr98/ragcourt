@@ -15,6 +15,11 @@ def read_user_questions(rows: list[dict[str, Any]], texts: dict[str, str]) -> li
     """Each row kept as a ``user`` question or rejected with its reason."""
     outcomes: list[Question | Dropped] = []
     for number, row in enumerate(rows):
+        if not isinstance(row, dict):  # pyright: ignore[reportUnnecessaryIsInstance] (rows come from a user's file)
+            outcomes.append(
+                Dropped(USER, "not a JSON object with question and quote", str(row)[:80], "", (), number)
+            )
+            continue
         outcomes.append(_one(number, row, texts))
     return outcomes
 
@@ -30,7 +35,7 @@ def _one(number: int, row: dict[str, Any], texts: dict[str, str]) -> Question | 
         problem = "quote not found verbatim"
     if not problem and len(found) > 1:
         names = ", ".join(name for name, _, _ in found[:3])
-        problem = f'ambiguous: the quote is in {names}; add "document"'
+        problem = f"ambiguous: the quote is found more than once ({names}); quote more of the text"
     if problem:
         return Dropped(USER, problem, question, quote, (), number)
     name, start, end = found[0]
@@ -65,4 +70,7 @@ def _places(quote: str, names: list[str], texts: dict[str, str]) -> list[tuple[s
         span = find_text(texts[name], quote)
         if span is not None:
             places.append((name, span[0], span[1]))
+        again = find_text(texts[name], quote, span[0] + 1) if span is not None else None
+        if again is not None:
+            places.append((name, again[0], again[1]))  # twice in one document: ambiguous too
     return places

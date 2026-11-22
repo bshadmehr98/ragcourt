@@ -75,7 +75,9 @@ def _board(board: dict[str, Any]) -> str:
         tie = "<span class='tie'>= </span>" if row["tied_with_top"] else ""
         cells = f"<td>{tie}{_e(row['label'])}</td><td>{_interval(row['overall'])}</td>"
         rows.append(f"<tr>{cells}<td>{_bar(row['overall'])}</td></tr>")
-    if board["winner"]:
+    if board.get("indicative"):
+        verdict = "Every category has too few held-out questions to rank: indicative only, no winner."
+    elif board["winner"]:
         verdict = f"Winner: {_e(board['winner'])}"
     else:
         verdict = "No significant difference at the top: no winner."

@@ -34,7 +34,9 @@ def results_data(
     held_ids = [question.id for question in held_out]
     unique = {evaluation.spec.label: evaluation for evaluation in measured}
     chosen_evaluation = unique[chosen.label]
-    costs = [evaluation.costs.cost_usd for evaluation in unique.values()]
+    # One chunking embedded by one embedder costs once, however many pipelines share it.
+    paid = {(e.spec.chunker, e.spec.embedder): e.costs.cost_usd for e in unique.values() if e.costs.vectors}
+    costs = list(paid.values())
     return {
         "complete": True,
         "run": evaluator.folder.name,

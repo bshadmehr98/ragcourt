@@ -71,3 +71,16 @@ def test_unknown_counts_stay_unknown(tmp_path: Path) -> None:
     store = cached(tmp_path, NoCounts(dimensions=4))
     assert store.embed(["x"]).token_counts is None
     assert cached(tmp_path, NoCounts(dimensions=4)).embed(["x"]).token_counts is None
+
+
+def test_a_torn_write_never_shifts_later_vectors(tmp_path: Path) -> None:
+    store = cached(tmp_path)
+    store.embed(["one", "two"])
+    folder = store.store.folder
+    with (folder / "vectors.f32").open("ab") as handle:
+        handle.write(b"\1" * 32 + b"\2" * 3)  # a whole orphan vector and a partial one
+    again = cached(tmp_path)
+    fresh = again.embed(["three"])
+    reloaded = cached(tmp_path)
+    assert reloaded.embed(["three"]).vectors == fresh.vectors and reloaded.calls == 0
+    assert (folder / "vectors.f32").stat().st_size == 3 * 8 * 4

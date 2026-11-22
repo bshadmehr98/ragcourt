@@ -61,10 +61,14 @@ class EmbeddingStore:
         keys_file, vectors_file = self.folder / "keys.txt", self.folder / "vectors.f32"
         if not self.dimension or not keys_file.is_file() or not vectors_file.is_file():
             return
+        row_bytes = self.dimension * 4
+        raw = vectors_file.read_bytes()
+        lines = keys_file.read_text().split("\n")[:-1]  # a last line without its newline is torn
+        rows = min(len(lines), len(raw) // row_bytes)
+        _trim(vectors_file, raw[: rows * row_bytes], keys_file, lines[:rows])
         values = array.array("f")
-        values.frombytes(vectors_file.read_bytes())
-        lines = keys_file.read_text().split("\n")[:-1]
-        for number, line in enumerate(lines[: len(values) // self.dimension]):
+        values.frombytes(raw[: rows * row_bytes])
+        for number, line in enumerate(lines[:rows]):
             key, count = line.split(" ")
             row = values[number * self.dimension : (number + 1) * self.dimension]
             self.vectors[key] = (list(row), int(count))
@@ -81,6 +85,15 @@ class EmbeddingStore:
         with (self.folder / "keys.txt").open("a") as handle:
             handle.write(f"{key} {UNKNOWN_COUNT if count is None else count}\n")
         self.vectors[key] = (list(array.array("f", vector)), UNKNOWN_COUNT if count is None else count)
+
+
+def _trim(vectors_file: Path, vectors: bytes, keys_file: Path, lines: list[str]) -> None:
+    """Cut both files back to the rows they share, so the next append lines up again."""
+    if len(vectors) != vectors_file.stat().st_size:
+        vectors_file.write_bytes(vectors)
+    text = "".join(line + "\n" for line in lines)
+    if len(text) != len(keys_file.read_text()):
+        keys_file.write_text(text)
 
 
 @dataclass

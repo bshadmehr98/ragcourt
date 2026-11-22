@@ -46,8 +46,9 @@ class Ollama:
             body = {"model": model, "input": [text], "options": options}
             reply = request_json(f"{self.url}/api/embed", body, sleep=self.sleep)
             vectors.append([float(value) for value in reply["embeddings"][0]])
-            counts.append(int(reply.get("prompt_eval_count", 0)))
-        return Embedded(vectors, counts)
+            counts.append(int(reply.get("prompt_eval_count") or 0))
+        # A server that does not report counts gets estimated sizes, never zeros passed off as measured.
+        return Embedded(vectors, counts if all(counts) else None)
 
     def show(self, model: str) -> ModelInfo:
         """The model's context length, size and digest, asked once per model."""

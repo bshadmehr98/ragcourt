@@ -27,7 +27,7 @@ def embed_query(text: str) -> list[float]:
 def test_retrievers_rank_by_relevance_with_deterministic_ties(name: str) -> None:
     search = stages.find("retriever", name).function(CHUNKS, VECTORS, embed_query)
     ranked = search("how long do retries wait", 3)
-    assert len(ranked) == 3 and ranked[0][0] == 3
+    assert 1 <= len(ranked) <= 3 and ranked[0][0] == 3
     assert ranked == search("how long do retries wait", 3)
     scores = [score for _, score in ranked]
     assert scores == sorted(scores, reverse=True)
@@ -35,7 +35,8 @@ def test_retrievers_rank_by_relevance_with_deterministic_ties(name: str) -> None
 
 def test_bm25_ties_go_by_index_and_dense_needs_vectors() -> None:
     search = stages.find("retriever", "bm25").function(["a", "a", "b"], None, embed_query)
-    assert [index for index, _ in search("a", 3)] == [0, 1, 2]
+    assert [index for index, _ in search("a", 3)] == [0, 1]  # ties by index; no shared word, not retrieved
+    assert search("zzz", 3) == []
     with pytest.raises(Exception, match="needs an embedder"):
         stages.find("retriever", "dense").function(CHUNKS, None, embed_query)
 

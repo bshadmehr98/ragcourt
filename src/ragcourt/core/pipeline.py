@@ -7,7 +7,6 @@ keep the order, and measure every metric on each question.
 
 from __future__ import annotations
 
-import time
 from collections.abc import Callable
 from dataclasses import dataclass
 
@@ -29,6 +28,9 @@ class Settings:
     budget_tokens: int = 400
 
 
+Clock = Callable[[], float]  # seconds, from the caller: core reads no clock itself (design §3.1)
+
+
 @dataclass(frozen=True)
 class Timing:
     """How long the index took to build and each question took to answer, in milliseconds."""
@@ -43,24 +45,24 @@ def run_pipeline(
     vectors: list[Vector] | None,
     rerank: Rerank | None,
     questions: list[Question],
-    context: tuple[Settings, TokenMap],
+    context: tuple[Settings, TokenMap, Clock],
 ) -> tuple[dict[str, QuestionResult], Timing]:
     """Every question's retrieved and final chunk indices, with its metrics, and the timing."""
-    settings, tokens = context
-    started = time.perf_counter()
+    settings, tokens, clock = context
+    started = clock()
     search = search_of([chunk.text for chunk in chunks], vectors)
-    index_ms = int((time.perf_counter() - started) * 1000)
+    index_ms = int((clock() - started) * 1000)
     results: dict[str, QuestionResult] = {}
     query_ms: list[float] = []
     for question in questions:
-        begin = time.perf_counter()
+        begin = clock()
         retrieved = [index for index, _ in search(question.question, settings.depth)]
         final = (
             reorder(retrieved, rerank(question.question, [chunks[i].text for i in retrieved]))
             if rerank
             else retrieved
         )
-        query_ms.append((time.perf_counter() - begin) * 1000)
+        query_ms.append((clock() - begin) * 1000)
         ranking = Ranking(
             question, [chunks[index] for index in final], chunks, settings.k, settings.budget_tokens
         )

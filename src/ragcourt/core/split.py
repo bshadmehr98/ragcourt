@@ -19,7 +19,7 @@ def assign_splits(questions: list[Question], seed: int) -> list[Question]:
     splits: dict[str, str] = {}
     for members in by_category.values():
         ordered = sorted(members, key=lambda question: _rank(question.id, seed))
-        dev_count = len(ordered) // 3
+        dev_count = max(1, len(ordered) // 3) if len(ordered) >= 2 else 0  # every category can be chosen on
         for number, question in enumerate(ordered):
             splits[question.id] = DEV if number < dev_count else HELD_OUT
     return [replace(question, split=splits[question.id]) for question in questions]

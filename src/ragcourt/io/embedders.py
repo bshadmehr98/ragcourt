@@ -40,7 +40,7 @@ def _ollama(model: str, client: ModelClient, limits: Path | None) -> Embedder:
     if key in known:
         params["limit"] = known[key]
     built = _build("ollama", params, client)
-    if limits is not None and key not in known and built.max_tokens is not None:
+    if limits is not None and key not in known and built.max_tokens:
         limits.parent.mkdir(parents=True, exist_ok=True)
         limits.write_text(json.dumps({**known, key: built.max_tokens}, indent=1) + "\n")
     return built

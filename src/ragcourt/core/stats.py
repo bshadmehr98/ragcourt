@@ -16,8 +16,9 @@ from ragcourt.types.results import Interval
 Resamples = list[list[int]]
 
 
-def resamples(size: int, count: int, seed: int) -> Resamples:
-    """``count`` lists of ``size`` indices drawn with replacement, fixed by the seed."""
+def resamples(size: int, count: int, seed: int | str) -> Resamples:
+    """``count`` lists of ``size`` indices drawn with replacement, fixed by the seed (give each category its
+    own seed, so categories of the same size are not resampled in step)."""
     generator = random.Random(seed)  # noqa: S311 (a seeded resample, not a secret)
     population = range(size)
     return [generator.choices(population, k=size) for _ in range(count)]

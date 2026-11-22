@@ -34,6 +34,7 @@ def board_data(board: Board) -> dict[str, Any]:
         "smallest_difference": {name: round(value, 4) for name, value in board.smallest_difference.items()},
         "too_few": board.too_few,
         "category_leaders": board.category_leaders,
+        "indicative": board.indicative,
     }
 
 

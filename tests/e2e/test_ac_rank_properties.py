@@ -186,3 +186,14 @@ def test_ac16_the_money_and_configured_budgets_hold(
     )
     code, _, err = run("rank", corpus, "--yes")
     assert code == 4 and "over the budget" in err and state.requests == []
+
+
+def test_too_few_questions_or_no_documents_are_refused(
+    rank_project: tuple[Path, FakeOllamaState], corpus: Path, run: Run, tmp_path: Path
+) -> None:
+    empty = tmp_path / "empty"
+    empty.mkdir()
+    code, _, err = run("rank", empty, "--yes")
+    assert code == 1 and "No documents" in err
+    code, _, err = run("rank", corpus, "--yes", "--questions", "1")
+    assert code == 1 and "too few to choose on some and report on others" in err

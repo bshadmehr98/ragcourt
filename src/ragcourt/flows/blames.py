@@ -78,6 +78,6 @@ def _shift(offset: int, quote_at: tuple[int, int]) -> int:
     """An offset of the window after the two quote marks were put in."""
     if offset <= quote_at[0]:
         return offset
-    if offset <= quote_at[1]:
+    if offset < quote_at[1]:
         return offset + 1
     return offset + 2

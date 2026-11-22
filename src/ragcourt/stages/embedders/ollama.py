@@ -52,7 +52,7 @@ def measured_limit(client: ModelClient, model: str) -> int | None:
     if not context:
         return None
     counts = client.embed(model, ["x " * (context + 16)]).token_counts
-    return counts[0] if counts else context
+    return counts[0] if counts and counts[0] > 0 else context
 
 
 @embedder("ollama")

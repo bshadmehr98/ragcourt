@@ -106,6 +106,13 @@ def write_results(folder: Path, results: dict[str, Any]) -> Path:
     return path
 
 
+def write_partial(folder: Path, partial: dict[str, Any]) -> Path:
+    """Write ``partial.json``: the finished steps of a run the budget stopped; ``--resume`` continues it."""
+    path = folder / "partial.json"
+    path.write_text(json.dumps(partial, indent=1, ensure_ascii=False) + "\n", encoding="utf-8")
+    return path
+
+
 def read_results(folder: Path) -> dict[str, Any]:
     """Read ``results.json``, refusing a newer format."""
     data: dict[str, Any] = json.loads((folder / RESULTS).read_text(encoding="utf-8"))

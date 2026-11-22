@@ -104,6 +104,10 @@ def _categories(board: dict[str, Any]) -> list[str]:
 
 
 def _verdict(board: dict[str, Any]) -> str:
+    if board.get("indicative"):
+        return (
+            "Every category has too few held-out questions to rank: these numbers are indicative; no winner."
+        )
     if board["winner"]:
         return f"Winner: {board['winner']}."
     tied = ", ".join(row["label"] for row in board["rows"] if row["tied_with_top"])

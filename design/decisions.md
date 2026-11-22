@@ -567,3 +567,25 @@ the designer's, open to the owner's review. Code comments refer to entries by nu
 - **Choice:** a spec holds commas (`recursive:size=256,overlap=32`), so `--chunkers` separates specs with
   `;`; other lists use commas.
 - **Status:** designer's choice.
+
+## D-056: What the review of milestone 1 changed  (2026-11-22)
+
+- **Found** by two independent reviews of the built code and its tests, each confirmed by running it: a
+  torn write could shift the embedding cache by one vector; a run stopped by the budget could not be
+  resumed; saved measurements were reused for another question set; an empty corpus or too few questions
+  gave a confident report; with no dev questions the choice was made on held-out ones; categories of equal
+  size were resampled in step; BM25 returned unmatched chunks; a server without token counts gave zeros
+  labelled measured; a torn question line broke later runs; a quote found twice in one document was
+  accepted; every category "too few" still named a winner.
+- **Choice:** all fixed and tested. The cache trims both files to the rows they share; the budget writes
+  `partial.json` and `--resume` continues; a saved measurement is reused only for the same questions;
+  `rank` refuses no documents, and question sets without both dev and held-out questions (every category
+  of two or more questions gets a dev question); each category has its own resample seed; BM25 returns
+  only chunks that share a word; missing counts are unknown; damaged lines are named and a torn last line
+  skipped; a quote twice in a document is ambiguous; when every category is too few the board is
+  "indicative" and names no winner; `rank` says when an unfinished run could be resumed; a run that costs
+  money asks first; an endpoint's cache is keyed by its URL too; core receives the clock.
+- **Kept as limits** (design §18): the overall ceiling pools all held-out questions; the time estimate uses
+  measured rates rather than a calibration call; an unreadable `llm` reranker reply keeps the retrieval
+  order; the money estimate is an upper bound.
+- **Status:** designer's choice.

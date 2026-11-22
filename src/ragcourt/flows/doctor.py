@@ -40,7 +40,7 @@ from ragcourt.io.rank_output import board_text
 from ragcourt.io.result_data import board_data
 from ragcourt.stages.specs import parse_spec
 from ragcourt.types import Corpus
-from ragcourt.types.results import Evaluation, PipelineSpec
+from ragcourt.types.results import Board, Evaluation, PipelineSpec
 
 Say = Callable[[str], None]
 NOT_A_SANDBOX = (
@@ -159,21 +159,23 @@ def _measure(
         evaluator.evaluate(PipelineSpec(spec, embedder, "dense", "none")) for spec in [*baselines, *extra]
     ]
     draws = {
-        name: resamples(len(members), project.config.search.resamples, project.config.seed)
+        name: resamples(len(members), project.config.search.resamples, f"{project.config.seed}:{name}")
         for name, members in by_category(held).items()
     }
     scoring = Scoring(held, project.config.search.metric, project.config.questions.min_held_out, draws)
     leaderboard = board("chunker", evaluations, scoring)
     say(board_text(board_data(leaderboard), None))
     for name in extra:
-        say(_verdict(name, evaluations, len(baselines), scoring))
+        say(_verdict(name, evaluations, (leaderboard, baselines), scoring))
     return 0
 
 
-def _verdict(name: str, evaluations: list[Evaluation], baselines: int, scoring: Scoring) -> str:
-    """Better, worse or no significant difference, against the best baseline on held-out questions."""
+def _verdict(
+    name: str, evaluations: list[Evaluation], ranked: tuple[Board, list[str]], scoring: Scoring
+) -> str:
+    """Better, worse or no significant difference, against the leaderboard's best baseline (held-out)."""
     candidate = next(item for item in evaluations if item.spec.chunker == name)
-    best = max(evaluations[:baselines], key=lambda item: _total(item, scoring))
+    best = _best_baseline(evaluations, *ranked)
     difference = paired_difference(
         _by_category(candidate, scoring), _by_category(best, scoring), scoring.draws
     )
@@ -187,8 +189,13 @@ def _verdict(name: str, evaluations: list[Evaluation], baselines: int, scoring: 
     return f"{name}: {word} the best baseline, {best.spec.chunker} ({span})."
 
 
-def _total(evaluation: Evaluation, scoring: Scoring) -> float:
-    return sum(evaluation.results[question.id].metrics[scoring.metric] for question in scoring.questions)
+def _best_baseline(evaluations: list[Evaluation], leaderboard: Board, baselines: list[str]) -> Evaluation:
+    """The highest baseline on the leaderboard."""
+    by_spec = {
+        evaluation.spec: evaluation for evaluation in evaluations if evaluation.spec.chunker in baselines
+    }
+    best = next(row.spec for row in leaderboard.rows if row.spec in by_spec)
+    return by_spec[best]
 
 
 def _by_category(evaluation: Evaluation, scoring: Scoring) -> dict[str, list[float]]:

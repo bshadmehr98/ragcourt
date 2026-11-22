@@ -41,9 +41,8 @@ def meaning(facts: Facts) -> str | None:
     if not _lost(facts) or facts.quote_alone_reaches or facts.bm25_rank is not None:
         return None
     others = ", ".join(f"{name}: {rank or 'not found'}" for name, rank in facts.other_embedders.items())
-    return "the model does not connect the question to its answer" + (
-        f" (other embedders: {others})" if others else ""
-    )
+    found = f" (other embedders, on the first step's chunking: {others})" if others else ""
+    return "the model does not connect the question to its answer" + found
 
 
 MECHANISMS: list[tuple[str, Callable[[Facts], str | None]]] = [

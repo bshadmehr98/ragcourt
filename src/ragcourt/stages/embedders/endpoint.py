@@ -29,6 +29,7 @@ class EndpointEmbedder:
     document_prefix: str = ""
     tokenizer: str = "unknown (sizes estimated)"
     counter: Counter | None = None
+    server: str = ""  # the endpoint's URL and model, so another server gets its own cache
 
     def embed(self, texts: list[str], *, as_query: bool = False) -> Embedded:
         """Vectors from the endpoint, and counts when a tokenizer was named."""
@@ -63,4 +64,7 @@ def endpoint(
         raise ConfigError(f"tokenizer {tokenizer!r}: write tiktoken:<encoding>, e.g. tiktoken:cl100k_base.")
     counter = tiktoken_counter(tokenizer.removeprefix("tiktoken:")) if tokenizer else None
     label = f"{tokenizer} (measured)" if tokenizer else "unknown (sizes estimated)"
-    return EndpointEmbedder(client, model, max_tokens or None, query_prefix, document_prefix, label, counter)
+    server = client.show(model).name
+    return EndpointEmbedder(
+        client, model, max_tokens or None, query_prefix, document_prefix, label, counter, server
+    )

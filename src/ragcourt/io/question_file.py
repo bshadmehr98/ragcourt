@@ -83,14 +83,31 @@ def read_questions(workdir: Path) -> tuple[dict[str, Any], list[Question], list[
     path = workdir / QUESTIONS
     if not path.is_file():
         return None
-    lines = [line for line in path.read_text(encoding="utf-8").splitlines() if line.strip()]
-    header: dict[str, Any] = json.loads(lines[0]) if lines else {}
+    lines = json_lines(path)
+    header: dict[str, Any] = lines[0] if lines else {}
     check_version(header, path)
-    questions = [question_from(json.loads(line)) for line in lines[1:]]
+    questions = [question_from(line) for line in lines[1:]]
     dropped_path = workdir / DROPPED
-    dropped_lines = dropped_path.read_text(encoding="utf-8").splitlines() if dropped_path.is_file() else []
-    dropped = [dropped_from(json.loads(line)) for line in dropped_lines if line.strip()]
+    dropped = [dropped_from(line) for line in json_lines(dropped_path)] if dropped_path.is_file() else []
     return header, questions, dropped
+
+
+def json_lines(path: Path) -> list[dict[str, Any]]:
+    """The JSON objects of a file written line by line; a last line cut short by a crash is left out."""
+    text = path.read_text(encoding="utf-8")
+    lines = text.split("\n")
+    complete = lines if text.endswith("\n") else lines[:-1]
+    found: list[dict[str, Any]] = []
+    for number, line in enumerate(complete, start=1):
+        if not line.strip():
+            continue
+        try:
+            found.append(json.loads(line))
+        except json.JSONDecodeError as error:
+            raise ConfigError(
+                f"{path} line {number} is damaged ({error.msg}); delete the file to start it again."
+            ) from error
+    return found
 
 
 def check_version(header: dict[str, Any], path: Path) -> None:

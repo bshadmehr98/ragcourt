@@ -101,6 +101,7 @@ class Board:
     smallest_difference: dict[str, float]
     too_few: dict[str, int]  # categories with too few held-out questions, and how many they have
     category_leaders: dict[str, str] = field(default_factory=dict[str, str])
+    indicative: bool = False  # every category is too few: numbers shown, no winner named
 
 
 @dataclass(frozen=True)

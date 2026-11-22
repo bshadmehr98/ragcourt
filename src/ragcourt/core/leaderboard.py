@@ -18,7 +18,7 @@ from ragcourt.core.stats import (
     smallest_difference,
 )
 from ragcourt.types.questions import Question
-from ragcourt.types.results import Board, BoardRow, Evaluation, Interval
+from ragcourt.types.results import Board, BoardRow, Evaluation
 
 
 @dataclass(frozen=True)
@@ -73,10 +73,11 @@ def board(stage: str, evaluations: list[Evaluation], scoring: Scoring) -> Board:
         BoardRow(row.spec, row.overall, row.categories, tied_with_top=number in tied)
         for number, row in enumerate(rows)
     ]
-    winner = rows[0].spec if rows and (len(rows) == 1 or 1 not in tied) else None
+    indicative = bool(too_few) and len(too_few) == len(groups)
+    winner = rows[0].spec if rows and not indicative and (len(rows) == 1 or 1 not in tied) else None
     smallest = _smallest(ordered, table, groups, scoring.draws)
     leaders = _leaders(rows, ordered, table, ranked, scoring.draws)
-    return Board(stage, scoring.metric, rows, winner, smallest, too_few, leaders)
+    return Board(stage, scoring.metric, rows, winner, smallest, too_few, leaders, indicative)
 
 
 def _row(
@@ -141,8 +142,3 @@ def _leaders(
         if separable(difference):
             leaders[name] = rows[best].spec.label
     return leaders
-
-
-def empty_interval() -> Interval:
-    """An interval for nothing measured."""
-    return Interval(0.0, 0.0, 0.0)

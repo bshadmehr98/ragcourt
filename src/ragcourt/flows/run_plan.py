@@ -79,10 +79,10 @@ def make_plan(
     return plan, guess
 
 
-def ready_to_go(project: Project, *, yes: bool, minutes: float) -> bool:
-    """Start without asking with ``--yes``, or for a short run that is not the project's first."""
+def ready_to_go(project: Project, *, yes: bool, minutes: float, cost: float | None) -> bool:
+    """Start without asking with ``--yes``, or for a short, free run that is not the project's first."""
     first_run = not (project.workdir / "runs").exists()
-    if yes or (not first_run and minutes <= 1):
+    if yes or (not first_run and minutes <= 1 and cost == 0):
         return True
     return confirm(f"Start this run (about {minutes:.0f} minutes, estimated)?", yes=False)
 

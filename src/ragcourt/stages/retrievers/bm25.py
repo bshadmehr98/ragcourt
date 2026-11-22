@@ -48,7 +48,8 @@ def bm25(
                 if found:
                     norm = found + k1 * (1 - b + b * lengths[index] / (average or 1.0))
                     scores[index] += weight(term) * found * (k1 + 1) / norm
-        order = sorted(range(total), key=lambda index: (-scores[index], index))
+        matched = [index for index in range(total) if scores[index] > 0]  # no shared word: not retrieved
+        order = sorted(matched, key=lambda index: (-scores[index], index))
         return [(index, scores[index]) for index in order[:depth]]
 
     return search

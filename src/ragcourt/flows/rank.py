@@ -45,33 +45,64 @@ Say = Callable[[str], None]
 
 def run_rank(project: Project, corpus: Corpus, options: RankOptions, say: Say) -> Path | None:
     """The whole run; returns the run's folder, or None when the user did not start it."""
+    if not corpus.documents:
+        raise ConfigError("No documents to rank: give a folder of .md, .txt, .rst or .html files.")
+    started = time.monotonic()
     candidates = candidates_of(project, options)
     evaluator = _evaluator(project, corpus, options, [])
     counts = {chunker: len(evaluator.chunked(chunker).chunks) for chunker in candidates.chunkers}
     plan, guess = make_plan(project, corpus, options, candidates, counts)
     say(plan_text(plan, guess))
     minutes, dollars = budgets(project, options)
-    texts: list[str] = []
-    for chunker in candidates.chunkers:
-        texts += [chunk.text for chunk in evaluator.chunked(chunker).chunks]
-    cost = estimated_cost(project, candidates.embedders, texts)
+    cost = estimated_cost(project, candidates.embedders, _texts(evaluator, candidates))
     say(
         "Estimated cost: unknown (an endpoint has no price)."
         if cost is None
-        else f"Estimated cost: ${cost:.2f}."
+        else f"Estimated cost: at most ${cost:.2f}."
     )
     check_budget(minutes, guess.minutes, "the whole run")
     check_cost(dollars, cost)
-    if not ready_to_go(project, yes=options.yes, minutes=guess.minutes):
+    if not ready_to_go(project, yes=options.yes, minutes=guess.minutes, cost=cost):
         say("Not started. Run again with --yes to start without asking.")
         return None
-    options = replace(options, budget_minutes=minutes)  # the configured budget holds in every step
-    earlier = run_files.unfinished_run(project.workdir, plan) if options.resume else None
-    folder = earlier or run_files.new_run(project.workdir, plan)
+    folder = _folder(project, plan, resume=options.resume, say=say)
     run_files.log_progress(folder, {"step": "questions", "event": "start"})
     questions = ensure_questions(project, corpus, options.questions, say)
+    _check_questions(questions)
     evaluator = _evaluator(project, corpus, options, questions, folder, evaluator)
-    return _search(evaluator, candidates, (plan, guess), options, say)
+    options = replace(options, budget_minutes=minutes)  # the configured budget holds in every step
+    return _search(evaluator, candidates, (plan, guess), options, (say, started))
+
+
+def _texts(evaluator: Evaluator, candidates: Candidates) -> list[str]:
+    texts: list[str] = []
+    for chunker in candidates.chunkers:
+        texts += [chunk.text for chunk in evaluator.chunked(chunker).chunks]
+    return texts
+
+
+def _folder(project: Project, plan: dict[str, object], *, resume: bool, say: Say) -> Path:
+    """The unfinished run with the same plan when resuming, else a new one; either way, said."""
+    earlier = run_files.unfinished_run(project.workdir, plan)
+    if resume and earlier is not None:
+        say(f"Resuming {earlier.name}.")
+        return earlier
+    if resume:
+        say("No unfinished run has this plan (documents, models or settings changed): starting a new one.")
+    elif earlier is not None:
+        say(f"An unfinished run with this plan exists ({earlier.name}); `--resume` continues it.")
+    return run_files.new_run(project.workdir, plan)
+
+
+def _check_questions(questions: list[Question]) -> None:
+    """Refuse to rank on nothing: pipelines are chosen on dev questions and reported on held-out ones."""
+    splits = {question.split for question in questions}
+    if "dev" not in splits or "held-out" not in splits:
+        raise ConfigError(
+            f"Only {len(questions)} questions were kept: too few to choose on some and report on others. "
+            "Ask for more (--questions N), add your own (--questions-file), or check the drops "
+            "(`ragcourt questions show --dropped`)."
+        )
 
 
 def _evaluator(
@@ -116,15 +147,15 @@ def _search(
     candidates: Candidates,
     planned: tuple[dict[str, object], Estimate],
     options: RankOptions,
-    say: Say,
+    output: tuple[Say, float],
 ) -> Path:
     plan, guess = planned
+    say, started = output
     config = evaluator.project.config
     dev = [question for question in evaluator.questions if question.split == "dev"]
     held = [question for question in evaluator.questions if question.split == "held-out"]
     count = config.search.resamples
     split = Questions(dev, held, _draws(dev, config.seed, count), _draws(held, config.seed, count))
-    started = time.monotonic()
     state = SearchState()
     for step in STEPS:
         _guard(evaluator.folder, options, (step, guess.step_minutes.get(step, 0.0), started), (plan, state))
@@ -155,9 +186,7 @@ def _guard(
         check_budget(options.budget_minutes, spent + step_minutes, f"the {step} step")
     except BudgetExceeded as error:
         done = ", ".join(str(item["step"]) for item in state.steps) or "none"
-        run_files.write_results(
-            folder, {"complete": False, "plan": plan, "steps": state.steps, "stopped_before": step}
-        )
+        run_files.write_partial(folder, {"plan": plan, "steps": state.steps, "stopped_before": step})
         raise BudgetExceeded(f"{error} Finished steps: {done}; kept in {folder}.") from error
 
 
@@ -175,7 +204,7 @@ def _step(
     say(f"\nStep {len(state.steps) + 1} of 4: {step}s …")
     evaluations = [evaluator.evaluate(spec) for spec in step_specs(step, state.best, candidates)]
     state.measured += evaluations
-    choice = choose(evaluations, split.dev or split.held_out, metric, split.dev_draws or split.held_draws)
+    choice = choose(evaluations, split.dev, metric, split.dev_draws)
     state.best = choice.best
     leaderboard = board(
         step, evaluations, Scoring(split.held_out, metric, config.questions.min_held_out, split.held_draws)
@@ -207,4 +236,7 @@ def _chosen_note(choice: Choice, leaderboard: Board) -> str:
 
 
 def _draws(questions: list[Question], seed: int, count: int) -> dict[str, Resamples]:
-    return {name: resamples(len(members), count, seed) for name, members in by_category(questions).items()}
+    return {
+        name: resamples(len(members), count, f"{seed}:{name}")
+        for name, members in by_category(questions).items()
+    }

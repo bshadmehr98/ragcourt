@@ -915,4 +915,6 @@ only. Measured on the bundled corpus with `gemma4`: `distractor` questions are t
 judge rightly drops many whose look-alike passage also answers them), and on a dozen documents dev and
 held-out choices can disagree; the output says so. One question is written per offered passage. The
 `chonkie.semantic` adapter is left out (it downloads its own model, D-054). The time budget is checked
-before each step, not during one; the money budget covers endpoint embeddings only.
+before each step, not during one; the money budget covers endpoint embeddings only and is an upper
+bound. The overall ceiling pools all held-out questions; the time estimate uses measured rates, not a
+calibration call; an unreadable `llm` reranker reply keeps the retrieval order (D-056).

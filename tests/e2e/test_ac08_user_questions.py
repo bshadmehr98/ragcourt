@@ -36,7 +36,7 @@ def test_user_questions_are_validated_by_their_quote(
         for line in (project / ".ragcourt" / "questions.dropped.jsonl").read_text().splitlines()
     ]
     reasons = {item["question"]: item["reason"] for item in dropped if item["category"] == "user"}
-    assert reasons["Which header line?"].startswith("ambiguous: the quote is in")
+    assert reasons["Which header line?"].startswith("ambiguous: the quote is found more than once")
     assert reasons["No quote here?"].startswith("no quote")
     assert reasons["Invented?"] == "quote not found verbatim"
     assert reasons["Wrong document"] == "no document 'nope.md'"

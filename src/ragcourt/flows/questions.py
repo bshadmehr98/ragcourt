@@ -140,9 +140,10 @@ def revalidate(questions: list[Question], texts: dict[str, str]) -> list[Questio
     for question in questions:
         text = texts.get(question.document)
         span = find_text(text, question.quote) if text is not None else None
-        if span is not None:
+        if span is not None and text is not None:
+            # The twin passage may have moved or changed with the documents: it is no longer pointed at.
             kept.append(
-                replace(question, start=span[0], end=span[1], quote=text[span[0] : span[1]] if text else "")
+                replace(question, start=span[0], end=span[1], quote=text[span[0] : span[1]], twin=None)
             )
     return kept
 

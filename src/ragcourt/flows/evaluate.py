@@ -10,6 +10,7 @@ from __future__ import annotations
 import functools
 import inspect
 import statistics
+import time
 from collections.abc import Callable
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -96,8 +97,8 @@ class Evaluator:
     def evaluate(self, spec: PipelineSpec) -> Evaluation:
         """Every question through one pipeline, from the run's folder when already measured."""
         saved = run_files.load_evaluation(self.folder, spec)
-        if saved is not None:
-            return saved
+        if saved is not None and set(saved.results) == {question.id for question in self.questions}:
+            return saved  # measured on these very questions before an interruption
         chunks = self.chunked(spec.chunker).chunks
         needs_vectors = spec.retriever != "bm25" and spec.embedder is not None
         vectors, counts = (
@@ -113,7 +114,7 @@ class Evaluator:
             vectors,
             self._rerank(spec.reranker),
             self.questions,
-            (self.settings, self.tokens),
+            (self.settings, self.tokens, time.perf_counter),
         )
         evaluation = Evaluation(spec, results, self._costs(spec, (vectors, counts), results, timing))
         run_files.save_evaluation(self.folder, evaluation)

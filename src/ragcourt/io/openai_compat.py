@@ -62,8 +62,8 @@ class OpenAICompatible:
         return Embedded(vectors, None)
 
     def show(self, model: str) -> ModelInfo:
-        """Endpoints do not say a model's input limit; it is unknown unless configured."""
-        return ModelInfo(model)
+        """Endpoints do not say a model's input limit; the name says which server serves the model."""
+        return ModelInfo(f"{self.endpoint.base_url}/{model}")
 
     def rerank(self, model: str, query: str, documents: list[str]) -> list[float]:
         """One score per document from ``/rerank`` (Jina and Cohere format)."""

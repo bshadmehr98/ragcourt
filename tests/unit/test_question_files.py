@@ -2,6 +2,7 @@
 
 import json
 from pathlib import Path
+from typing import Any
 
 import pytest
 
@@ -92,3 +93,23 @@ def test_recommendations_and_the_template() -> None:
     assert recommend(8, None).roles["writer"] == ("qwen3:4b",)
     text = config_text(recommend(32, 8).roles)
     assert 'judge = "gemma4"' in text and "# writer:" in text
+
+
+def test_a_torn_last_line_is_left_out_and_damage_is_named(tmp_path: Path) -> None:
+    question_file.start_files(tmp_path, {"corpus_hash": "h"})
+    question_file.append(tmp_path, Question("id1", "Q?", "keyword", "a.md", 0, 5, "hello"))
+    with (tmp_path / "questions.jsonl").open("a") as handle:
+        handle.write('{"id": "id2", "quest')
+    assert len(question_file.read_questions(tmp_path)[1]) == 1  # type: ignore[index]
+    (tmp_path / "questions.jsonl").write_text('{"format_version": "1"}\nnot json\n')
+    from ragcourt import ConfigError
+
+    with pytest.raises(ConfigError, match="line 2 is damaged"):
+        question_file.read_questions(tmp_path)
+
+
+def test_a_quote_twice_in_one_document_and_a_row_that_is_not_an_object() -> None:
+    rows: list[Any] = [{"question": "Q", "quote": "Again."}, ["not", "a", "dict"]]
+    outcomes = read_user_questions(rows, {"a.md": "Again. Again."})
+    assert isinstance(outcomes[0], Dropped) and outcomes[0].reason.startswith("ambiguous")
+    assert isinstance(outcomes[1], Dropped) and outcomes[1].reason.startswith("not a JSON object")

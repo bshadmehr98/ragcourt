@@ -99,3 +99,20 @@ def test_retries_on_server_errors_then_gives_up() -> None:
 def test_only_http_addresses() -> None:
     with pytest.raises(EndpointError, match="not an http"):
         request_json("file:///etc/passwd")
+
+
+def test_missing_counts_are_unknown_not_zero(
+    ollama: tuple[str, FakeOllamaState], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    url, _ = ollama
+    from ragcourt.io import ollama as dialect
+
+    real = dialect.request_json
+
+    def without_counts(address: str, body: object = None, **kwargs: object):  # type: ignore[no-untyped-def]
+        reply = real(address, body, **kwargs)  # type: ignore[arg-type]
+        reply.pop("prompt_eval_count", None)
+        return reply
+
+    monkeypatch.setattr(dialect, "request_json", without_counts)
+    assert client_for(url).embed("fake-embed", ["one two"]).token_counts is None
