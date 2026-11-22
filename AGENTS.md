@@ -64,7 +64,8 @@ docs/  examples/       user docs and runnable examples, both executed by tests o
    held-out split, with its uncertainty; ties are reported as "no significant difference"; nothing (not
    even a chunker doctor wrote) is called better without the measurement. Unknown is said, never filled
    in (an estimated token count is labelled estimated; an unknown price is unknown).
-4. **Blame is code:** each miss gets exactly one stage, from offsets and ranks (design §9); a model is
+4. **Blame is code:** each miss gets exactly one cause, a stage and a mechanism, from offsets, ranks,
+   scores and probes (design §9), with its evidence and whether a measurement confirms it; a model is
    never asked who is to blame. A judge only filters questions (and, as a reranker, orders candidates),
    and only after passing its self-test (design §6.6).
 5. **Gold is independent of chunking:** a question's gold answer is an exact quote found verbatim in the

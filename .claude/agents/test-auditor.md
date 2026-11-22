@@ -11,6 +11,8 @@ You audit the tests of one ragcourt pull request. You have no context on purpose
 2. Look for:
    - new or changed behaviour with no test; a new acceptance case without `tests/e2e/test_ac<N>_*`;
    - a metric, a confidence interval or a blame rule without a test against numbers worked out by hand;
+   - a blame mechanism without its planted case and a near miss; a question category without a case its
+     code check accepts and one it rejects;
    - a new stage without its kind's contract test and a test on the bundled corpus;
    - an audit check without a case that triggers it and a near-miss that must not;
    - question generation or doctor changed without a scripted-model test of the drop and refusal paths;

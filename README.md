@@ -20,8 +20,12 @@ say which stage caused each miss.
   answers are exact quotes from your documents (filtered by a judge model that must pass a self-test
   first), with confidence intervals, and "no significant
   difference" when the top results are tied.
-- **`explain`**: for every failed question, the one stage that lost it (the chunker, retrieval or
-  ranking), computed by code, and what would fix it.
+- **Questions by kind**: different wording, keywords, exact terms, misleading questions, negations and
+  numbers, many of each, so you see which embedder fails on which kind, not one blurred average.
+- **`explain`**: for every failed question, the stage and the mechanism that lost it (cut in half by the
+  chunker, drowned in a long chunk, past the embedder's input limit, exact words the embedder blurred, a
+  look-alike passage, demoted by the reranker, …), computed by code, with whether a measurement confirms
+  it and what would fix it.
 - **`doctor`**: a model reads samples of your documents, recommends chunkers and may write one; you see
   the code and approve it before it runs, isolated, and it is ranked against the baselines like any
   other.
