@@ -67,7 +67,7 @@ packages = ["src/ragcourt"]
 
 [tool.hatch.build.targets.sdist]
 include = [
-    "src/", "tests/", "docs/", "examples/", "design/", "scripts/", "README.md", "CONTRIBUTING.md",
+    "src/", "tests/", "docs/", "examples/", "design/", "scripts/", "README.md", "TUTORIAL.md", "CONTRIBUTING.md",
     "AGENTS.md", "LICENSE", "CHANGELOG.md", "pyproject.toml",
 ]
 

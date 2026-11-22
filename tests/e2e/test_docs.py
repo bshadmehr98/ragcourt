@@ -14,7 +14,7 @@ from pathlib import Path
 import pytest
 
 ROOT = Path(__file__).resolve().parents[2]
-RUNNABLE = [ROOT / "README.md", *sorted((ROOT / "docs").glob("*.md"))]
+RUNNABLE = [ROOT / "README.md", ROOT / "TUTORIAL.md", *sorted((ROOT / "docs").glob("*.md"))]
 LINKED = [
     *RUNNABLE,
     ROOT / "AGENTS.md",

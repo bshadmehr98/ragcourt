@@ -1,6 +1,7 @@
 # ragcourt documentation
 
-Start with the [README](../README.md) for installing and the first commands. The design behind every
+New here? Start with the tutorial, [Learn ragcourt](../TUTORIAL.md): every feature in short lessons. These
+pages are the reference behind it. The design behind every
 behaviour is in [`../design/current.md`](../design/current.md).
 
 | Page | What it holds |

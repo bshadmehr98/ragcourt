@@ -9,7 +9,7 @@ Look at `git diff main...HEAD --stat` and the diff itself, then apply every row 
 
 | If the change... | Update |
 |---|---|
-| changes behaviour or the public API | `design/current.md` (the section, §16 guarantees, §17 implemented and planned), the matching `docs/*.md` page, `README.md` if the quickstart or feature list changes |
+| changes behaviour or the public API | `design/current.md` (the section, §16 guarantees, §17 implemented and planned), the matching `docs/*.md` page, the lesson in `TUTORIAL.md` (keep it short), `README.md` if the quick tour changes |
 | adds or changes a CLI command or flag | `docs/cli.md` (its bash blocks run in the tests), `design/current.md` §13.1 |
 | adds, removes or changes a stage | `docs/stages.md`, `design/current.md` §7.3 or §7.4 |
 | adds or changes an audit check | `docs/audit.md`, `design/current.md` §5.1 |
@@ -28,7 +28,7 @@ Look at `git diff main...HEAD --stat` and the diff itself, then apply every row 
 | changes a rule or command contributors use | `CONTRIBUTING.md`, `AGENTS.md`, and the skill in `.claude/skills/` that describes it |
 
 Rules:
-- Every `python` block in `README.md` and `docs/*.md` runs in `tests/e2e/test_docs.py`; blocks that must
+- Every `python` block in `README.md`, `TUTORIAL.md` and `docs/*.md` runs in `tests/e2e/test_docs.py`; blocks that must
   not run use a `text` or `bash` fence. Relative links must resolve (same test).
 - Write for users of the product: plain words, the words of `design/current.md` §2, the style of the page
   around it, no internal notes.
