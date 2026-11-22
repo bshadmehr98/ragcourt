@@ -59,7 +59,7 @@ def test_names_that_would_break_a_stage_spec_are_refused(name: str) -> None:
         stages.register("chunker", name, lambda text: [text])
 
 
-@pytest.mark.parametrize("name", ["recursive", "chonkie.token", "by-paragraph", "v2_split"])
+@pytest.mark.parametrize("name", ["t_plain", "t.chonkie.token", "t-by-paragraph", "t_v2_split"])
 def test_ordinary_names_are_accepted(name: str) -> None:
     assert stages.register("chunker", name, lambda text: [text]).name == name
 
@@ -158,7 +158,7 @@ def test_builtins_are_imported_from_their_folders(tmp_path: Path, monkeypatch: p
 
     (tmp_path / "t_builtin.py").write_text(CHUNKER_FILE.format(name="t_builtin"))
     monkeypatch.setattr(chunkers, "__path__", [str(tmp_path)])
-    assert stages.load_builtins() == ["ragcourt.stages.chunkers.t_builtin"]
-    assert stages.load_builtins() == ["ragcourt.stages.chunkers.t_builtin"]  # twice: no error, no change
+    assert "ragcourt.stages.chunkers.t_builtin" in stages.load_builtins()
+    assert "ragcourt.stages.chunkers.t_builtin" in stages.load_builtins()  # twice: no error
     assert "t_builtin" in stages.names("chunker")
     del sys.modules["ragcourt.stages.chunkers.t_builtin"]

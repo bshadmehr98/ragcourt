@@ -31,8 +31,8 @@ COMPREHENSIONS = (ast.ListComp, ast.SetComp, ast.DictComp, ast.GeneratorExp)
 FORBIDDEN_CALLS = {"eval", "exec", "__import__", "globals", "locals"}
 JUNK_NAMES = {"utils", "util", "helpers", "helper", "misc", "common", "manager", "managers", "handler"}
 JUNK_NAMES |= {"handlers", "base", "stuff", "tools"}
-# Protocols, enums, and the one standard-library API that works only by subclassing (D-038).
-ALLOWED_BASES = {"Protocol", "Enum", "StrEnum", "IntEnum", "HTMLParser"}
+# Protocols, enums, and the standard-library APIs that work only by subclassing (D-038).
+ALLOWED_BASES = {"Protocol", "Enum", "StrEnum", "IntEnum", "HTMLParser", "BaseHTTPRequestHandler"}
 IMPORTLIB_ALLOWED = {"src/ragcourt/stages/loader.py"}  # loading the user's stage folder (design §7.2)
 
 
@@ -92,7 +92,8 @@ def import_problem(node: ast.AST, rel: str) -> str | None:
         names = [alias.name for alias in node.names]
     elif isinstance(node, ast.ImportFrom):
         names = [node.module or ""]
-    uses_importlib = any(name.split(".")[0] == "importlib" for name in names)
+    # importlib.metadata and importlib.resources read package data; they do not import code by name.
+    uses_importlib = any(name in ("importlib", "importlib.util", "importlib.machinery") for name in names)
     if uses_importlib and rel not in IMPORTLIB_ALLOWED:
         return "`importlib`: only the stage loader imports code by name"
     return None

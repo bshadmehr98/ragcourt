@@ -10,11 +10,23 @@ from ragcourt.types.stages import Embedded
 
 @dataclass(frozen=True)
 class ChatRequest:
-    """One chat call: the model, the prompt, and whether the reply must be JSON."""
+    """One chat call: the model, the prompt, whether the reply must be JSON, and its sampling."""
 
     model: str
     prompt: str
     json_reply: bool = True
+    temperature: float = 0.0
+    seed: int = 0
+
+
+@dataclass(frozen=True)
+class ModelInfo:
+    """What a model server says about a model; None where it does not say."""
+
+    name: str
+    context_length: int | None = None
+    size_bytes: int | None = None
+    digest: str | None = None
 
 
 class ModelClient(Protocol):
@@ -26,4 +38,12 @@ class ModelClient(Protocol):
 
     def embed(self, model: str, texts: list[str]) -> Embedded:
         """Embed a batch of texts with one model."""
+        ...
+
+    def show(self, model: str) -> ModelInfo:
+        """What the server says about ``model``: its input limit, size and digest."""
+        ...
+
+    def rerank(self, model: str, query: str, documents: list[str]) -> list[float]:
+        """One relevance score per document, from a ``/rerank`` endpoint."""
         ...

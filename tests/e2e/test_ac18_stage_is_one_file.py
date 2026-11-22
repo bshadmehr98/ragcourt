@@ -32,7 +32,7 @@ def project_with(tmp_path: Path, files: dict[str, str]) -> Path:
 
 def test_a_chunker_in_the_users_folder_is_found_by_name(tmp_path: Path) -> None:
     project = project_with(tmp_path, {"by_paragraph.py": BY_PARAGRAPH})
-    stages.load_folder(load_config(project).stages_dir)
+    stages.load_folder(load_config(project).stage_folder())
     chunk = stages.find("chunker", "by_paragraph").function
     assert chunk("A first paragraph here.\n\nshort\n\nA second paragraph here.") == [
         "A first paragraph here.",
@@ -43,8 +43,18 @@ def test_a_chunker_in_the_users_folder_is_found_by_name(tmp_path: Path) -> None:
 def test_a_duplicate_name_fails_naming_both_files(tmp_path: Path) -> None:
     project = project_with(tmp_path, {"a.py": BY_PARAGRAPH, "b.py": BY_PARAGRAPH})
     with pytest.raises(ConfigError) as caught:
-        stages.load_folder(load_config(project).stages_dir)
+        stages.load_folder(load_config(project).stage_folder())
     message = str(caught.value)
     assert "Two chunkers are named 'by_paragraph'" in message
     assert str(project / "ragcourt_stages" / "a.py") in message
     assert str(project / "ragcourt_stages" / "b.py") in message
+
+
+def test_a_users_chunker_appears_in_audit_with_no_other_change(
+    tmp_path: Path, run, corpus: Path, monkeypatch
+) -> None:  # type: ignore[no-untyped-def]
+    project = project_with(tmp_path, {"by_paragraph.py": BY_PARAGRAPH})
+    monkeypatch.chdir(project)
+    code, out, _ = run("audit", corpus, "--embedder", "fake", "-q")
+    assert code == 0
+    assert "by_paragraph" in out and "recursive" in out

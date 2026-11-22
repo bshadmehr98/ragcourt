@@ -4,7 +4,10 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from ragcourt import stages
 from ragcourt.testing.fake_embedder import FakeEmbedder, fake_tokens
+from ragcourt.testing.fake_endpoint import FakeEndpointState, fake_endpoint
+from ragcourt.testing.fake_ollama import FakeOllamaState, fake_ollama
 from ragcourt.testing.scripted_model import ScriptedModel
 
 
@@ -13,4 +16,25 @@ def corpus_path() -> Path:
     return Path(__file__).parent / "corpus"
 
 
-__all__ = ["FakeEmbedder", "ScriptedModel", "corpus_path", "fake_tokens"]
+def fake_embedder(max_tokens: int = 512, dimensions: int = 256) -> FakeEmbedder:
+    """The ``fake`` embedder stage: deterministic, no model, no network."""
+    return FakeEmbedder(max_tokens=max_tokens, dimensions=dimensions)
+
+
+def register_fakes() -> None:
+    """Register the ``fake`` embedder, so ``--embedder fake`` and ``[models] embedders = ["fake"]`` work."""
+    stages.register("embedder", "fake", fake_embedder)
+
+
+__all__ = [
+    "FakeEmbedder",
+    "FakeEndpointState",
+    "FakeOllamaState",
+    "ScriptedModel",
+    "corpus_path",
+    "fake_embedder",
+    "fake_endpoint",
+    "fake_ollama",
+    "fake_tokens",
+    "register_fakes",
+]

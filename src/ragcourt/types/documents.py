@@ -27,3 +27,17 @@ class Corpus:
 
     documents: tuple[Document, ...]
     skipped: tuple[Skipped, ...]
+
+
+@dataclass(frozen=True)
+class Chunk:
+    """One chunk a chunker returned, at the span the pipeline found for it in its document (design §4.2).
+
+    ``text`` is the source text of the span, which may differ in whitespace from what the chunker returned.
+    """
+
+    document: str
+    index: int
+    start: int
+    end: int
+    text: str

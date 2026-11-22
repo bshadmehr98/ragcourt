@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
 """Check the import layers of design/current.md §3.1; exit 1 and name every import that breaks them.
 
-    types, errors  ->  stages  ->  core | io  ->  commands  ->  cli
+    types, errors, text_units  ->  stages  ->  core | io  ->  commands  ->  cli
 
 A module imports only from layers below its own. core and io sit side by side and never import each
 other. Within stages, an implementation (``stages/<kind>/<name>.py``) imports only the registry
-(``ragcourt.stages`` itself), never another implementation: only the pipeline joins stages. A command
+(``ragcourt.stages`` and its shared modules such as ``stages/splitting``), never another
+implementation: only the pipeline joins stages. A command
 never imports another command. Nothing imports ``cli`` or ``testing``; the package root (the public API)
 and ``testing`` may import anything except ``cli`` and ``commands``.
 
@@ -21,8 +22,9 @@ from pathlib import Path
 
 PACKAGE = "ragcourt"
 Imported = list[tuple[int, tuple[str, ...]]]  # (line, dotted module path)
-LAYER = {"types": 0, "errors": 0, "stages": 1, "core": 2, "io": 2, "commands": 3, "cli": 4}
+LAYER = {"types": 0, "errors": 0, "text_units": 0, "stages": 1, "core": 2, "io": 2, "commands": 3, "cli": 4}
 TOP = 5  # the package root (__init__, __main__) and testing
+STAGE_KINDS = ("chunkers", "embedders", "retrievers", "rerankers")
 
 
 def unit_of(parts: tuple[str, ...]) -> str:
@@ -64,7 +66,7 @@ def imported(tree: ast.Module, parts: tuple[str, ...], *, is_package: bool) -> I
 def problem(source: tuple[str, ...], target: tuple[str, ...]) -> str | None:
     """Why importing ``target`` from ``source`` breaks a rule, or None."""
     src, dst = unit_of(source), unit_of(target)
-    if dst in ("cli", "testing") and src != dst:
+    if dst in ("cli", "testing") and src != dst and source != (PACKAGE, "__main__"):
         return f"nothing imports ragcourt.{dst}"
     if src == dst:
         return same_unit_problem(source, target)
@@ -78,11 +80,16 @@ def problem(source: tuple[str, ...], target: tuple[str, ...]) -> str | None:
 
 def same_unit_problem(source: tuple[str, ...], target: tuple[str, ...]) -> str | None:
     unit = unit_of(source)
-    if unit == "stages" and len(source) > 3 and len(target) > 3 and source[:4] != target[:4]:
+    if unit == "stages" and _implementation(target) and source[:4] != target[:4]:
         return "a stage never imports another stage; only the pipeline joins them"
     if unit == "commands" and len(source) > 2 and len(target) > 2 and source[2] != target[2]:
         return "a command never imports another command"
     return None
+
+
+def _implementation(parts: tuple[str, ...]) -> bool:
+    """True for a stage file, ``stages/<kind>s/<name>``; shared modules such as ``stages/specs`` are not."""
+    return len(parts) > 3 and parts[2] in STAGE_KINDS
 
 
 def check(root: Path) -> list[str]:

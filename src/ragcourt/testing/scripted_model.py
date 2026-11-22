@@ -8,8 +8,8 @@ from __future__ import annotations
 
 from collections.abc import Callable, Sequence
 
-from ragcourt.testing.fake_embedder import FakeEmbedder
-from ragcourt.types import ChatRequest, Embedded
+from ragcourt.testing.fake_embedder import FakeEmbedder, fake_tokens
+from ragcourt.types import ChatRequest, Embedded, ModelInfo
 
 Replies = Sequence[str] | Callable[[ChatRequest], str]
 
@@ -44,3 +44,12 @@ class ScriptedModel:
         """Fake vectors and fake token counts for ``texts``; the call is recorded."""
         self.embedded.append((model, list(texts)))
         return self.embedder.embed(texts)
+
+    def show(self, model: str) -> ModelInfo:
+        """The fake embedder's limit as the model's context length."""
+        return ModelInfo(model, self.embedder.max_tokens)
+
+    def rerank(self, model: str, query: str, documents: list[str]) -> list[float]:  # noqa: ARG002
+        """Scores by words shared with the query: deterministic, no model (any ``model`` scores the same)."""
+        words = set(fake_tokens(query))
+        return [float(len(words & set(fake_tokens(document)))) for document in documents]
