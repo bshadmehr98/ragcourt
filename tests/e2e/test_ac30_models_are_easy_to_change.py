@@ -26,8 +26,14 @@ def test_set_keeps_comments_and_self_tests_a_new_judge(
 
 
 def test_set_embedders_writes_a_list_and_a_flag_overrides_for_one_run(
-    project: Path, corpus: Path, run: Run, scripted: ScriptedReplies
+    project: Path, corpus: Path, run: Run, scripted: ScriptedReplies, ollama: tuple[str, FakeOllamaState]
 ) -> None:
+    toml = project / "ragcourt.toml"
+    before = toml.read_text()
+    code, _, err = run("models", "set", "embedders", "fake-embed,other-embed")
+    assert code == 1 and "other-embed is not installed; nothing was changed" in err
+    assert toml.read_text() == before  # a model that is not there is never written down
+    ollama[1].models["other-embed"] = 2048
     assert run("models", "set", "embedders", "fake-embed,other-embed")[0] == 0
     assert 'embedders = ["fake-embed", "other-embed"]' in (project / "ragcourt.toml").read_text()
     code, out, _ = run("questions", corpus, "--judge", "fake-chat")

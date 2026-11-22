@@ -54,11 +54,11 @@ exact-term questions; ragcourt says so rather than guess.
 ## When the search picks among ties
 
 The search still has to carry one pipeline into its next step. Among entries tied on dev, it keeps the
-cheaper one (in money: local models cost nothing), then the one sending fewer tokens to the language
-model per question, then the first listed, and says so:
+cheaper one (in money: local models cost nothing), then the one that scored higher on dev, then the
+one sending fewer tokens to the language model per question, then the first listed, and says so:
 
 ```text
-Chosen for the next step (on dev questions): … (tied on dev with 2 more; kept the cheaper, then smaller, then first listed)
+Chosen for the next step (on dev questions): … (tied on dev with 2 more; kept the cheaper, then the higher on dev, then the smaller)
 ```
 
 Next: [ranking pipelines](12-ranking.md).

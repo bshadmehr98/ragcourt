@@ -590,8 +590,8 @@ Greedy by stage, embedders first (brief §6), on dev questions, by the chosen me
 4. **Rerankers:** `none` and each candidate reranker on the best so far.
 
 A stage's best is the top entry on dev by the overall score (the mean of the categories, §8.4); when
-entries are tied (§8.4), the cheaper, then the smaller, then
-the first listed is kept and the tie is reported. Candidates come from `ragcourt.toml` or flags; by
+entries are tied (§8.4), the cheaper, then the higher on dev, then the smaller, then
+the first listed is kept and the tie is reported (D-057). Candidates come from `ragcourt.toml` or flags; by
 default every available built-in. Every evaluated configuration's held-out numbers appear in that stage's
 leaderboard; the "best overall pipeline" is the last step's choice, reported on held-out questions.
 When a category has a different winner from the overall one ("`bm25` leads on `exact_term`"), the output

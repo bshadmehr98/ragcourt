@@ -3,11 +3,12 @@
 from __future__ import annotations
 
 from ragcourt.stages import chunker
-from ragcourt.stages.splitting import TokenIndex, as_strings, token_windows
+from ragcourt.stages.splitting import TokenIndex, as_strings, check_size, token_windows
 
 
 @chunker("fixed")
 def fixed(text: str, size: int = 256, overlap: int = 32) -> list[str]:
     """Windows of ``size`` reference tokens, each starting ``overlap`` tokens before the last one ended."""
+    check_size(size, overlap)
     index = TokenIndex(text)
     return as_strings(text, token_windows(index, 0, len(text), size, overlap))

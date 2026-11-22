@@ -6,8 +6,10 @@ return is a slice of it (design §4.2). Sizes are in reference tokens (``ragcour
 
 from __future__ import annotations
 
+import bisect
 import re
 
+from ragcourt.errors import ConfigError
 from ragcourt.text_units import sentence_spans, strip_span, token_spans, tokens_between
 
 Span = tuple[int, int]
@@ -26,6 +28,21 @@ class TokenIndex:
         """Tokens starting inside ``[start, end)``."""
         return tokens_between(self.starts, start, end)
 
+    def between(self, start: int, end: int) -> list[Span]:
+        """The token spans starting inside ``[start, end)``, found by bisection (linear scans made
+        chunking quadratic in the document's length)."""
+        return self.spans[bisect.bisect_left(self.starts, start) : bisect.bisect_left(self.starts, end)]
+
+
+def check_size(size: object, overlap: object = 0) -> None:
+    """A size of one token or more and an overlap from 0 to below the size, both whole numbers."""
+    whole = isinstance(size, int) and isinstance(overlap, int) and not isinstance(size, bool)
+    if not whole or size < 1 or overlap < 0 or overlap >= size:  # type: ignore[operator]
+        raise ConfigError(
+            f"size must be a whole number of tokens from 1, and overlap from 0 to below size "
+            f"(got size={size!r}, overlap={overlap!r})."
+        )
+
 
 def split_on(text: str, start: int, end: int, pattern: re.Pattern[str]) -> list[Span]:
     """``text[start:end]`` cut after every match of ``pattern``; the separators stay with the left piece."""
@@ -40,7 +57,7 @@ def split_on(text: str, start: int, end: int, pattern: re.Pattern[str]) -> list[
 
 def token_windows(index: TokenIndex, start: int, end: int, size: int, overlap: int = 0) -> list[Span]:
     """Windows of at most ``size`` tokens over ``[start, end)``, each starting ``overlap`` tokens early."""
-    inside = [span for span in index.spans if span[0] >= start and span[1] <= end]
+    inside = [span for span in index.between(start, end) if span[1] <= end]
     step = max(1, size - overlap)
     windows: list[Span] = []
     for first in range(0, len(inside), step):
@@ -95,7 +112,7 @@ def pack(index: TokenIndex, pieces: list[Span], size: int, overlap: int = 0) -> 
 def _overlap_start(index: TokenIndex, previous: Span, piece: Span, limits: tuple[int, int]) -> int:
     """Where the next chunk starts: up to ``overlap`` tokens back into the previous one, within ``size``."""
     size, overlap = limits
-    before = [s for s, _ in index.spans if previous[0] < s < piece[0]][-overlap:] if overlap > 0 else []
+    before = [s for s, _ in index.between(previous[0] + 1, piece[0])][-overlap:] if overlap > 0 else []
     # Start on a word, not on the punctuation that closed the previous sentence.
     fitting = [s for s in before if index.count(s, piece[1]) <= size and index.text[s].isalnum()]
     return fitting[0] if fitting else piece[0]

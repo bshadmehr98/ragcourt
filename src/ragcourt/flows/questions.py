@@ -19,6 +19,7 @@ from ragcourt.core.question_checks import Models, Outcome
 from ragcourt.core.split import assign_splits
 from ragcourt.core.user_questions import read_user_questions
 from ragcourt.core.windows import index_corpus
+from ragcourt.flows.checks import check_categories
 from ragcourt.flows.judge import JUDGE_PROMPTS, check_judge, judge_line
 from ragcourt.io import question_file
 from ragcourt.io.narration import judge_text, roles_text
@@ -44,6 +45,7 @@ class QuestionOptions:
 
 def ensure_questions(project: Project, corpus: Corpus, options: QuestionOptions, say: Say) -> list[Question]:
     """The question set for this corpus: reused when complete and unchanged, else resumed or written."""
+    check_categories(project.config, options.per_category)
     header = _header(project, corpus, options)
     existing = question_file.read_questions(project.workdir)
     done = _reusable(existing, header, corpus, say)

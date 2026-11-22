@@ -94,11 +94,11 @@ def _set(project: Project, role: str | None, model: str | None, *, yes: bool) ->
     if role not in ROLES or not model:
         raise ConfigError(f"Write `ragcourt models set ROLE MODEL` with ROLE one of {', '.join(ROLES)}.")
     models = tuple(part.strip() for part in model.split(",") if part.strip())
+    for name in models:  # every model is there before ragcourt.toml names it
+        _ensure_installed(project, name, yes=yes)
     path = project.config.file or project.config.project / CONFIG_FILE
     set_role(path, role, toml_value(models, as_list=role == "embedders"))
     print(f"{role} = {', '.join(models)} (written to {path})")
-    for name in models:
-        _offer_pull(project, name, yes=yes)
     if role == "judge":
         refreshed = open_project_like(project)
         templates = {name: prompt.text for name, prompt in load_prompts(refreshed.config.prompts_dir).items()}
@@ -111,16 +111,19 @@ def open_project_like(project: Project) -> Project:
     return open_project(ProjectOptions(project.config.project, project.config.file, None, project.workdir))
 
 
-def _offer_pull(project: Project, model: str, *, yes: bool) -> None:
-    if model.startswith("endpoint:") or not project.client.ollama_answers():
+def _ensure_installed(project: Project, model: str, *, yes: bool) -> None:
+    if model.startswith("endpoint:"):
         return
+    if not project.client.ollama_answers():
+        raise ConfigError(f"Ollama does not answer at {project.config.ollama_url}; nothing was changed.")
     if model in project.client.ollama.installed():
         return
-    if confirm(f"{model} is not installed ({_size(model)}). Pull it now?", yes=yes):
-        print(f"Pulling {model} …")
-        project.client.ollama.pull(model)
-    else:
-        print(f"Not pulled. Run `ollama pull {model}` before using it.")
+    if not confirm(f"{model} is not installed ({_size(model)}). Pull it now?", yes=yes):
+        raise ConfigError(
+            f"{model} is not installed; nothing was changed. `ollama pull {model}` installs it."
+        )
+    print(f"Pulling {model} …")
+    project.client.ollama.pull(model)
 
 
 def _test(project: Project, role: str | None) -> int:

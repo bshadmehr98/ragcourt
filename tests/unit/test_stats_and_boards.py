@@ -118,3 +118,19 @@ def test_greedy_steps() -> None:
     assert [s.reranker for s in step_specs("reranker", best, candidates)] == ["none", "llm"]
     assert best.label == "c2 | - | bm25 | none"
     assert best.differs_only_in(PipelineSpec("c1", "e2", "bm25", "none")) == ["chunker"]
+
+
+def test_among_ties_a_higher_dev_score_beats_a_few_tokens_less() -> None:
+    dev = questions("keyword", 30, "dev")
+    draws = draws_for(dev)
+
+    def noisy(name: str, ones: int, size: int) -> Evaluation:
+        results = {q.id: QuestionResult(q.id, (), (), {"m": float(n < ones)}) for n, q in enumerate(dev)}
+        return Evaluation(
+            PipelineSpec(name, "e", "dense"), results, Costs(cost_usd=0.0, tokens_per_query=size)
+        )
+
+    lower_small, higher_big = noisy("lower_small", 15, 300), noisy("higher_big", 18, 310)
+    choice = choose([lower_small, higher_big], dev, "m", draws)
+    assert choice.tied, "the two must be tied on dev for the tie-break to matter"
+    assert choice.best.chunker == "higher_big"

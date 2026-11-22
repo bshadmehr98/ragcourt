@@ -100,13 +100,14 @@ def board_text(board: dict[str, Any], chosen: str | None) -> str:
 
 
 def _disagreement(board: dict[str, Any], chosen: str) -> list[str]:
-    """Said when the held-out winner is not the pipeline chosen on dev (D-057)."""
-    winner = board["winner"]
-    if not winner or chosen.startswith(winner):
+    """Said when the pipeline chosen on dev is separably worse on held-out than the top (D-057)."""
+    rows = board["rows"]
+    behind = [row for row in rows[1:] if chosen.startswith(row["label"]) and not row["tied_with_top"]]
+    if not rows or not behind:
         return []
     return [
-        f"Note: on held-out questions {winner} is separably better than this choice; the dev questions "
-        "could not tell them apart. Prefer the winner, or write more questions (--questions N)."
+        f"Note: on held-out questions {rows[0]['label']} is separably better than this choice; the dev "
+        "questions could not tell them apart. Prefer it, or write more questions (--questions N)."
     ]
 
 

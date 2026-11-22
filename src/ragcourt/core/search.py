@@ -3,7 +3,7 @@
 Four steps, each varying one stage with the best of the steps before: embedders (with the default chunker,
 ``dense`` and no reranker), chunkers, retrievers, rerankers. A step's best is chosen on dev questions by the
 mean of the category means; entries the paired bootstrap cannot tell apart from the top are tied, and among
-them the cheaper, then the smaller, then the first listed is kept.
+them the cheaper, then the higher on dev, then the smaller, then the first listed is kept.
 """
 
 from __future__ import annotations
@@ -55,7 +55,8 @@ class Choice:
 def choose(
     evaluations: list[Evaluation], dev: list[Question], metric: str, draws: dict[str, Resamples]
 ) -> Choice:
-    """The best entry on dev; among those tied with the top, the cheaper, then smaller, then first listed."""
+    """The best entry on dev; among those tied with the top, the cheaper, then the higher on dev, then the
+    smaller, then the first listed (D-057: a few tokens less must not outweigh a higher score)."""
     groups = by_category(dev)
     ranked, _ = ranked_categories(dev, 1)
     scores = [_score(evaluation, groups, ranked, metric) for evaluation in evaluations]
@@ -65,7 +66,7 @@ def choose(
         for number in range(len(evaluations))
         if number == top or _tied(evaluations, top, number, (groups, ranked, metric, draws))
     ]
-    keep = min(tied, key=lambda number: _tie_break(evaluations[number], number))
+    keep = min(tied, key=lambda number: _tie_break(evaluations[number], scores[number], number))
     return Choice(evaluations[keep].spec, [evaluations[number].spec for number in tied if number != keep])
 
 
@@ -90,6 +91,6 @@ def _tied(
     return not separable(paired_difference(first, second, draws))
 
 
-def _tie_break(evaluation: Evaluation, listed: int) -> tuple[float, float, int]:
+def _tie_break(evaluation: Evaluation, score: float, listed: int) -> tuple[float, float, float, int]:
     cost = evaluation.costs.cost_usd if evaluation.costs.cost_usd is not None else float("inf")
-    return cost, evaluation.costs.tokens_per_query, listed
+    return cost, -score, evaluation.costs.tokens_per_query, listed

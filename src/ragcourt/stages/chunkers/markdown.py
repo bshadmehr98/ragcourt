@@ -5,7 +5,7 @@ from __future__ import annotations
 import re
 
 from ragcourt.stages import chunker
-from ragcourt.stages.splitting import TokenIndex, as_strings, pack, split_to_size
+from ragcourt.stages.splitting import TokenIndex, as_strings, check_size, pack, split_to_size
 
 # An ATX heading line (# Title), or a line underlined with === or --- (a setext heading).
 HEADING = re.compile(r"^(#{1,6}[ \t].*|[^\n]+\n(=+|-+)[ \t]*)$", re.MULTILINE)
@@ -14,6 +14,7 @@ HEADING = re.compile(r"^(#{1,6}[ \t].*|[^\n]+\n(=+|-+)[ \t]*)$", re.MULTILINE)
 @chunker("markdown")
 def markdown(text: str, size: int = 512, overlap: int = 64) -> list[str]:
     """Sections from one heading to the next; a section over ``size`` tokens is cut like ``recursive``."""
+    check_size(size, overlap)
     index = TokenIndex(text)
     starts = sorted({0, *(match.start() for match in HEADING.finditer(text))})
     spans: list[tuple[int, int]] = []

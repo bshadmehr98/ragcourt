@@ -27,6 +27,8 @@ from ragcourt.flows.run_plan import (
     candidates_of,
     check_budget,
     check_cost,
+    check_models,
+    check_run,
     estimated_cost,
     make_plan,
     ready_to_go,
@@ -49,6 +51,7 @@ def run_rank(project: Project, corpus: Corpus, options: RankOptions, say: Say) -
         raise ConfigError("No documents to rank: give a folder of .md, .txt, .rst or .html files.")
     started = time.monotonic()
     candidates = candidates_of(project, options)
+    check_run(project, options, candidates)
     evaluator = _evaluator(project, corpus, options, [])
     counts = {chunker: len(evaluator.chunked(chunker).chunks) for chunker in candidates.chunkers}
     plan, guess = make_plan(project, corpus, options, candidates, counts)
@@ -65,6 +68,7 @@ def run_rank(project: Project, corpus: Corpus, options: RankOptions, say: Say) -
     if not ready_to_go(project, yes=options.yes, minutes=guess.minutes, cost=cost):
         say("Not started. Run again with --yes to start without asking.")
         return None
+    check_models(project, options, candidates)
     folder = _folder(project, plan, resume=options.resume, say=say)
     run_files.log_progress(folder, {"step": "questions", "event": "start"})
     questions = ensure_questions(project, corpus, options.questions, say)
@@ -227,9 +231,7 @@ def _chosen_note(choice: Choice, leaderboard: Board) -> str:
     """The chosen entry, and why it may differ from the held-out leader."""
     note = choice.best.label
     if choice.tied:
-        note += (
-            f" (tied on dev with {len(choice.tied)} more; kept the cheaper, then smaller, then first listed)"
-        )
+        note += f" (tied on dev with {len(choice.tied)} more; kept the cheaper, then the higher on dev, then the smaller)"
     if leaderboard.winner is not None and leaderboard.winner != choice.best:
         note += "\nDev and held-out questions disagree here; with this few questions the choice is uncertain."
     return note

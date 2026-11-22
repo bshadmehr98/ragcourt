@@ -4,10 +4,18 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+from ragcourt import stages
 from ragcourt.core.pipeline import Settings
 from ragcourt.core.plan import Estimate, Workload, estimate
 from ragcourt.core.search import Candidates
 from ragcourt.errors import BudgetExceeded
+from ragcourt.flows.checks import (
+    check_budget_values,
+    check_categories,
+    check_installed,
+    check_search,
+    check_stages,
+)
 from ragcourt.flows.questions import QuestionOptions, question_plan
 from ragcourt.io.ask import confirm
 from ragcourt.io.project import Project
@@ -129,3 +137,37 @@ def check_budget(budget: float | None, minutes: float, what: str) -> None:
     if budget is not None and minutes > budget:
         over = f"{what} would take about {minutes:.1f} minutes, over the budget of {budget:g}"
         raise BudgetExceeded(f"{over}; nothing more was run.")
+
+
+def check_run(project: Project, options: RankOptions, candidates: Candidates) -> None:
+    """Everything ``rank`` is asked to do, before its plan is shown."""
+    check_categories(project.config, options.questions.per_category)
+    check_search(
+        project.config, options.metric or project.config.search.metric, settings_of(project, options).k
+    )
+    check_stages(candidates)
+    check_budget_values(*budgets(project, options))
+
+
+def check_models(project: Project, options: RankOptions, candidates: Candidates) -> None:
+    """After the plan is shown and before any model is called: every Ollama model it names is installed."""
+    check_installed(project, _ollama_models(project, options, candidates))
+
+
+def _ollama_models(project: Project, options: RankOptions, candidates: Candidates) -> list[str]:
+    """The Ollama models this run may call: writer and judge (when questions are to be written), the
+    embedders that are model names, and the reranker's model for the llm reranker."""
+    questions = options.questions
+    names: list[str] = []
+    settings = project.config.questions
+    count = settings.per_category if questions.per_category is None else questions.per_category
+    if count and settings.categories:
+        names += [
+            *project.role("writer", questions.writer).models,
+            *project.role("judge", questions.judge).models,
+        ]
+    stage_names = stages.names("embedder")
+    names += [name for name in candidates.embedders if name.split(":", maxsplit=1)[0] not in stage_names]
+    if any(name.split(":", maxsplit=1)[0] == "llm" for name in candidates.rerankers):
+        names += project.role("reranker").models
+    return [name for name in dict.fromkeys(names) if not name.startswith("endpoint:")]

@@ -16,6 +16,8 @@ CODE = "duplicate.near"
 MEANING = "is nearly the same text as an earlier chunk"
 WORD = re.compile(r"\w+")
 SHINGLE = 5
+# A 5-gram in more chunks than this is boilerplate (its own check): later holders are not indexed.
+MAX_HOLDERS = 64
 
 
 def shingles(text: str) -> set[tuple[str, ...]]:
@@ -38,7 +40,8 @@ def find(chunks: list[Chunk], context: AuditContext) -> list[Finding]:
             detail = f"{match[1]:.2f} similar to chunk {earlier.index} of {earlier.document}"
             found.append(Finding(CODE, chunk, detail))
         for gram in own:
-            seen[gram].append(number)
+            if len(seen[gram]) < MAX_HOLDERS:
+                seen[gram].append(number)
     return found
 
 
@@ -51,7 +54,7 @@ def _best_earlier(
             shared[earlier] += 1
     best: tuple[int, float] | None = None
     for earlier, count in shared.items():
-        similarity = count / len(own | sets[earlier])
+        similarity = count / (len(own) + len(sets[earlier]) - count)
         if best is None or similarity > best[1]:
             best = (earlier, similarity)
     return best
