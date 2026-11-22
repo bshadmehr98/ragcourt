@@ -917,4 +917,6 @@ held-out choices can disagree; the output says so. One question is written per o
 `chonkie.semantic` adapter is left out (it downloads its own model, D-054). The time budget is checked
 before each step, not during one; the money budget covers endpoint embeddings only and is an upper
 bound. The overall ceiling pools all held-out questions; the time estimate uses measured rates, not a
-calibration call; an unreadable `llm` reranker reply keeps the retrieval order (D-056).
+calibration call; an unreadable `llm` reranker reply keeps the retrieval order (D-056). A key may travel over plain
+`http://` to a server you configure; a stale lock on Windows must be deleted by hand; Windows and macOS
+are tested in CI only (D-057).

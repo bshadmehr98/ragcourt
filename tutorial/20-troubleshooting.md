@@ -2,10 +2,16 @@
 
 | You see | It means | Do |
 |---|---|---|
-| `Ollama does not answer at http://localhost:11434` | Ollama is not running | start it (`ollama serve`), or set `ollama_url` |
-| `… is not installed. Pull it now?` | a role names a model Ollama doesn't have | answer yes, or `ollama pull NAME` |
+| `Ollama does not answer at http://localhost:11434` | Ollama is not running (checked before a run starts) | start it (`ollama serve`), or set `ollama_url` |
+| `… could not be reached: [Errno 111] Connection refused` | a server stopped answering during a run | start it again, then `--resume` |
+| `Not installed in Ollama: …` | a run needs a model Ollama doesn't have (checked before any question is written) | `ollama pull NAME`, or `ragcourt models set ROLE MODEL` |
+| `… is not installed. Pull it now?` | `models set` names a model Ollama doesn't have | answer yes; with no, `ragcourt.toml` is left unchanged |
 | `Score 80% on 40 labelled cases (90% needed): FAILED.` | the judge model is not reliable enough | a larger judge: `ragcourt models set judge gemma4` |
-| `No documents` | the folder has no `.md`, `.txt`, `.rst` or `.html` files | check the path; convert PDFs to text |
+| `No documents to rank` / `No documents to audit` | the folder has no `.md`, `.txt`, `.rst` or `.html` files | check the path; convert PDFs to text; the skipped files are listed with why |
+| `skipped …: not valid UTF-8` | a file in another encoding | save it as UTF-8 |
+| `Another ragcourt (process N) is using …` | a second ragcourt in the same working folder | wait, or use another `--workdir`; delete the `lock` file if no other ragcourt runs |
+| `Note: on held-out questions … is separably better than this choice` | the dev questions were too few to see a difference the held-out ones see | prefer that pipeline, or write more questions (`--questions 150`) |
+| `… redirected (301) to …` | an endpoint's address moved | put the new address in `base_url` |
 | `too few to choose on some and report on others` | not enough questions survived | more per kind: `--questions 30`, or more documents |
 | `too few to rank (N held-out questions)` | that kind has fewer than 30 held-out questions | more questions, or accept it: it is left out of the overall |
 | `No significant difference … no winner` | the entries can't be told apart on these questions | pick the cheaper, or write more questions to see smaller differences |

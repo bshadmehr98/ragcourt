@@ -58,4 +58,4 @@ What each kind receives and returns:
 Parameters are keyword arguments with defaults, so they can be set by name (`by_paragraph:min_chars=400`);
 a name is letters, digits, `_`, `.` and `-`. Two stages of the same kind with the same name are an error
 that names both places (file and line). Your stages are your own code and run in-process like any Python
-you write; code a model wrote is handled differently (design §12).
+you write, on every command run from that folder (so don't run ragcourt inside a folder you downloaded); code a model wrote is handled differently (design §12).

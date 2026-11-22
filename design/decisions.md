@@ -589,3 +589,22 @@ the designer's, open to the owner's review. Code comments refer to entries by nu
   measured rates rather than a calibration call; an unreadable `llm` reranker reply keeps the retrieval
   order; the money estimate is an upper bound.
 - **Status:** designer's choice.
+
+## D-057: What the pre-release tests changed  (2026-11-22)
+
+- **Found** by a security review, a new user's test of the built wheel against fakes, and real runs with
+  local models on Chroma's chunking benchmark (its own 472 gold questions) and the FastAPI docs (159
+  files, the default 540 questions). Confirmed by running each.
+- **Choice:** the fixes listed in the change log under "Before release". Three are design choices:
+  1. Among entries tied on dev, the order is now the cheaper, then the higher on dev, then the smaller,
+     then the first listed (it was cheaper, smaller, first listed). A tie on dev is uncertainty, and the
+     dev mean is still the best guess; a few tokens per question must not outweigh it.
+  2. When the pipeline chosen on dev is separably behind the top on held-out, the board says so and
+     suggests the top or more questions. The choice itself stays on dev, so held-out numbers stay honest.
+  3. Passages are offered to the writer one document at a time (seeded), so coverage is spread across
+     documents instead of following their length.
+- **Kept as limits:** plain `http://` with a key is allowed (servers on a local network) and documented;
+  the generated chunker's isolation is not a sandbox (approval is the safety step); on Windows a stale
+  lock is not detected automatically (the message says which file to delete); Windows and macOS run in CI
+  but were not tried by hand.
+- **Status:** designer's choice.

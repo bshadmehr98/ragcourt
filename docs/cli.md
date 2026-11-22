@@ -16,7 +16,8 @@ ragcourt doctor FOLDER [--approve SHA256] [--no-code] [--timeout S] [--questions
 ragcourt cache clear
 ```
 
-Every command also takes `--workdir DIR`, `--config FILE`, `--stages DIR`, `--seed N`, `--json` and `-q`
+Every command also takes `--workdir DIR`, `--config FILE`, `--stages DIR`, `--seed N` and `-q`; `audit` and
+`explain` also take `--json`
 (no legend). `ragcourt COMMAND --help` says what the command calls and what it sends.
 
 | Command | Calls a model? | What it does |
@@ -43,7 +44,8 @@ by `;`: `--chunkers "recursive:size=256,overlap=32;markdown"`.
 |---|---|
 | `questions.jsonl` | the question set: a header line, then one question per line with its quote, split and verdicts |
 | `questions.dropped.jsonl` | every dropped question with its reason and verdicts |
-| `cache/embeddings/<model>/` | `model.json`, `keys.txt`, `vectors.f32`: the embedding cache |
+| `cache/embeddings/<model>-<hash>/` | `model.json`, `keys.txt`, `vectors.f32`: the embedding cache |
+| `lock` | the process id of the ragcourt writing this folder, while it runs |
 | `cache/limits.json` | each Ollama model's measured input limit |
 | `judge/<hash>.json` | the judge's self-test, per model and prompt version |
 | `runs/<run-id>/` | `plan.json`, `progress.jsonl`, `configs/*.json`, `results.json`, `report.html` |

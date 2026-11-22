@@ -44,8 +44,9 @@
 | `--config FILE` | another `ragcourt.toml` |
 | `--stages DIR` | the folder of your own stages (chapter 16) |
 | `--seed N` | the seed of every random choice |
-| `--json` | the result as JSON, for scripts |
-| `-q` | no legend under tables |
+| `-q` | fewer explanations: no legends under tables |
+
+`audit` and `explain` also take `--json`: the result as JSON, for scripts.
 | `--help` | what the command calls and what it sends |
 
 ## Your own questions

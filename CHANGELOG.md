@@ -45,3 +45,23 @@ design changed is in [`design/changes/`](design/changes/).
 - The stage registry refuses one name defined twice in one file, names that would break a stage spec,
   and non-functions; unknown kinds are a `ConfigError`; hidden files in `ragcourt_stages/` are not run,
   and a stage file can import a helper beside it.
+- Before release (D-057), from a security review, a new user's test of the built wheel and real runs on
+  Chroma's chunking benchmark and the FastAPI docs:
+  - **Security:** a key is never sent to an address a server redirects to; corpus links that point
+    outside the folder are skipped; control and bidirectional characters from documents or models are
+    escaped on the terminal, and model-written code holding them is refused; approved code is re-hashed
+    before every run, its output files capped and its process group stopped on a timeout; replies are
+    size-capped and malformed ones are one-line errors; report filters use no inline JavaScript; HTML over
+    5 MB is skipped; GitHub Actions are pinned to commits and the review workflow takes its instructions
+    from `main`.
+  - **Never a traceback:** a wrong run id, an unreadable questions file, a folder that cannot be written,
+    unknown metrics, categories, retrievers or rerankers, out-of-range settings and chunker sizes are one
+    message, before the plan; missing Ollama models are named before any question is written; `models
+    set` never writes a model that is not installed; one ragcourt at a time per working folder.
+  - **Results:** among entries tied on dev, the higher dev score now beats a few tokens less (the Chroma
+    run kept `dense` over a separably better `hybrid`), and a choice behind on held-out is pointed out;
+    the doctor's verdict uses the categories its board ranks; questions are drawn from every document in
+    turn, so one long changelog no longer supplies most of them; a quote with Markdown links is prose.
+  - **Speed and use:** chunking and the near-duplicate check are linear in a document's length (4 MB: 80
+    s, now 9 s); runs on your own questions alone (`--questions 0`) call no writer or judge, and the plan
+    counts them; output is line-buffered; `--json` is offered where it works; audit lists skipped files.
