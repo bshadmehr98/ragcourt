@@ -161,3 +161,28 @@ def test_ac23_the_report_is_self_contained(
             )
     for blame in results["blames"]:
         assert json.dumps(blame["text"])[1:-1].split("'")[0][:20] in report or blame["text"][:10] in report
+
+
+def test_ac16_the_money_and_configured_budgets_hold(
+    rank_project: tuple[Path, FakeOllamaState], corpus: Path, run: Run
+) -> None:
+    project, state = rank_project
+    toml = project / "ragcourt.toml"
+    base = toml.read_text().replace(
+        'embedders = ["fake-embed", "fake"]', 'embedders = ["endpoint:remote/m", "fake"]'
+    )
+    toml.write_text(base + '\n[endpoints.remote]\nbase_url = "http://127.0.0.1:9"\n')
+    code, out, err = run("rank", corpus, "--yes", "--budget-usd", "1")
+    assert code == 4 and "has no price" in err and "Estimated cost: unknown" in out
+    toml.write_text(
+        base
+        + '\n[endpoints.remote]\nbase_url = "http://127.0.0.1:9"\n[prices]\n"endpoint:remote/m" = 1000000\n'
+    )
+    code, out, err = run("rank", corpus, "--yes", "--budget-usd", "0.5")
+    assert code == 4 and "over the budget of $0.5" in err
+    toml.write_text(
+        base.replace('embedders = ["endpoint:remote/m", "fake"]', 'embedders = ["fake"]')
+        + "\n[budget]\nminutes = 0.0001\n"
+    )
+    code, _, err = run("rank", corpus, "--yes")
+    assert code == 4 and "over the budget" in err and state.requests == []

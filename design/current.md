@@ -77,26 +77,32 @@ One Python package, `ragcourt`, standard library only in its core (D-003). No se
 ### 3.1 Layers
 
 ```text
-types, errors      layer 0  dataclasses and protocols, no logic
-stages             layer 1  the registry and one file per stage
-core   |   io      layer 2  core: pure functions; io: files, the model client, the cache, reports
-commands           layer 3  audit, rank, explain, doctor: one file each
-cli                layer 4  argument parsing and printing
+types, errors, text_units   layer 0  dataclasses and protocols, no logic; the reference units of text
+stages                      layer 1  the registry, its shared modules, one file per stage
+core   |   io               layer 2  core: pure functions; io: files, the model client, the cache, reports
+flows                       layer 3  parts of commands that several commands share (D-045)
+commands                    layer 4  one file per command
+cli                         layer 5  argument parsing
 ```
 
-A module imports only from layers below its own. `core` and `io` never import each other: a command
-reads with `io`, computes with `core`, and writes with `io`. Within `stages`, an implementation imports
-only the registry (`ragcourt.stages`), never another implementation; only the pipeline (`core`) joins
-stages. A command never imports another command. Nothing imports `cli` or `testing`. The package root
-(the public API) may import from every layer except `commands` and `cli`. `scripts/check_layers.py`
-enforces all of this and runs in `scripts/check.sh`.
+A module imports only from layers below its own. `core` and `io` never import each other: a flow or a
+command reads with `io`, computes with `core`, and writes with `io`. Within `stages`, an implementation
+(`stages/<kind>s/<name>.py`) imports only the registry and its shared modules (`stages/specs`,
+`stages/splitting`, `stages/loader`), never another implementation; only the pipeline joins stages. A
+command never imports another command; what two commands share (building the question set, evaluating a
+pipeline, the judge's self-test) is a flow. Nothing imports `cli` (except `__main__`) or `testing`. The
+package root (the public API) may import from every layer except `flows`, `commands` and `cli`.
+`scripts/check_layers.py` enforces all of this and runs in `scripts/check.sh`.
 
 `core` is pure in this sense: its functions take values and callables and return values; they never open
 files, read the clock or the environment, or touch the network. The callables they receive (an embedder's
-`embed`, the cached wrapper around it) may do I/O; `core` does not know.
+`embed`, a chat model as prompt-in reply-out) may do I/O; `core` does not know. `text_units` (layer 0)
+holds the reference tokenization and sentence rules, so chunkers (layer 1) and metrics (layer 2) count
+alike (D-043).
 
-Stages that need a model (an endpoint embedder, an endpoint reranker) receive a client through the
-`ModelClient` protocol declared in `types` (§11.1), so they never import `io`.
+Stages that need a model (the Ollama and endpoint embedders, the `llm` and endpoint rerankers) receive the
+client through the `ModelClient` protocol declared in `types` (§11.1): a factory or function that has a
+`client` parameter is given it, so stages never import `io`.
 
 ### 3.2 Modules
 
@@ -106,28 +112,27 @@ own file and the package's `__init__.py` holds the ordered list.
 
 | Module | Holds | Design |
 |---|---|---|
-| `types/documents.py`, `questions.py`, `results.py`, `stages.py`, `models.py` | frozen dataclasses (`Document`, `Chunk`, `Question`, `Verdict`, `MetricRow`, `Blame`, `Plan`, …), the four stage signatures, the `ModelClient` protocol; no logic | §2 |
-| `errors.py` | `RagCourtError` and its subclasses | §14 |
-| `stages/__init__.py` | the four decorators, the registry, loading the user's folder | §7.2 |
-| `stages/<kind>/<name>.py` | one stage per file | §7.3, §7.4 |
-| `core/offsets.py`, `core/tokens.py` | finding chunk spans in the source; the reference tokenization | §4.2, §4.3 |
+| `types/documents.py`, `stages.py`, `models.py`, `config.py`, `audit.py`, `questions.py`, `results.py` | frozen dataclasses and protocols; no logic | §2 |
+| `errors.py`, `text_units.py` | `RagCourtError` and its subclasses; reference tokens and sentences | §14, §4.3 |
+| `stages/__init__.py`, `loader.py`, `specs.py`, `splitting.py` | the decorators and registry; loading built-ins and the user's folder; `name:key=value` specs; span arithmetic the chunkers share | §7 |
+| `stages/<kind>s/<name>.py` | one stage per file | §7.3, §7.4 |
+| `core/offsets.py`, `core/chunking.py`, `core/structure.py`, `core/sizes.py`, `core/boundaries.py` | spans of chunks; a corpus cut by one chunker; headings, tables, code; size summaries; boundaries marked | §4, §5 |
 | `core/audit/<check>.py` | one audit check per file; `__init__.py` lists them | §5.1 |
-| `core/categories/<category>.py` | one question category per file: which passages it may use, how membership is checked; `__init__.py` lists them | §6.7 |
-| `core/filters.py`, `core/split.py` | the code rules for questions; dev and held-out | §6.2, §6.4 |
-| `core/pipeline.py`, `core/metrics.py`, `core/stats.py` | running one pipeline; every metric; intervals, ties, smallest difference | §8 |
-| `core/blame/<stage>.py` | the mechanisms of one stage, in order; `__init__.py` runs the stages in order and picks the cause | §9.1 |
-| `core/probes.py`, `core/fixes.py` | what blame measures besides ranks; fixes and evidence levels | §9.3, §9.4 |
-| `core/search.py`, `core/plan.py` | the greedy steps; the plan and its estimate | §10 |
-| `io/documents.py`, `io/html_text.py`, `io/config.py` | reading documents; the text of an HTML file; `ragcourt.toml` | §4.1, §3.3 |
-| `io/client.py`, `io/ollama.py`, `io/openai_compat.py` | the one client (retries, JSON replies) and its two dialects | §11.1 |
-| `io/cache.py` | the embedding cache in plain files | §10.2 |
-| `io/writer.py`, `io/judge.py` | asking the writer for a question; asking the judge, and its self-test | §6.1, §6.6 |
-| `io/question_file.py`, `io/results_file.py` | reading and writing the question file and the results file | §6.5, §13.3 |
-| `io/terminal.py`, `io/progress.py`, `io/html_report.py` | tables and the legend; progress lines; the HTML report | §13, §10.4 |
-| `commands/<command>.py` | one command per file (`setup`, `models`, `prompts`, `audit`, `questions`, `rank`, `explain`, `report`, `doctor`, `cache`): read with `io`, compute with `core`, write with `io` | §13.1 |
-| `prompts/*.txt`, `prompts/judge_cases.jsonl` | every prompt a model is given, and the judge's labelled self-test cases, as readable files | §6.6 |
-| `cli.py` | `ragcourt …` | §13.1 |
-| `testing/` | `FakeEmbedder`, `ScriptedModel`, a fake Ollama server, the bundled corpus | §15.2 |
+| `core/windows.py`, `core/words.py`, `core/categories/<category>.py` | passages offered to the writer; content words; one category per file | §6.1, §6.7 |
+| `core/generate.py`, `core/question_checks.py`, `core/question_rules.py`, `core/verdicts.py`, `core/split.py`, `core/selftest.py`, `core/user_questions.py` | the question loop; its checks; the code rules; reading replies; dev and held-out; the judge's self-test; your questions | §6 |
+| `core/pipeline.py`, `core/relevance.py`, `core/metrics.py`, `core/stats.py`, `core/leaderboard.py` | one pipeline over the questions; hits and tokens; every metric; intervals and ties; leaderboards | §8 |
+| `core/blame/<stage>.py`, `core/blame/facts.py`, `core/fixes.py`, `core/ceilings.py` | the mechanisms of one stage, in order; what blame looks at; fixes and levels; ceilings | §9 |
+| `core/search.py`, `core/plan.py`, `core/recommend.py`, `core/doctor.py` | the greedy steps and the choice on dev; the estimate; the models that fit a machine; doctor's pure parts | §10, §11.3, §12 |
+| `io/documents.py`, `io/html_text.py`, `io/config.py`, `io/toml_edit.py`, `io/config_template.py` | reading documents and HTML; `ragcourt.toml`, editing a role, the commented template | §4.1, §3.3, §11.4 |
+| `io/http.py`, `io/client.py`, `io/ollama.py`, `io/openai_compat.py`, `io/replies.py`, `io/embedders.py` | JSON over HTTP with retries; the one client and its two dialects; building embedders by name | §11.1 |
+| `io/cache.py`, `io/question_file.py`, `io/judge_record.py`, `io/run_files.py`, `io/prompts.py` | the plain files: embeddings, questions, the judge's self-test, runs, prompts | §6.5, §6.6, §10, §13.3 |
+| `io/terminal.py`, `io/narration.py`, `io/audit_output.py`, `io/question_output.py`, `io/rank_output.py`, `io/explain_output.py`, `io/result_data.py`, `io/html_report.py` | everything written for people, rendered from data | §13 |
+| `io/project.py`, `io/ask.py`, `io/machine.py`, `io/isolated_run.py` | a command's view of the project; asking before what cannot be undone; memory of the machine; running generated code apart | §3.3, §11.3, §12 |
+| `flows/questions.py`, `flows/judge.py`, `flows/evaluate.py`, `flows/probes.py`, `flows/blames.py`, `flows/run_plan.py`, `flows/rank.py`, `flows/results.py`, `flows/doctor.py` | the parts of `questions`, `rank` and `doctor` | §6 to §12 |
+| `commands/<command>.py` | one command per file | §13.1 |
+| `prompts/*.txt`, `prompts/judge_cases.jsonl` | every prompt a model is given, and the judge's labelled self-test cases | §6.6 |
+| `cli.py`, `__main__.py` | `ragcourt …`, `python -m ragcourt` | §13.1 |
+| `testing/` | the fake embedder, the scripted model and replies, fake Ollama and endpoint servers, `offline_project`, the bundled corpus | §15.2 |
 
 ### 3.3 Files
 
@@ -714,19 +719,23 @@ reranker) and `doctor` (§12). Changing one is one command or one line (D-031):
 
 ```text
 ragcourt setup [--yes]
-ragcourt models [set ROLE MODEL[,MODEL…]] [test judge]
+ragcourt models [set ROLE MODEL[,MODEL…]] [test judge] [--yes]
 ragcourt prompts [show NAME]
 ragcourt audit <folder> [--chunker SPEC]… [--embedder NAME] [--show DOC] [--json] [--fail-on CODE…]
-ragcourt questions <folder> [--questions N] [--questions-file FILE]
-ragcourt questions show [--dropped] [--reason R]
-ragcourt rank <folder> [--resume] [--questions-file FILE] [--judge MODEL] [--metric NAME] [--k N] [--budget-usd X] [--budget-minutes M] [--yes] [--html]
+ragcourt questions <folder> [--questions N] [--questions-file FILE] [--writer MODEL] [--judge MODEL]
+ragcourt questions show [--dropped] [--reason TEXT]
+ragcourt rank <folder> [--resume] [--questions N] [--questions-file FILE] [--writer MODEL] [--judge MODEL]
+              [--metric NAME] [--k N] [--embedders LIST] [--chunkers SPECS] [--retrievers LIST] [--rerankers LIST]
+              [--budget-minutes M] [--budget-usd X] [--yes] [--html]
 ragcourt explain [RUN] [--show QUESTION-ID]
-ragcourt doctor <folder> [--approve SHA256]
+ragcourt report [RUN]
+ragcourt doctor <folder> [--approve SHA256] [--no-code] [--timeout S] [--questions N] [--embedder NAME]
 ragcourt cache clear
 ```
 
 Common: `--workdir`, `--config`, `--stages DIR`, `--seed`, `--json`, `-q`. Exit codes: 0 done, 1 error, 2
-usage, 3 a `--fail-on` check fired, 4 stopped by the budget.
+usage, 3 a `--fail-on` check fired, 4 stopped by the budget, 130 interrupted (`--resume` continues).
+`docs/cli.md` describes each.
 
 ### 13.2 Terminal output
 
@@ -884,20 +893,13 @@ is removed, except guarantee 26, which needs real models and is a marked test in
 
 ## 17. Implemented and planned
 
-Updated as the milestone's steps land.
+**Implemented** (milestone 1, all nine steps): everything in §1 to §16. Every guarantee of §16 has its test
+in `tests/e2e/` (guarantee 26 also in `tests/real/`, run against Ollama with `gemma4` and
+`nomic-embed-text`). Tried on real corpora ([history/0004](history/0004-real-data.md)); real runs on the
+bundled corpus take about two minutes with eight questions per category.
 
-**Implemented** (step 1 of 9, foundations): the `types` package (documents, stage signatures with
-`Embedded` and `as_query`, the `ModelClient` protocol); the errors of §14; the stage registry with its four
-decorators, the built-in folders and the user's `ragcourt_stages/` (§7.2); reading documents, HTML
-included (§4.1, D-040); `ragcourt.toml` with its first setting, `stages_dir` (§3.3, D-039);
-`ragcourt.testing` with `FakeEmbedder`, `ScriptedModel` and the bundled corpus (§15.2). Tried on real
-corpora ([history/0004](history/0004-real-data.md)). Guarantee 22 passes; guarantee 18 passes for the
-registry and is extended when `audit` (step 2) and `rank` (step 5) exist. The hand-checked
-`questions.jsonl` of §15.2 comes with step 4. The repository, its gate (with the import-layer and
-simplicity checks) and its workflow exist.
-
-**Planned:** steps 2 to 9 of milestone 1, the whole of 0.1 (owner, D-029), in the order of
-[`changes/0001-initial-design.md`](changes/0001-initial-design.md).
+**Planned** (after 0.1): converters for public datasets with quote gold (history/0005); multi-quote
+questions; PDF.
 
 ## 18. Known limits (0.1)
 
@@ -909,4 +911,8 @@ held-out questions; the greedy search can miss a combination that only wins join
 needs two passages); a small corpus may not support every category; question
 quality and the judge's verdicts are only as good as the local model (the self-test guards the judge, not
 the writer); a full run takes 15 to 25 minutes on a GPU like the owner's (8 GB) and much longer on CPU
-only.
+only. Measured on the bundled corpus with `gemma4`: `distractor` questions are the hardest to obtain (the
+judge rightly drops many whose look-alike passage also answers them), and on a dozen documents dev and
+held-out choices can disagree; the output says so. One question is written per offered passage. The
+`chonkie.semantic` adapter is left out (it downloads its own model, D-054). The time budget is checked
+before each step, not during one; the money budget covers endpoint embeddings only.

@@ -54,6 +54,7 @@ def register(add_parser: AddParser, common: argparse.ArgumentParser) -> None:
     parser.add_argument(
         "--budget-minutes", type=float, metavar="M", help="stop before a step that would pass M minutes"
     )
+    parser.add_argument("--budget-usd", type=float, metavar="X", help="refuse a run that would cost over $X")
     parser.add_argument("--yes", action="store_true", help="start without asking")
     parser.add_argument("--html", action="store_true", help="also write a self-contained report.html")
     parser.set_defaults(run=run)
@@ -73,6 +74,7 @@ def run(args: argparse.Namespace) -> int:
         names(args.retrievers),
         names(args.rerankers),
         args.budget_minutes,
+        args.budget_usd,
         yes=args.yes,
         resume=args.resume,
     )

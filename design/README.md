@@ -8,8 +8,8 @@
 
 **Status:** the design ([changes/0001](changes/0001-initial-design.md)) was accepted by the owner on
 2026-11-22, after four rounds of answers to the brief in
-[history/0001-owner-brief.md](history/0001-owner-brief.md); [current.md](current.md) §17 says what is
-implemented.
+[history/0001-owner-brief.md](history/0001-owner-brief.md), and is implemented (0.1, unreleased);
+[current.md](current.md) §17 says what is built.
 
 ## The problem
 
@@ -55,7 +55,7 @@ Answer generation and judging answers, vector databases, images, audio, video, a
 | File | What it holds |
 |---|---|
 | [`current.md`](current.md) | the design as it stands: concepts, rules, the guarantees the tests check, what is implemented |
-| [`changes/0001-initial-design.md`](changes/0001-initial-design.md) | the first design, from the owner's brief (accepted), with its build order |
+| [`changes/0001-initial-design.md`](changes/0001-initial-design.md) | the first design, from the owner's brief (implemented), with its build order |
 | [`history/0001-owner-brief.md`](history/0001-owner-brief.md) | the owner's brief, word for word |
 | [`history/0000-research.md`](history/0000-research.md) | what exists already (AutoRAG, Chroma's chunking study, chunkvet, ragblame, Ragas and others), the name checks, what is still to research |
 | [`history/0002-local-models.md`](history/0002-local-models.md) | local models measured on the owner's machine: embedders, question writers, judges, the first-minute estimate |

@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import time
 from collections.abc import Callable
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from pathlib import Path
 
 from ragcourt.core.leaderboard import Scoring, board, by_category
@@ -23,8 +23,11 @@ from ragcourt.flows.questions import ensure_questions
 from ragcourt.flows.results import results_data
 from ragcourt.flows.run_plan import (
     RankOptions,
+    budgets,
     candidates_of,
     check_budget,
+    check_cost,
+    estimated_cost,
     make_plan,
     ready_to_go,
     settings_of,
@@ -47,10 +50,22 @@ def run_rank(project: Project, corpus: Corpus, options: RankOptions, say: Say) -
     counts = {chunker: len(evaluator.chunked(chunker).chunks) for chunker in candidates.chunkers}
     plan, guess = make_plan(project, corpus, options, candidates, counts)
     say(plan_text(plan, guess))
-    check_budget(options.budget_minutes, guess.minutes, "the whole run")
+    minutes, dollars = budgets(project, options)
+    texts: list[str] = []
+    for chunker in candidates.chunkers:
+        texts += [chunk.text for chunk in evaluator.chunked(chunker).chunks]
+    cost = estimated_cost(project, candidates.embedders, texts)
+    say(
+        "Estimated cost: unknown (an endpoint has no price)."
+        if cost is None
+        else f"Estimated cost: ${cost:.2f}."
+    )
+    check_budget(minutes, guess.minutes, "the whole run")
+    check_cost(dollars, cost)
     if not ready_to_go(project, yes=options.yes, minutes=guess.minutes):
         say("Not started. Run again with --yes to start without asking.")
         return None
+    options = replace(options, budget_minutes=minutes)  # the configured budget holds in every step
     earlier = run_files.unfinished_run(project.workdir, plan) if options.resume else None
     folder = earlier or run_files.new_run(project.workdir, plan)
     run_files.log_progress(folder, {"step": "questions", "event": "start"})

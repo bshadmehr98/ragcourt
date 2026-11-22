@@ -124,6 +124,10 @@ def test_confirmed_needs_a_measured_alternative_differing_only_in_that_stage() -
     assert level == "confirmed" and "embedder e2" in fix
     level, fix = fix_for("embedder.meaning", "q1", chosen, [evaluation(chosen, 0.0)])
     assert fix == "no tested embedder connects this question to its answer"
+    level, fix = fix_for(
+        "chunker.split", "q1", chosen, [evaluation(PipelineSpec("c2", "e1", "dense", "none"), 0.0)]
+    )
+    assert level == "indicated" and "not finding it either: chunker c2" in fix
 
 
 def blame(question: str, stage: str) -> Blame:

@@ -18,9 +18,8 @@ check and its §17 says what is built. Why the design looks like this: the owner
 [design/history/0001-owner-brief.md](design/history/0001-owner-brief.md),
 [design/changes/](design/changes/) and [design/decisions.md](design/decisions.md).
 
-**Status:** design 0001 is accepted (2026-11-22) and being built in one milestone; design §17 says which
-steps are done. Do not implement anything the design does not say; a gap becomes a `D-` entry or a
-proposed change record.
+**Status:** design 0001 is implemented (0.1, unreleased); design §17 says what is built. Do not implement
+anything the design does not say; a gap becomes a `D-` entry or a proposed change record.
 
 ## Commands
 
@@ -34,24 +33,26 @@ uv run python scripts/check_layers.py   # the import layers of design §3.1 alon
 
 ## Layout
 
-The layers of design §3.1; each module's docstring names the sections it implements. Planned, built
-milestone by milestone:
+The layers of design §3.1 (the full module table is §3.2); each module's docstring names the sections it
+implements.
 
 ```
 src/ragcourt/
-  __init__.py  errors.py       the public API with an explicit __all__; RagCourtError and its subclasses
+  __init__.py  errors.py  text_units.py   the public API; the errors; reference tokens and sentences (layer 0)
   types/                       dataclasses and protocols, no logic (layer 0)
-  stages/                      the registry and its decorators (__init__); chunkers/, embedders/, retrievers/, rerankers/: one file per stage (layer 1)
-  core/                        pure functions: offsets, pipeline, metrics, stats, blame, search, audit (layer 2)
-  io/                          documents, config, the model client, the cache, questions, the report (layer 2)
-  commands/                    setup, audit, rank, explain, doctor: one file each (layer 3)
-  cli.py                       the command line (layer 4)
-  testing/                     the fake embedder, the scripted model, the bundled corpus (corpus/)
+  stages/                      the registry, specs, loader, splitting; chunkers/ embedders/ retrievers/ rerankers/: one file per stage (layer 1)
+  core/                        pure functions: offsets, audit/, categories/, questions, metrics, stats, blame/, search (layer 2)
+  io/                          files, the model client and dialects, the cache, prompts, everything written for people (layer 2)
+  flows/                       parts several commands share: questions, judge, evaluate, rank, doctor (layer 3)
+  commands/                    one file per command (layer 4)
+  cli.py  __main__.py          the command line (layer 5)
+  prompts/                     every prompt and the judge's labelled cases, as files
+  testing/                     fakes, offline_project, the bundled corpus (corpus/)
 tests/unit|contract|integration|e2e   default suite; tests/real: by hand, marked real_model
 scripts/check.sh                     the one gate
 scripts/check_layers.py  check_simple.py   the import layers; the simplicity rules ruff can't check
 design/                why and how: README, current.md, changes/, decisions.md, history/
-docs/  examples/       user docs and runnable examples, both executed by tests once they exist
+docs/  examples/       user docs and runnable examples, both executed by tests
 ```
 
 ## Rules
@@ -61,8 +62,8 @@ docs/  examples/       user docs and runnable examples, both executed by tests o
    code, functions and frozen dataclasses, no magic. Small modules of one concept (≤ 250 lines, aim
    150), short flat functions (≤ 40 lines, ≤ 3 nested blocks), comprehensions with one `for` and at most
    one `if`. Every extension is one new file. `scripts/check_simple.py` and ruff check it.
-2. **Layers import only downward** (design §3.1): types → stages → core and io → commands → cli. Stages
-   never import each other; only the pipeline joins them. `scripts/check_layers.py` enforces it.
+2. **Layers import only downward** (design §3.1): types → stages → core and io → flows → commands → cli.
+   Stages never import each other; only the pipeline joins them. `scripts/check_layers.py` enforces it.
 3. **Numbers are measured:** every number in a ranking is computed on the user's documents, on the
    held-out split, with its uncertainty; ties are reported as "no significant difference"; nothing (not
    even a chunker doctor wrote) is called better without the measurement. Unknown is said, never filled

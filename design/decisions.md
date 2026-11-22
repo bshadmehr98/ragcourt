@@ -471,3 +471,99 @@ the designer's, open to the owner's review. Code comments refer to entries by nu
   `document_prefix` parameters, with each known model's documented prefixes as its defaults, shown in the
   plan (D-030); the cache keys on the exact text sent, prefix included.
 - **Status:** designer's choice.
+
+## D-043: Chunk sizes in reference tokens; the units at layer 0  (2026-11-22)
+
+- **Question:** the native chunkers need a tokenizer, but stages (layer 1) cannot import `core`.
+- **Choice:** `ragcourt/text_units.py` at layer 0 holds the reference tokenization (words and punctuation)
+  and the sentence rules; the native chunkers' `size` is in those tokens, the same for every embedder.
+  The audit reports sizes in the embedder's own tokens.
+- **Status:** designer's choice.
+
+## D-044: Near-duplicates by exact shingles, found through an index  (2026-11-22)
+
+- **Choice:** `duplicate.near` compares word 5-gram sets exactly, finding candidates through the 5-grams
+  they share, at any corpus size; the MinHash of design §5.1 is not needed at 0.1's scale.
+- **Status:** designer's choice.
+
+## D-045: A `flows` layer between core and io, and commands  (2026-11-22)
+
+- **Question:** `rank`, `questions` and `doctor` share building the question set, evaluating pipelines
+  and the judge's self-test; commands may not import each other, and `core` and `io` may not either.
+- **Choice:** `ragcourt/flows/` (layer 3) holds those shared parts; commands (layer 4) and the cli
+  (layer 5) sit above. A flow prints nothing; it reports through a `say` function the command gives it.
+- **Status:** designer's choice.
+
+## D-046: Machine memory from the OS and nvidia-smi  (2026-11-22)
+
+- **Question:** Ollama has no route that reports a GPU's total memory (design §11.3 assumed one).
+- **Choice:** RAM from the OS, GPU memory from `nvidia-smi` when present, else unknown and said so.
+- **Status:** designer's choice.
+
+## D-047: When the question set is reused, resumed or written afresh  (2026-11-22)
+
+- **Choice:** reused when the documents, writer, judge, prompts, seed, categories and count are the same
+  and the set is complete; resumed (skipping every passage already tried, kept or dropped) when it is
+  unfinished or the count grew; revalidated (quotes found again) when only the documents changed; written
+  afresh when the writer, judge, prompts, seed or categories changed. Dropped questions go to
+  `questions.dropped.jsonl` with every verdict, for `questions show --dropped`.
+- **Status:** designer's choice.
+
+## D-048: Distractor questions as measured with a local model  (2026-11-22)
+
+- **Found** (design/history/0004 and the real runs): `gemma4` rarely words a question "like the other
+  passage"; the code check then dropped all of them, and the judge, asked "yes only if the other passage
+  does not answer", answered the double negation backwards.
+- **Choice:** the writer is given the twin's own words and must use two of them (the code check); the judge
+  is asked plainly whether the other passage answers, and the question passes on "no"; twins more alike
+  than 0.5 (near-duplicates, which answer the same) are not offered; paragraphs repeated across documents
+  (headers, footers) are never offered to the writer; numeric quotes may state the number in words.
+- **Status:** designer's choice, from measurement.
+
+## D-049: A keyword search is a valid question  (2026-11-22)
+
+- **Found:** `gemma4` as judge called the self-test's keyword-search case invalid.
+- **Choice:** the validity prompt says a short keyword search counts as a real question. The judge's score
+  went from 95% to 98%.
+- **Status:** designer's choice, from measurement.
+
+## D-050: The dev choice explained  (2026-11-22)
+
+- **Choice:** each step's chosen entry says when it was tied on dev and was kept for being cheaper, then
+  smaller, then first listed, and warns when dev and held-out questions disagree. A BM25 pipeline's label
+  shows no embedder.
+- **Status:** designer's choice.
+
+## D-051: Measured counts at the limit; the limit kept  (2026-11-22)
+
+- **Choice:** a count Ollama reports can only reach the limit (it counts what it read), so a measured
+  count at the limit is a chunk that was cut (`size.over_limit`). Each Ollama model's measured limit is
+  kept per model version in `.ragcourt/cache/limits.json`, so a second run makes no embedding call.
+- **Status:** designer's choice.
+
+## D-052: When rank asks before starting  (2026-11-22)
+
+- **Choice:** the plan is always printed; the project's first run, and any run estimated over a minute,
+  asks before starting; without a terminal the answer is no and `--yes` starts it. The money budget
+  (`--budget-usd`, `[budget] usd`) refuses a run whose endpoint embeddings would cost more, or whose cost is
+  unknown; the time budget is checked before each step.
+- **Status:** designer's choice.
+
+## D-053: The gate installs every extra but `local`  (2026-11-22)
+
+- **Choice:** `sentence-transformers` brings torch (gigabytes), so `scripts/check.sh` and CI install
+  every extra but `local`; its adapters are tested for the missing-extra message by default and by hand
+  otherwise.
+- **Status:** designer's choice.
+
+## D-054: `chonkie.semantic` left out of 0.1  (2026-11-22)
+
+- **Choice:** it downloads its own embedding model on first use, which would break "no download without
+  your yes" (design §11.3); the token, sentence and recursive adapters are kept.
+- **Status:** designer's choice.
+
+## D-055: Chunker specs are separated by `;` on the command line  (2026-11-22)
+
+- **Choice:** a spec holds commas (`recursive:size=256,overlap=32`), so `--chunkers` separates specs with
+  `;`; other lists use commas.
+- **Status:** designer's choice.

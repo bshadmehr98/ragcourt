@@ -27,6 +27,7 @@ class RankOptions:
     retrievers: tuple[str, ...] | None = None
     rerankers: tuple[str, ...] | None = None
     budget_minutes: float | None = None
+    budget_usd: float | None = None
     yes: bool = False
     resume: bool = False
 
@@ -84,6 +85,43 @@ def ready_to_go(project: Project, *, yes: bool, minutes: float) -> bool:
     if yes or (not first_run and minutes <= 1):
         return True
     return confirm(f"Start this run (about {minutes:.0f} minutes, estimated)?", yes=False)
+
+
+def budgets(project: Project, options: RankOptions) -> tuple[float | None, float | None]:
+    """The time and money budgets: the flags, else ``[budget]`` in ``ragcourt.toml``."""
+    budget = project.config.budget
+    minutes = options.budget_minutes if options.budget_minutes is not None else budget.minutes
+    dollars = options.budget_usd if options.budget_usd is not None else budget.usd
+    return minutes, dollars
+
+
+def estimated_cost(project: Project, embedders: tuple[str, ...], texts: list[str]) -> float | None:
+    """Dollars to embed ``texts`` with each endpoint embedder (characters / 4 tokens); local models cost
+    nothing; None when an endpoint has no price in ``[prices]`` (unknown, never zero)."""
+    tokens = sum(len(text) for text in texts) / 4
+    total = 0.0
+    for name in embedders:
+        if not name.startswith("endpoint:"):
+            continue
+        price = project.config.prices.get(name)
+        if price is None:
+            return None
+        total += price * tokens / 1_000_000
+    return round(total, 4)
+
+
+def check_cost(budget: float | None, cost: float | None) -> None:
+    """Refuse to start a run whose cost is over the budget, or unknown when a budget is set."""
+    if budget is None:
+        return
+    if cost is None:
+        raise BudgetExceeded(
+            "A money budget is set but an endpoint has no price: add it to [prices]; nothing was run."
+        )
+    if cost > budget:
+        raise BudgetExceeded(
+            f"The run would cost about ${cost:.2f}, over the budget of ${budget:g}; nothing was run."
+        )
 
 
 def check_budget(budget: float | None, minutes: float, what: str) -> None:

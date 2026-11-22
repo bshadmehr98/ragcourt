@@ -89,7 +89,10 @@ def test_ac13_and_ac14_every_miss_has_one_cause_a_level_and_a_fix(ran: tuple[Pat
         assert blame["mechanism"] in MECHANISM_NAMES and blame["level"] in ("confirmed", "indicated")
         assert blame["fix"] and blame["evidence"] and "«" in blame["context"]
         if blame["level"] == "indicated":
-            assert "not measured" in blame["fix"] or "no tested embedder" in blame["fix"]
+            assert any(
+                words in blame["fix"]
+                for words in ("not measured", "no tested embedder", "not finding it either")
+            )
     overall = results["ceilings"]["overall"]
     assert overall["chunker"] >= overall["retrieval"] >= overall["hit_at_k"]
     stages = [blame["stage"] for blame in results["blames"]]

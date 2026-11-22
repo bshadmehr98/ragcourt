@@ -46,14 +46,21 @@ def fix_for(
     """The evidence level and the fix of one blame."""
     stage = mechanism.split(".", maxsplit=1)[0]
     fields = ("chunker", "embedder") if mechanism == "chunker.over_limit" else FIELDS[stage]
+    tried: list[str] = []
     for evaluation in measured:
         changed = chosen.differs_only_in(evaluation.spec)
+        if len(changed) != 1 or changed[0] not in fields:
+            continue
+        value = f"{changed[0]} {getattr(evaluation.spec, changed[0])}"
         result = evaluation.results.get(question)
-        if len(changed) == 1 and changed[0] in fields and result and result.metrics["hit_at_k"] == 1.0:
-            value = getattr(evaluation.spec, changed[0])
-            return "confirmed", f"{FIXES[mechanism]}: {changed[0]} {value} finds it (measured in this run)"
+        if result and result.metrics["hit_at_k"] == 1.0:
+            return "confirmed", f"{FIXES[mechanism]}: {value} finds it (measured in this run)"
+        if value not in tried:
+            tried.append(value)
     if mechanism == "embedder.meaning" and _no_embedder_finds(question, measured):
         return "indicated", "no tested embedder connects this question to its answer"
+    if tried:
+        return "indicated", f"{FIXES[mechanism]}; measured here and not finding it either: {', '.join(tried)}"
     flag = FLAGS[fields[0]]
     return "indicated", f"{FIXES[mechanism]} (not measured: `ragcourt rank DOCS {flag} …` would measure it)"
 

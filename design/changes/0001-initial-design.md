@@ -2,9 +2,10 @@
 
 ## Status
 
-`accepted` (2026-11-22) by the owner, together with D-032, D-033, D-035 and D-036; proposed the same day
-from the owner's brief ([history/0001-owner-brief.md](../history/0001-owner-brief.md)). Built in the
-milestone below; [current.md](../current.md) §17 says which steps are done.
+`implemented` (2026-11-22, unreleased): accepted by the owner with D-032, D-033, D-035 and D-036, and built
+in the milestone below; proposed the same day from the owner's brief
+([history/0001-owner-brief.md](../history/0001-owner-brief.md)). Choices made while building are D-037 to
+D-055.
 
 **Revised 2026-11-22** after the owner's first answers: the first result uses a local model (Ollama),
 not the model-free audit; a model judge filters questions (the brief's exclusion of judges was wrong);

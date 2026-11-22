@@ -1,16 +1,17 @@
 # ragcourt documentation
 
-The user documentation is written as the first design is built. The design itself is in
-[`../design/`](../design/README.md); start with [`../design/current.md`](../design/current.md).
+Start with the [README](../README.md) for installing and the first commands. The design behind every
+behaviour is in [`../design/current.md`](../design/current.md).
 
-| Page | What it will hold |
+| Page | What it holds |
 |---|---|
-| [`cli.md`](cli.md) | the `ragcourt` command line: `audit`, `rank`, `explain`, `doctor`, the configuration file, the results file |
-| [`audit.md`](audit.md) | every audit check, its code, what triggers it and what to do about it |
-| [`models.md`](models.md) | the model roles (writer, judge, embedders, reranker, doctor), the defaults and why, `setup`, changing a model with `models set`, endpoints |
-| [`judge.md`](judge.md) | what the judge is asked, what it is shown and never decides, its prompts, its self-test case by case, reading its verdicts |
-| [`questions.md`](questions.md) | the question categories, how questions and gold quotes are made and filtered, the dev and held-out split, bringing your own questions, the question file |
-| [`metrics.md`](metrics.md) | every metric, how it is computed, the confidence intervals and what "no significant difference" means |
+| [`cli.md`](cli.md) | every command and option, exit codes, the files ragcourt writes |
+| [`models.md`](models.md) | the model roles, the defaults and why, `setup`, `models set`, endpoints, prefixes and input limits |
+| [`audit.md`](audit.md) | every audit check: what triggers it, its near miss, what to do |
+| [`questions.md`](questions.md) | the question categories, how questions and quotes are written and filtered, the split, your own questions |
+| [`judge.md`](judge.md) | what the judge is asked and shown, what it never decides, its prompts and self-test, reading its verdicts |
+| [`metrics.md`](metrics.md) | every metric, the intervals, "no significant difference", too few to rank |
+| [`blame.md`](blame.md) | why a question was missed: the stages, the mechanisms, the probes, confirmed or indicated, fixes |
 | [`stages.md`](stages.md) | the built-in stages, the extras, and how to write your own stage in one file |
-| [`one-question.md`](one-question.md) | one question followed from the document to the blame |
-| [`privacy.md`](privacy.md) | what is read, what is sent to which endpoint, what is stored where, no telemetry |
+| [`one-question.md`](one-question.md) | one question followed from its document to its blame |
+| [`privacy.md`](privacy.md) | what is read, what is sent to which address, what is stored where |
