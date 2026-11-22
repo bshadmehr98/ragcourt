@@ -15,6 +15,7 @@ if [ -f uv.lock ]; then uv sync --all-extras --frozen; else uv sync --all-extras
 step "ruff check";   uv run ruff check .
 step "ruff format";  uv run ruff format --check .
 step "import layers"; uv run python scripts/check_layers.py   # design/current.md §3.1
+step "simplicity";   uv run python scripts/check_simple.py   # CONTRIBUTING.md "Keep it simple"
 step "pyright";      uv run pyright
 step "pytest (default suite + coverage)"
 uv run pytest --cov="src/${PKG_IMPORT}" --cov-branch --cov-report=term-missing:skip-covered --cov-fail-under=90

@@ -64,16 +64,36 @@ src = ["src", "tests"]
 extend-exclude = ["design"]
 
 [tool.ruff.lint]
-select = ["E", "F", "W", "I", "B", "UP", "SIM", "RUF", "PT", "N", "S", "C4", "DTZ", "PL", "C90"]
-ignore = ["PLR0913", "PLR0917", "PLR2004"]
+# The "Keep it simple" rules of CONTRIBUTING.md that ruff can check; scripts/check_simple.py checks the rest.
+select = [
+    "E", "F", "W", "I", "B", "UP", "SIM", "RUF", "PT", "N", "S", "C4", "DTZ", "PL", "C90",
+    "BLE",   # no blind `except Exception`
+    "T20",   # no print outside the command line
+    "ERA",   # no commented-out code
+    "RET",   # plain returns
+    "ARG",   # no unused arguments
+    "PTH",   # pathlib, not os.path
+    "FBT",   # no boolean positional arguments: name the flag
+    "PIE",   # no needless pass, duplicate keys, …
+    "D100", "D101", "D103",  # every module, public class and public function says what it does
+]
+ignore = ["PLR0917", "PLR2004"]
 
 [tool.ruff.lint.mccabe]
 max-complexity = 10
 
+[tool.ruff.lint.pylint]
+max-args = 6
+max-branches = 10
+max-returns = 5
+max-statements = 30
+
 [tool.ruff.lint.per-file-ignores]
-"tests/**" = ["S101", "S105", "S106", "S108", "S603", "S607", "PT018", "E501", "PLC0415", "PLR0915"]
+"tests/**" = ["S101", "S105", "S106", "S108", "S603", "S607", "PT018", "E501", "PLC0415", "D1", "FBT", "ARG"]
 "examples/**" = ["S101", "S108", "PT018", "T201"]
-"scripts/**" = ["T201"]
+"scripts/**" = ["T201", "D103"]
+"src/ragcourt/cli.py" = ["T201"]          # the command line prints
+"src/ragcourt/commands/*.py" = ["T201"]   # commands write output for people
 
 [tool.pyright]
 include = ["src", "tests", "scripts"]

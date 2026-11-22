@@ -20,6 +20,7 @@ import sys
 from pathlib import Path
 
 PACKAGE = "ragcourt"
+Imported = list[tuple[int, tuple[str, ...]]]  # (line, dotted module path)
 LAYER = {"types": 0, "errors": 0, "stages": 1, "core": 2, "io": 2, "commands": 3, "cli": 4}
 TOP = 5  # the package root (__init__, __main__) and testing
 
@@ -39,17 +40,23 @@ def module_parts(path: Path, root: Path) -> tuple[str, ...]:
     return parts[:-1] if parts[-1] == "__init__" else parts
 
 
-def imported(tree: ast.Module, parts: tuple[str, ...], is_package: bool) -> list[tuple[int, tuple[str, ...]]]:
+def import_from_base(node: ast.ImportFrom, parts: tuple[str, ...], *, is_package: bool) -> tuple[str, ...]:
+    """The module a ``from … import`` reads from, with a relative import resolved."""
+    base = tuple(node.module.split(".")) if node.module else ()
+    if not node.level:
+        return base
+    here = parts if is_package else parts[:-1]
+    return here[: len(here) - node.level + 1] + base
+
+
+def imported(tree: ast.Module, parts: tuple[str, ...], *, is_package: bool) -> Imported:
     """Every ``ragcourt`` module this file imports, with its line, relative imports resolved."""
-    found: list[tuple[int, tuple[str, ...]]] = []
+    found: Imported = []
     for node in ast.walk(tree):
         if isinstance(node, ast.Import):
             found += [(node.lineno, tuple(a.name.split("."))) for a in node.names]
         elif isinstance(node, ast.ImportFrom):
-            base = tuple((node.module or "").split(".")) if node.module else ()
-            if node.level:
-                here = parts if is_package else parts[:-1]
-                base = here[: len(here) - node.level + 1] + base
+            base = import_from_base(node, parts, is_package=is_package)
             found += [(node.lineno, (*base, a.name)) for a in node.names]
     return [(line, target) for line, target in found if target[0] == PACKAGE]
 
@@ -83,7 +90,7 @@ def check(root: Path) -> list[str]:
     for path in sorted(root.rglob("*.py")):
         parts = module_parts(path, root)
         tree = ast.parse(path.read_text(), filename=str(path))
-        for line, target in imported(tree, parts, path.name == "__init__.py"):
+        for line, target in imported(tree, parts, is_package=path.name == "__init__.py"):
             why = problem(parts, target)
             if why:
                 errors.append(f"{path}:{line}: imports {'.'.join(target)}: {why}")

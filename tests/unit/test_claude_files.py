@@ -9,6 +9,7 @@ import json
 import os
 import re
 from pathlib import Path
+from typing import Any
 
 import pytest
 
@@ -85,7 +86,9 @@ def test_named_files_exist(path: Path) -> None:
 def test_named_design_sections_exist(path: Path) -> None:
     headings = (ROOT / "design/current.md").read_text()
     lines = [line for line in path.read_text().splitlines() if "design/current.md" in line]
-    refs = [ref for line in lines for ref in re.findall(r"§(\d+(?:\.\d+)?)", line)]
+    refs: list[str] = []
+    for line in lines:
+        refs += re.findall(r"§(\d+(?:\.\d+)?)", line)
     missing = [ref for ref in refs if not re.search(rf"^#+ {re.escape(ref)}[. ]", headings, re.MULTILINE)]
     assert not missing, f"{path.relative_to(ROOT)} names sections missing from design/current.md: {missing}"
 
@@ -104,14 +107,20 @@ def test_named_skills_and_agents_exist(path: Path) -> None:
     assert not unknown, f"{path.relative_to(ROOT)} names skills or agents that don't exist: {unknown}"
 
 
+def wired_hooks(settings: dict[str, Any]) -> list[tuple[str, str, dict[str, str]]]:
+    """Every hook in the settings as (event, matcher, hook)."""
+    wired: list[tuple[str, str, dict[str, str]]] = []
+    for event, groups in settings["hooks"].items():
+        for group in groups:
+            wired += [(event, group["matcher"], hook) for hook in group["hooks"]]
+    return wired
+
+
 def test_settings_wire_the_hooks_and_deny_publishing() -> None:
     settings = json.loads((CLAUDE / "settings.json").read_text())
-    hooks = {
-        (event, group["matcher"], hook.get("if", ""), hook["command"].rsplit("/", 1)[-1])
-        for event, groups in settings["hooks"].items()
-        for group in groups
-        for hook in group["hooks"]
-    }
+    hooks = set()
+    for event, matcher, hook in wired_hooks(settings):
+        hooks.add((event, matcher, hook.get("if", ""), hook["command"].rsplit("/", 1)[-1]))
     assert ("PreToolUse", "Edit|Write|NotebookEdit", "", "guard-main.sh") in hooks
     assert ("PostToolUse", "Edit|Write", "", "format-python.sh") in hooks
     assert ("PostToolUse", "Bash", "Bash(git push*)", "after-push.sh") in hooks
@@ -133,12 +142,7 @@ def test_settings_wire_the_hooks_and_deny_publishing() -> None:
 
 def test_settings_hooks_exist_and_are_executable() -> None:
     settings = json.loads((CLAUDE / "settings.json").read_text())
-    commands = [
-        hook["command"]
-        for groups in settings["hooks"].values()
-        for group in groups
-        for hook in group["hooks"]
-    ]
+    commands = [hook["command"] for _, _, hook in wired_hooks(settings)]
     assert commands
     for command in commands:
         script = ROOT / command.replace('"$CLAUDE_PROJECT_DIR"/', "")
