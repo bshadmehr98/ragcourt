@@ -105,6 +105,19 @@ rank stage variants, attribute misses to a stage, or use span gold with interval
 - Alternatives checked on PyPI only: `chunkdoctor` free (an unrelated Minecraft "ChunkDoctor" exists on
   GitHub); `ragblame` free on PyPI but a direct concept clash on GitHub; `retrievalscope` free on PyPI
   with no GitHub repositories. `sourced`
+- **Second round (2026-11-22, after the owner asked for a name with "rag" that is used nowhere):** 60
+  candidates checked by script against PyPI (both `ragx` and `rag-x`), npm and GitHub repository names
+  (`gh api search/repositories "<name> in:name"`). Free on all three, with no repository whose name
+  contains it: `ragsift`, `ragstethoscope`, `ragsplint`, `ragculprit`, `ragcalipers`, `ragcaliper`,
+  `ragtally`, `ragprove`, `ragscout`, `ragsleuth`, `ragbisector`, `ragstage`, `ragstages`,
+  `ragpinpoint`, `ragrootcause`, `ragseam`, `ragsplice`, `ragmeasure`, `ragreceipt`, `ragsurgeon`,
+  `ragbiopsy`, `ragcensus`. `sourced`. A web search for the exact names `ragsift`, `ragculprit`,
+  `ragsleuth`, `ragcaliper`, `ragpinpoint`, `ragbisector`, `ragscout`, `ragstage`, `ragtally`,
+  `ragbiopsy`, `ragprove` and `ragseam` found no use of any of them; near names exist (RAGSwift, a
+  self-hosted embeddings platform, next to `ragsift`; RAGXRay on PyPI; Ragnosis on Product Hunt).
+  `sourced`. Taken or crowded: `ragtrace`, `ragbench`, `raglens`, `ragscope`, `ragprobe`, `ragrank`,
+  `ragdiag`, `ragkit`, `ragxray` (on PyPI or as GitHub repository names), and `ragmedic` (20 repositories),
+  `ragtune` (10). `sourced`. Domains and trademarks were not checked.
 - Conclusion: "ragdoctor" is crowded by three RAG-diagnosis projects of nearly the same name. Raised as
   [D-001](../decisions.md#d-001-the-name-ragdoctor). `inferred`
 
@@ -124,15 +137,19 @@ rank stage variants, attribute misses to a stage, or use span gold with interval
 - AutoRAG's passage-reranker and token-metric pages; whether MTCB's generator needs a key.
 - RECTIFY's code; arXiv 2603.06976's code and gold; an "arXiv 2609.31660" that appeared in a search and
   could not be verified.
-- **How well small local models write questions with verbatim quotes**, and how many are dropped. The
-  promise "a first useful result in under a minute with no API key" for `rank` depends on it (D-006).
+- **How well small local models write questions with verbatim quotes**, and how many are dropped: first
+  measured on the owner's machine in [0002-local-models.md](0002-local-models.md).
 - How often the blame rules' boundaries (top 50, k) match what developers mean by "the retriever's
   fault"; no user has been asked.
-- Which tokenizers can be loaded offline for common embedding models, and their install size (D-008).
+- Which tokenizers can be loaded offline for common embedding models, and their install size (D-008);
+  for Ollama models, [0002-local-models.md](0002-local-models.md) found that Ollama reports token counts.
 - Whether a bootstrap over a few dozen held-out questions gives intervals narrow enough to separate
   anything on typical corpora; this will be measured on the bundled corpus and real-model tests (D-011).
 
 ## Sources
+
+- https://alternativeto.net/software/ragswift/about ; https://pypi.org/project/ragxray/ ;
+  https://www.producthunt.com/products/ragnosis/reviews
 
 - https://github.com/Marker-Inc-Korea/AutoRAG ; https://pypi.org/pypi/AutoRAG/json ;
   https://autorag-docs.nomadamas.org/legacy/optimization/optimization.html
