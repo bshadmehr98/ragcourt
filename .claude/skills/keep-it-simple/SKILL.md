@@ -35,8 +35,8 @@ most of them. This is how to meet them well, not just pass the checks.
   exception) or in hidden files. `core` never does I/O.
 - Persist with plain files the user can open (JSON, JSONL, TOML); never add a database, a server, a
   thread or `async`.
-- A class only for data (`@dataclass(frozen=True)`), a `Protocol`, an enum or an error. Behaviour is a
-  function.
+- A class only for data (`@dataclass(frozen=True)`), a `Protocol`, an enum or an error (and the one
+  `HTMLParser` that reads HTML). Behaviour is a function.
 
 **When a check fails**
 - Too long: find the second concept in the function or module and move it out under its own name. Do

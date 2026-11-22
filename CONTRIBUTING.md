@@ -53,8 +53,8 @@ checklist.
    it goes in one module behind a design decision.
 4. **Functions and dataclasses.** Data is a `@dataclass(frozen=True)` (or a plain dict read from a
    file); behaviour is a function. A class with methods only where state truly belongs to it (the model
-   client holding its connection settings). The only inheritance: `typing.Protocol`, enums, and the errors
-   in `errors.py`.
+   client holding its connection settings). The only inheritance: `typing.Protocol`, enums, the errors
+   in `errors.py`, and `html.parser.HTMLParser`, which the standard library offers only as a base class.
 5. **No magic.** No metaclasses, `__getattr__` tricks, monkey-patching, `eval`/`exec`, `global`, import
    hooks or code generation. The one dynamic import is the stage loader (design §7.2). The one decorator
    the design asks for is a stage's registration.
@@ -109,7 +109,7 @@ without a comment that says why, and never "fixed" by splitting code into pieces
 | Branches, returns, statements per function | 10, 5, 30 |
 | Parameters per function | 6; boolean ones keyword-only |
 | Comprehension | one `for`, at most one `if`, none inside another |
-| Inheritance | `Protocol`, enums and the errors only |
+| Inheritance | `Protocol`, enums, the errors and `HTMLParser` only |
 | Imports | downward only (design §3.1, `scripts/check_layers.py`) |
 | Core dependencies | the standard library |
 

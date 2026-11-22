@@ -9,7 +9,7 @@ Checked on every Python file under src/, scripts/, tests/ and examples/:
 - no nested conditional expression (``a if b else c if d else e``) and no walrus (``:=``);
 - no ``global``, ``nonlocal``, ``eval``, ``exec``, ``__import__``, ``globals()`` or ``locals()``;
 - ``importlib`` only where the design loads the user's stages; no metaclasses;
-- in src/, a class subclasses only ``Protocol`` or an enum, except the errors in errors.py;
+- in src/, a class subclasses only ``Protocol``, an enum or ``HTMLParser``, except the errors in errors.py;
 - no module named like a junk drawer (utils, helpers, misc, common, manager, base, …).
 
 Usage: ``python scripts/check_simple.py [PATH …]`` (default: the four folders).
@@ -31,7 +31,8 @@ COMPREHENSIONS = (ast.ListComp, ast.SetComp, ast.DictComp, ast.GeneratorExp)
 FORBIDDEN_CALLS = {"eval", "exec", "__import__", "globals", "locals"}
 JUNK_NAMES = {"utils", "util", "helpers", "helper", "misc", "common", "manager", "managers", "handler"}
 JUNK_NAMES |= {"handlers", "base", "stuff", "tools"}
-ALLOWED_BASES = {"Protocol", "Enum", "StrEnum", "IntEnum"}
+# Protocols, enums, and the one standard-library API that works only by subclassing (D-038).
+ALLOWED_BASES = {"Protocol", "Enum", "StrEnum", "IntEnum", "HTMLParser"}
 IMPORTLIB_ALLOWED = {"src/ragcourt/stages/__init__.py"}  # loading the user's stage folder (design §7.2)
 
 
@@ -43,13 +44,19 @@ def body_lines(node: ast.FunctionDef | ast.AsyncFunctionDef) -> int:
     return (node.end_lineno or node.lineno) - start + 1
 
 
+def is_elif(parent: ast.AST, child: ast.AST) -> bool:
+    """True for the ``elif`` of an ``if``: the AST nests it in ``orelse``, but it reads as the same level."""
+    return isinstance(parent, ast.If) and isinstance(child, ast.If) and parent.orelse == [child]
+
+
 def max_depth(node: ast.AST, depth: int = 0) -> int:
     """The deepest block nesting below ``node``; a nested function starts again from zero."""
     deepest = depth
     for child in ast.iter_child_nodes(node):
         if isinstance(child, (ast.FunctionDef, ast.AsyncFunctionDef, ast.Lambda)):
             continue
-        child_depth = depth + 1 if isinstance(child, BLOCKS) else depth
+        nests = isinstance(child, BLOCKS) and not is_elif(node, child)
+        child_depth = depth + 1 if nests else depth
         deepest = max(deepest, max_depth(child, child_depth))
     return deepest
 

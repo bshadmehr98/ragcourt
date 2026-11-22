@@ -47,6 +47,15 @@ def test_this_repository_is_simple() -> None:
             "def f(x):\n    if x:\n        for y in x:\n            while y:\n                if y:\n                    break\n",
             False,
         ),
+        ("def f(x):\n    if x == 1:\n        pass\n" + "    elif x == 2:\n        pass\n" * 5, True),
+        (
+            "def f(x):\n    if x:\n        pass\n    elif x:\n        if x:\n            if x:\n                pass\n",
+            True,
+        ),
+        (
+            "def f(x):\n    if x:\n        if x:\n            pass\n        elif x:\n            if x:\n                if x:\n                    pass\n",
+            False,
+        ),
         ("X = 1\n" * 250, True),
         ("X = 1\n" * 251, False),
     ],
