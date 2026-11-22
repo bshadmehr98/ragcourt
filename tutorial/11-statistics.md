@@ -42,7 +42,14 @@ on small document sets, and it is useful: it means "pick the cheaper one".
 than this cannot be seen with these questions; to see them, write more questions (`--questions 150`).
 
 **Leaders per kind**: when another entry is clearly better on one kind of question, even if not overall,
-the output says so: "On paraphrase, … dense leads."
+the output says so: "On paraphrase, … dense leads." And when the pipeline the search *chose* is clearly
+behind another entry on one kind, a note says so, because an overall tie can hide a kind of question the
+choice fails:
+
+```text
+Note: on paraphrase questions this choice scores 0.02, separably below … dense | none (0.22).
+If those questions matter to you, prefer it.
+```
 
 ## Too few to rank
 

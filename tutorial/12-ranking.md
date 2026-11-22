@@ -56,7 +56,9 @@ Chosen for the next step (on dev questions): recursive:size=256,overlap=32 | …
 - Each cell is the mean and its 95% interval; one column per kind of question.
 - `=` marks entries tied with the top. The last one has no `=`: it is clearly worse.
 - The chosen pipeline can differ from the top row: it was chosen on dev questions, the table shows
-  held-out ones, and both are tied.
+  held-out ones, and both are tied. If held-out questions show the choice clearly behind, a `Note:` says
+  so, and another names any kind of question the choice fails (chapter 11). Read the notes: they are where
+  "best overall" and "best for you" part ways.
 
 ## After the four steps
 
