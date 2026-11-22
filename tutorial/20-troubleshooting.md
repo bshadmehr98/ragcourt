@@ -21,7 +21,7 @@
 | `A money budget is set but an endpoint has no price` | ragcourt can't estimate the cost | add it to `[prices]` |
 | `unknown setting … The settings are: …` | a typo in `ragcourt.toml` | use a name from the list |
 | `No unfinished run has this plan … starting a new one` | `--resume` found no stopped run with the same documents, models and settings | expected after a change; the new run reuses questions and embeddings |
-| the first run is slow | writing ~540 questions takes 15 to 25 min on an 8 GB GPU | try `--questions 20` first; later runs reuse the questions |
+| the first run is slow | writing ~540 questions takes about 45 min on an 8 GB GPU, the `llm` reranker about 3 s per question | try `--questions 20` first, or leave out `--rerankers llm`; later runs reuse the questions |
 | a distractor column always too few | your documents have few look-alike passages | normal for small or very varied document sets |
 
 ## Making runs faster

@@ -66,7 +66,7 @@ ragcourt questions show                         # every kept question, quote and
 ragcourt questions show --dropped --reason judge
 ```
 
-Writing ~540 questions takes 15 to 25 minutes on an 8 GB GPU, once: they are saved in
+Writing ~540 questions took 44 minutes on an 8 GB GPU for 160 pages of documentation, once: they are saved in
 `.ragcourt/questions.jsonl` and reused while your documents and models don't change. If the run is
 interrupted, it continues where it stopped.
 

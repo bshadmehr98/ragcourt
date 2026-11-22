@@ -29,7 +29,7 @@ reported as **too few to rank** and left out of the overall score.
 
 90 per category by default (`[questions] per_category`): 30 to choose pipelines (**dev**), 60 to report
 on (**held-out**), split by a hash of each question and the seed, a third per category. About 540
-questions take 15 to 25 minutes once per corpus on an 8 GB GPU; they are written as they come, reused while
+questions took 44 minutes for 160 pages of documentation on an 8 GB GPU, once per corpus; they are written as they come, reused while
 your documents and settings do not change, and resumed after an interruption.
 
 ## Filters

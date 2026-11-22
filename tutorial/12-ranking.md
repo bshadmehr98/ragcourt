@@ -80,7 +80,11 @@ Chunker specs carry commas, so they are separated by `;`. The same lists can liv
 
 ## How long it takes
 
-On an 8 GB GPU with the defaults, the first run is 15 to 25 minutes, mostly writing questions. Later runs
-reuse the questions and the cached embeddings, so trying a new chunker takes about a minute.
+Measured on an 8 GB GPU with the defaults (chapter 19): about 2 minutes for a dozen short pages with a few
+questions per kind, about 70 minutes for 160 pages of documentation (FastAPI's) with the full 540
+questions: 44 minutes writing questions, 4 minutes embedding, 20 minutes for the `llm` reranker. The plan
+shows the estimate before anything starts. Later runs reuse the questions and the cached embeddings: the
+FastAPI run again took about 22 minutes, nearly all of it the reranker; without `llm` in `--rerankers`, a
+new chunker is measured in a minute or two.
 
 Next: [why a question was missed](13-why-questions-fail.md).

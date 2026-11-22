@@ -45,7 +45,7 @@ The [examples folder](../examples/README.md) has one such script per feature.
 
 ```text
 ragcourt audit my_docs/      # seconds: how the chunkers cut your text (chapter 4)
-ragcourt rank my_docs/       # the ranking: plan first, then 15 to 25 minutes the first time (chapter 12)
+ragcourt rank my_docs/       # the ranking: plan and time estimate first (minutes to an hour, chapter 12)
 ragcourt explain             # why each missed question was missed (chapter 13)
 ragcourt report              # the same results as one HTML page
 ```

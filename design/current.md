@@ -353,8 +353,8 @@ its count or its passages are used up (at most 6 requests per wanted question, s
 are accepted 1 to 3 times in 8 without passage selection). The output says, per category, how many were
 asked for, written, dropped by reason and kept; a category with fewer than 30 held-out questions is
 reported as **too few to rank** with its count, never folded into the average. Questions are written once
-per corpus and reused; the plan (§10.3) shows the time this takes before it starts (about 15 to 25
-minutes on the owner's machine for a full set, `inferred`).
+per corpus and reused; the plan (§10.3) shows the time this takes before it starts (44 minutes on the
+owner's machine for the 434 questions the FastAPI docs gave, `measured`, D-057).
 
 Every leaderboard also prints, per category, the **smallest difference it can tell apart** at that size
 (from the paired bootstrap of §8.4: half the width of the interval of the difference between the top
@@ -910,8 +910,8 @@ held-out questions; the greedy search can miss a combination that only wins join
 `indicated` rests on probes, not on a measured alternative; questions need one quote (no question that
 needs two passages); a small corpus may not support every category; question
 quality and the judge's verdicts are only as good as the local model (the self-test guards the judge, not
-the writer); a full run takes 15 to 25 minutes on a GPU like the owner's (8 GB) and much longer on CPU
-only. Measured on the bundled corpus with `gemma4`: `distractor` questions are the hardest to obtain (the
+the writer); a full run on 160 pages of documentation took about 70 minutes on a GPU like the owner's (8 GB),
+and would take much longer on CPU only. Measured on the bundled corpus with `gemma4`: `distractor` questions are the hardest to obtain (the
 judge rightly drops many whose look-alike passage also answers them), and on a dozen documents dev and
 held-out choices can disagree; the output says so. One question is written per offered passage. The
 `chonkie.semantic` adapter is left out (it downloads its own model, D-054). The time budget is checked
