@@ -5,13 +5,13 @@ the designer's, open to the owner's review. Code comments refer to entries by nu
 
 ## Awaiting owner review
 
-Design 0001 is proposed and was revised after the owner's answers (2026-11-22). Still open, each written
-out in plain words below:
+Design 0001 is proposed and was revised after the owner's answers (2026-11-22). Open now:
 
 | Id | The question | Status |
 |---|---|---|
-| [D-011](#d-011-choosing-on-one-half-of-the-questions-reporting-on-the-other) | Choose the winner on one half of the questions and report scores on the other half; call a tie when the difference is within the noise? | awaiting owner |
-| [D-014](#d-014-retrieval-blame-is-one-stage) | When the search does not find the right chunk, blame "retrieval" without saying whether the embedding model or the search method was at fault, unless a measurement shows which? | awaiting owner |
+| [D-032](#d-032-questions-by-category-90-each) | Six question categories (different wording, keywords, exact terms, misleading, negation, numbers), 90 each (30 to choose, 60 to report)? | awaiting owner |
+| [D-033](#d-033-blame-a-stage-a-mechanism-evidence-and-a-level) | Blame as a stage plus a mechanism (14 of them), with evidence and `confirmed` or `indicated`? | awaiting owner |
+| [D-034](#d-034-the-first-look-and-the-first-minute) | The first-minute run is "a first look" (8 questions per category, no winner per category); the full set takes 15 to 25 minutes once per corpus? | awaiting owner |
 
 ## The owner's answers (2026-11-22)
 
@@ -29,6 +29,8 @@ out in plain words below:
 | D-026 | The judge's self-test is accepted, and it must be explained to the user (D-030). | owner |
 | D-030 | Nothing happens blindly: a new user must know what is being judged, how, by which model, and why. | owner |
 | D-027 | The default local models are accepted; the user must be able to change them easily (D-031). | owner |
+| D-011 | Choosing on some questions and reporting on others is accepted; but one mixed set of a few dozen is not enough: many questions of each kind are needed (D-032). | owner |
+| D-014 | "retrieval" as one blame stage is not good enough: why a miss happened is the reason to use the product, so blame must be precise (D-033). | owner |
 
 ## D-001: The name: ragcourt  (2026-11-22)
 
@@ -137,7 +139,11 @@ out in plain words below:
   are left for reporting, because the ranges get wide.
 - **The alternative:** report on all questions and accept a flattered score; simpler, but the brief asks
   for the split (brief §3).
-- **Status:** awaiting owner review.
+- **Owner (2026-11-22):** accepted, with a condition: "for deciding if a specific embedding acts better
+  we need different kinds of questions", for example 60 with different wording, 60 misleading, 60 with
+  specific words, "so only using 60 questions is not good enough at all". See D-032: the split is now one
+  third to choose and two thirds to report, within each category.
+- **Status:** owner's answer.
 
 ## D-012: The closed-book filter uses a judge  (2026-11-22)
 
@@ -171,7 +177,9 @@ out in plain words below:
   search, another embedding model found the chunk, the fix names that model; if keyword or hybrid search
   found it, the fix names that retriever; if nothing tested found it, the fix says so.
 - **The alternative:** always split it into "embedder" and "retriever", which would mean guessing.
-- **Status:** awaiting owner review.
+- **Owner (2026-11-22):** not good enough: these failures are exactly why a user would use the product.
+  Replaced by D-033.
+- **Status:** superseded by D-033.
 
 ## D-015: Rerankers  (2026-11-22)
 
@@ -318,3 +326,53 @@ out in plain words below:
   for a judge, runs the self-test; per-run flags override; `setup` writes a commented `ragcourt.toml`.
   Precedence: flag, file, default, printed in the plan (design §11.4).
 - **Status:** designer's choice.
+
+## D-032: Questions by category, 90 each  (2026-11-22)
+
+- **Owner (2026-11-22):** many questions of each kind, because embedders fail on specific kinds.
+- **Choice:** six categories, each aimed at a known weakness: `paraphrase` (different wording),
+  `keyword` (search terms), `exact_term` (a rare identifier, name or number), `distractor` (worded like a
+  similar passage that does not answer it: the misleading questions), `negation`, `numeric`; plus the
+  user's own (design §6.7). 90 per category by default, 30 to choose and 60 to report; every result per
+  category and overall (the mean of categories, so each counts the same); a category under 30 reported
+  questions is "too few to rank"; each category prints the smallest difference it can tell apart (§6.8).
+- **Why these checks:** a local model asked for a negation, a number or a misleading question wrote one
+  that was really of that kind only 1 to 3 times in 8 ([history/0003-question-categories.md](history/0003-question-categories.md)).
+  So passages that can support a category are chosen by code, membership is checked by code (and by the
+  judge for `negation` and `distractor`), and failures are dropped and counted, never kept as "hard".
+- **Cost:** about 540 questions, 15 to 25 minutes on the owner's machine once per corpus (`inferred`),
+  shown in the plan before it starts; the counts and categories are settings.
+- **Not in 0.1:** questions that need two passages (multi-hop), and unanswerable questions; both need a
+  different gold than one quote.
+- **Status:** awaiting owner review.
+
+## D-033: Blame: a stage, a mechanism, evidence and a level  (2026-11-22)
+
+- **Owner (2026-11-22):** "Can't we have a better system? These are the reasons a user may actually use
+  our project."
+- **Choice:** four stages (`chunker`, `embedder`, `retriever`, `ranking`) and fourteen mechanisms, checked
+  by code in a fixed order so each miss gets one cause and a list of anything else also seen (design
+  §9.1). Examples: the quote was cut across a boundary (`chunker.split`); it lay past the embedder's input
+  limit, so the embedder never read it (`chunker.over_limit`); it was drowned in a long chunk, shown by
+  embedding the quote alone (`chunker.diluted`); keyword search found it and the embedder did not
+  (`embedder.exact_words`); a similar passage that does not answer took its place (`embedder.distracted`);
+  the reranker pushed it out (`ranking.reranker_demoted`).
+- **How it tells the embedder from the retriever:** a few cheap probes per question (§9.4): the quote
+  embedded alone, BM25's rank of the right chunk whatever the retriever, every measured embedder's rank,
+  ranks before and after the reranker and in each half of a hybrid search, the quote's token position.
+- **Evidence level:** `confirmed` when a configuration measured in the run, differing only in the blamed
+  stage, gets the question right; otherwise `indicated`, with the command that would confirm it. The share
+  of confirmed blames is printed (§9.3, §9.5).
+- **Still never a model:** every check is arithmetic on spans, ranks and scores.
+- **Status:** awaiting owner review.
+
+## D-034: The first look and the first minute  (2026-11-22)
+
+- **Question:** the first result must come in about a minute (D-006), but a trustworthy ranking needs
+  about 540 questions (D-032), which take 15 to 25 minutes to write once.
+- **Choice:** `rank` without `--full` is labelled **a first look**: 8 questions per category, the default
+  embedders, intervals and blame, no winner named per category, ending with the plan and estimate of the
+  full run, which reuses its questions. `rank --full` is the real answer. Whether the first look fits in a
+  minute with categories (hard categories need more requests) is measured in the first-minute test; if it
+  does not, the first look shrinks to the categories that are quick to write.
+- **Status:** awaiting owner review.
