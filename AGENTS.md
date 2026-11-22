@@ -1,11 +1,11 @@
-# AGENTS.md: ragdoctor
+# AGENTS.md: ragcourt
 
 A brief for AI coding tools (Claude Code, Codex, Cursor and others) helping with this repository.
 People follow the same rules; they are in [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## What this is
 
-ragdoctor (working name; package, import and command `ragdoctor`) is an open-source command-line tool
+ragcourt (package, import and command `ragcourt`) is an open-source command-line tool
 for RAG developers: it ranks chunkers, embedding models, retrievers and rerankers on the user's own
 documents, and says which stage caused each miss. It runs on local models through Ollama by default:
 `setup` picks and pulls models that fit the machine; `rank` measures pipelines against questions whose
@@ -38,8 +38,8 @@ The layers of design §3.1; each module's docstring names the sections it implem
 milestone by milestone:
 
 ```
-src/ragdoctor/
-  __init__.py  errors.py       the public API with an explicit __all__; RagDoctorError and its subclasses
+src/ragcourt/
+  __init__.py  errors.py       the public API with an explicit __all__; RagCourtError and its subclasses
   types.py                     dataclasses and protocols, no logic (layer 0)
   stages/                      the registry and its decorators (__init__); chunkers/, embedders/, retrievers/, rerankers/: one file per stage (layer 1)
   core/                        pure functions: offsets, pipeline, metrics, stats, blame, search, audit (layer 2)

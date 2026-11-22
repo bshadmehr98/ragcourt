@@ -20,7 +20,7 @@ merged        -> finish-task
 ```
 
 - Never edit on `main`: `.claude/hooks/guard-main.sh` blocks the Edit/Write tools on this repository's
-  files there (`RAGDOCTOR_ALLOW_MAIN=1` overrides it). Shell edits and commits are not blocked, so start
+  files there (`RAGCOURT_ALLOW_MAIN=1` overrides it). Shell edits and commits are not blocked, so start
   every task with `start-task`.
 - Once published, reviews run only on GitHub: `.github/workflows/claude-review.yml` has claude[bot]
   follow `.github/claude-review.md` with the reviewer agents on every push to a pull request. A branch
@@ -37,6 +37,6 @@ merged        -> finish-task
   denied. The deny rules are a reminder, not a lock: `uv run` can start anything. To be asked before
   commands run, override `permissions` in `.claude/settings.local.json`.
 - "The user" in the skills is the person in the session; "the maintainer" is whoever maintains
-  ragdoctor. Only the maintainer accepts change records, merges and releases.
-- Settings for your machine (the `RAGDOCTOR_TEST_*` variables of `real-model-tests`, an endpoint key,
+  ragcourt. Only the maintainer accepts change records, merges and releases.
+- Settings for your machine (the `RAGCOURT_TEST_*` variables of `real-model-tests`, an endpoint key,
   extra permissions) go in `.claude/settings.local.json`, which is not committed.

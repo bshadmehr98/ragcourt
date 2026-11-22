@@ -1,6 +1,6 @@
-# ragdoctor
+# ragcourt
 
-*(working name)* Rank chunkers, embedding models, retrievers and rerankers on **your own documents**, and
+Rank chunkers, embedding models, retrievers and rerankers on **your own documents**, and
 say which stage caused each miss.
 
 **Status: designed, not built.** The first design waits for the owner:
@@ -9,7 +9,7 @@ say which stage caused each miss.
 
 ## What it will do
 
-- **Local models, no key.** `ragdoctor setup` finds Ollama, recommends models that fit your machine and
+- **Local models, no key.** `ragcourt setup` finds Ollama, recommends models that fit your machine and
   pulls them when you say so; after that a first ranking takes about a minute, and nothing leaves your
   machine.
 - **`audit`**: chunk your documents and flag chunks cut mid-sentence,
@@ -33,9 +33,9 @@ Any OpenAI-compatible endpoint works too, if you configure one. No telemetry.
 Not yet. When the design is accepted and built:
 
 ```text
-uv tool install ragdoctor
-ragdoctor setup          # once: checks Ollama, pulls models that fit, tests the judge
-ragdoctor rank docs/     # the first ranking, in about a minute
+uv tool install ragcourt
+ragcourt setup          # once: checks Ollama, pulls models that fit, tests the judge
+ragcourt rank docs/     # the first ranking, in about a minute
 ```
 
 ## How this is being built

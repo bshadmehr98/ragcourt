@@ -27,7 +27,7 @@ nothing silently.
 1. Both carry a `format_version`. New optional keys keep it. Removing a key or changing its meaning needs
    a new version and a change record (`plan-change`) with a "Migration and compatibility" section.
 2. An older file is read (or migrated forward on read); a newer file is refused with a message that says
-   which version of ragdoctor reads it. Never guess.
+   which version of ragcourt reads it. Never guess.
 3. Keep a small file of each old version in `tests/fixtures/` and test both the reading and the refusal
    message.
 4. The embedding cache is disposable: a change to its layout bumps its version and starts a new cache;

@@ -1,6 +1,6 @@
 ## What
 
-<!-- What changes for users of ragdoctor, in a few lines. -->
+<!-- What changes for users of ragcourt, in a few lines. -->
 
 ## Why
 

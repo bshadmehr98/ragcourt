@@ -1,5 +1,5 @@
 [project]
-name = "ragdoctor"
+name = "ragcourt"
 dynamic = ["version"]
 description = "Rank chunkers, embedding models, retrievers and rerankers on your own documents, and say which stage caused each miss."
 readme = "README.md"
@@ -26,7 +26,7 @@ classifiers = [
 dependencies = []
 
 [project.scripts]
-ragdoctor = "ragdoctor.cli:main"
+ragcourt = "ragcourt.cli:main"
 
 [dependency-groups]
 # Development tools (PEP 735): installed by `uv sync`, never published as an extra.
@@ -36,20 +36,20 @@ dev = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/bshadmehr98/ragdoctor"
-Repository = "https://github.com/bshadmehr98/ragdoctor"
-Issues = "https://github.com/bshadmehr98/ragdoctor/issues"
-Changelog = "https://github.com/bshadmehr98/ragdoctor/blob/main/CHANGELOG.md"
+Homepage = "https://github.com/bshadmehr98/ragcourt"
+Repository = "https://github.com/bshadmehr98/ragcourt"
+Issues = "https://github.com/bshadmehr98/ragcourt/issues"
+Changelog = "https://github.com/bshadmehr98/ragcourt/blob/main/CHANGELOG.md"
 
 [build-system]
 requires = ["hatchling>=1.25"]
 build-backend = "hatchling.build"
 
 [tool.hatch.version]
-path = "src/ragdoctor/__init__.py"
+path = "src/ragcourt/__init__.py"
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/ragdoctor"]
+packages = ["src/ragcourt"]
 
 [tool.hatch.build.targets.sdist]
 include = [
@@ -92,7 +92,7 @@ markers = [
 
 [tool.coverage.run]
 branch = true
-source = ["src/ragdoctor"]
+source = ["src/ragcourt"]
 
 [tool.coverage.report]
 exclude_also = ["if TYPE_CHECKING:", "raise NotImplementedError", "@overload", "\\.\\.\\."]

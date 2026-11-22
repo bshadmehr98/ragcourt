@@ -9,7 +9,6 @@ Design 0001 is proposed and was revised after the owner's first answers (2026-11
 
 | Id | The question | Status |
 |---|---|---|
-| [D-001](#d-001-the-name) | Which name? Candidates with "rag" that are used nowhere are listed | awaiting the owner's pick |
 | [D-029](#d-029-milestone-1-includes-the-first-ranking) | Milestone 1 includes the first ranking with local models, not only the audit? | awaiting owner |
 | [D-026](#d-026-the-judge-and-its-self-test) | The judge must pass a self-test on labelled cases before its verdicts are used? | awaiting owner |
 | [D-027](#d-027-the-default-local-models-come-from-measurement) | Default local models chosen by measurement, `gemma4` on this machine? | awaiting owner |
@@ -20,8 +19,8 @@ Design 0001 is proposed and was revised after the owner's first answers (2026-11
 
 | Id | Decision | Who |
 |---|---|---|
-| D-002 | Python; the owner's toolchain (uv, hatchling, ruff with line length 110 and complexity 10, pyright strict for `src/`, pytest with 90% branch coverage, `scripts/check.sh` as the one gate) and the k8s-holmes workflow adapted (add-stage, real-model-tests, `RAGDOCTOR_ALLOW_MAIN`). | owner (the brief) |
-| D-001 | The name will contain "rag" and be used nowhere else; the owner picks from the candidates later. | owner |
+| D-002 | Python; the owner's toolchain (uv, hatchling, ruff with line length 110 and complexity 10, pyright strict for `src/`, pytest with 90% branch coverage, `scripts/check.sh` as the one gate) and the k8s-holmes workflow adapted (add-stage, real-model-tests, `RAGCOURT_ALLOW_MAIN`). | owner (the brief) |
+| D-001 | The name is **ragcourt**: it contains "rag" and is used nowhere else. | owner |
 | D-006 | The first version is not model-free: the first useful result uses a model. Any local model that fits the machine may be used. | owner |
 | D-007 | Ollama is the local model runtime (installed on the owner's machine). | owner |
 | D-012 | A model judge is required. The brief's "not in 0.1: model judges" was wrong. Blame stays code. | owner |
@@ -29,21 +28,20 @@ Design 0001 is proposed and was revised after the owner's first answers (2026-11
 | D-025 | User questions carry a quote and skip the closed-book filter: accepted. | owner |
 | D-004 | The repository lives under `bshadmehr98`, its name to follow the product's name. | owner |
 
-## D-001: The name  (2026-11-22)
+## D-001: The name: ragcourt  (2026-11-22)
 
-- **Question:** the brief calls `ragdoctor` a working name. It is crowded: `rag-doctor` is a published RAG
-  failure-diagnosis tool on PyPI, and thehalleyyoung/ragdoctor and hanhanwu/RagDoctor are RAG-diagnosis
-  repositories ([history/0000-research.md](history/0000-research.md) §3).
-- **Owner (2026-11-22):** a name with "rag" that is not used anywhere; the owner picks later.
-- **Candidates** free on PyPI, npm and GitHub repository names, with no web use found for those searched
-  (research §3, second round): `ragculprit`, `ragsleuth`, `ragbisector`, `ragpinpoint`, `ragcaliper`,
-  `ragscout`, `ragsift`, `ragtally`, `ragprove`, `ragstage`, `ragseam`, `ragbiopsy`, and more in the note.
-  Judge-themed (third round): `ragjury`, `ragarbiter`, `ragreferee`, `ragumpire`, `ragtribunal`,
-  `ragcoroner`, `ragassessor`; `ragjudge` and `ragverdict` are taken.
-- **Meanwhile:** `ragdoctor` stays as the package, import and command; a rename is one search-and-replace
-  before publishing.
-- **Status:** awaiting the owner's pick; must be settled before the first publish.
-
+- **Question:** the brief called the product `ragdoctor`, a working name. It was crowded: `rag-doctor` is
+  a published RAG failure-diagnosis tool on PyPI, and two RAG-diagnosis repositories on GitHub are named
+  `ragdoctor` and `RagDoctor` ([history/0000-research.md](history/0000-research.md) §3).
+- **Owner (2026-11-22):** a name with "rag" that is used nowhere; from the candidates, **ragcourt**.
+- **Checked:** `ragcourt` and `rag-court` are free on PyPI, `ragcourt` on npm, no GitHub repository name
+  contains it, and a web search for the exact name found no use (research §3, third round). Domains
+  and trademarks were not checked.
+- **Applied:** package, import and command `ragcourt`; the working folder `.ragcourt/`, the
+  configuration `ragcourt.toml`, the user's stages in `ragcourt_stages/`, the base error
+  `RagCourtError`, the guard override `RAGCOURT_ALLOW_MAIN`. The owner's brief and the research notes
+  keep the old name, as written at the time.
+- **Status:** owner's decision.
 ## D-003: The core is the standard library alone  (2026-11-22)
 
 - **Question:** k8s-holmes allows pydantic in the core. The brief asks for "types (dataclasses, no
@@ -57,10 +55,9 @@ Design 0001 is proposed and was revised after the owner's first answers (2026-11
 ## D-004: Repository URL  (2026-11-22)
 
 - **Owner (2026-11-22):** a repository under `bshadmehr98`, named after the product.
-- **Meanwhile:** `https://github.com/bshadmehr98/ragdoctor` in `pyproject.toml` and `@bshadmehr98` in
-  `CODEOWNERS`; both change with the name (D-001).
-- **Status:** owner's answer; the URL follows D-001.
-
+- **Applied:** `https://github.com/bshadmehr98/ragcourt` in `pyproject.toml`; `@bshadmehr98` in
+  `CODEOWNERS`. The repository does not exist on GitHub yet; nothing is pushed until the maintainer asks.
+- **Status:** owner's answer.
 ## D-005: No GPU lock script  (2026-11-22)
 
 - **Choice:** the owner's GPU lock script is not copied (k8s-holmes did not have it either). In-process
@@ -74,10 +71,10 @@ Design 0001 is proposed and was revised after the owner's first answers (2026-11
 - **First proposal (rejected by the owner):** `audit`, with no model at all.
 - **Owner (2026-11-22):** the first version is not model-free; any local model that fits the machine may
   be used; Ollama is installed.
-- **Choice:** the first-minute result is `ragdoctor rank <folder>` with nothing configured: it finds
+- **Choice:** the first-minute result is `ragcourt rank <folder>` with nothing configured: it finds
   Ollama on `localhost`, uses the default local models (D-027), writes about 40 questions with quotes,
   filters them with the judge, and ranks the default embedders on the default chunker with blame for
-  every miss. `ragdoctor setup` (run once, not counted in the minute) checks Ollama, recommends models that
+  every miss. `ragcourt setup` (run once, not counted in the minute) checks Ollama, recommends models that
   fit the machine, pulls them after asking, and runs the judge's self-test (D-026). `audit` stays
   model-free when no model is available, and uses the embedder's measured token counts and limit through
   Ollama when it is. The minute is a target to be measured (an end-to-end real-model test on the bundled
@@ -171,9 +168,9 @@ Design 0001 is proposed and was revised after the owner's first answers (2026-11
 
 ## D-016: Files, the cache and the configuration  (2026-11-22)
 
-- **Choice:** one working folder, `.ragdoctor/`, git-ignored by the template; the embedding cache in
+- **Choice:** one working folder, `.ragcourt/`, git-ignored by the template; the embedding cache in
   SQLite (`sqlite3`, one file, safe across interrupted runs); configuration in an optional
-  `ragdoctor.toml` read with `tomllib`; keys only through the environment variable the configuration
+  `ragcourt.toml` read with `tomllib`; keys only through the environment variable the configuration
   names.
 - **Status:** designer's choice.
 
@@ -188,7 +185,7 @@ Design 0001 is proposed and was revised after the owner's first answers (2026-11
 
 ## D-018: The user's own stages run in-process  (2026-11-22)
 
-- **Choice:** files in `ragdoctor_stages/` are the user's code, imported like any module they write
+- **Choice:** files in `ragcourt_stages/` are the user's code, imported like any module they write
   (brief §7). Only model-written code goes through doctor's approval and subprocess.
 - **Status:** designer's choice.
 
@@ -201,16 +198,16 @@ Design 0001 is proposed and was revised after the owner's first answers (2026-11
 
 ## D-020: Cost needs the user's prices  (2026-11-22)
 
-- **Choice:** ragdoctor ships no price table (prices change and would be wrong); the configuration gives
+- **Choice:** ragcourt ships no price table (prices change and would be wrong); the configuration gives
   a price per million tokens per model. Without one, cost is `unknown`, and the budget can only be in
   minutes. Local models cost 0 when the configuration says so.
 - **Status:** designer's choice.
 
 ## D-021: Small commands beyond the brief  (2026-11-22)
 
-- **Choice:** `ragdoctor setup` (find Ollama, recommend and pull models after asking, test the judge;
-  D-006), `ragdoctor questions` (make or validate the question set alone, so it can be reviewed before
-  spending on a run) and `ragdoctor report` (rebuild the HTML from a results file), plus `cache clear`. Each is a thin call into what `rank` already does.
+- **Choice:** `ragcourt setup` (find Ollama, recommend and pull models after asking, test the judge;
+  D-006), `ragcourt questions` (make or validate the question set alone, so it can be reviewed before
+  spending on a run) and `ragcourt report` (rebuild the HTML from a results file), plus `cache clear`. Each is a thin call into what `rank` already does.
 - **Status:** designer's choice; cheap to drop.
 
 ## D-022: No PDF in 0.1  (2026-11-22)
@@ -222,7 +219,7 @@ Design 0001 is proposed and was revised after the owner's first answers (2026-11
 
 ## D-023: Module names `types` and `io`  (2026-11-22)
 
-- **Choice:** the brief's names are kept (`ragdoctor.types`, `ragdoctor.io`). They shadow standard
+- **Choice:** the brief's names are kept (`ragcourt.types`, `ragcourt.io`). They shadow standard
   library names only inside the package; absolute imports are the rule, so `import io` still means the
   standard library.
 - **Status:** designer's choice.
@@ -231,7 +228,7 @@ Design 0001 is proposed and was revised after the owner's first answers (2026-11
 
 - **Choice:** the starting thresholds of design §5.1 (20 tokens for tiny, Jaccard 0.9 on word 5-grams,
   repeated lines in 30% of documents) follow chunkvet's and common practice; every threshold is a named
-  setting in `ragdoctor.toml` and printed in the output.
+  setting in `ragcourt.toml` and printed in the output.
 - **Status:** designer's choice; to be revisited with real corpora.
 
 ## D-025: User questions need a quote  (2026-11-22)
@@ -269,7 +266,7 @@ Design 0001 is proposed and was revised after the owner's first answers (2026-11
 - **Choice:** cheap code rules drop what the measurement showed is common, before any judge call: a quote
   of fewer than 6 words or with no sentence (a bare name or a code line), a question of fewer than 3
   words for `paraphrase`, a missing or unknown `style`. Each drop is counted by reason.
-- **Status:** designer's choice; thresholds in `ragdoctor.toml`.
+- **Status:** designer's choice; thresholds in `ragcourt.toml`.
 
 ## D-029: Milestone 1 includes the first ranking  (2026-11-22)
 

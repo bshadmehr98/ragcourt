@@ -7,9 +7,9 @@
 # - The branch is read where the edited file is, so a git worktree on a task branch works even while the
 #   main checkout is on main.
 # - Only the file-edit tools pass through this hook: shell edits and commits are not blocked.
-# - Override for one session with RAGDOCTOR_ALLOW_MAIN=1.
+# - Override for one session with RAGCOURT_ALLOW_MAIN=1.
 set -uo pipefail
-[ "${RAGDOCTOR_ALLOW_MAIN:-}" = "1" ] && exit 0
+[ "${RAGCOURT_ALLOW_MAIN:-}" = "1" ] && exit 0
 
 file="$(python3 -c 'import json, sys
 i = json.load(sys.stdin).get("tool_input", {})

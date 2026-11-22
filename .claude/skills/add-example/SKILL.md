@@ -5,13 +5,13 @@ description: Add a runnable, explained example to examples/ that the tests execu
 
 # Add an example
 
-ragdoctor has no examples yet. The first one also creates its test.
+ragcourt has no examples yet. The first one also creates its test.
 
 1. One concept per file: `examples/<name>.py`:
    - a module docstring with a **What:**, a **How:** and a **Why:** paragraph (what it shows, the calls
      it uses in order, the problem it solves);
    - offline and fast: the bundled corpus (`tests/fixtures/corpus/`, or a few documents written inline),
-     the fake embedder and the scripted model from `ragdoctor.testing`, a temporary project folder; no
+     the fake embedder and the scripted model from `ragcourt.testing`, a temporary project folder; no
      API key, no network, no model download;
    - prints a few lines that show the result and asserts the key facts.
 2. List it in `examples/README.md`, in reading order (each example builds on the ones before it), with the

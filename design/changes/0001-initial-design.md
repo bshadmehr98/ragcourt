@@ -7,9 +7,10 @@ Waiting for the owner's acceptance; no product code is written until then.
 
 **Revised 2026-11-22** after the owner's first answers: the first result uses a local model (Ollama),
 not the model-free audit; a model judge filters questions (the brief's exclusion of judges was wrong);
-generated-code approval and user questions are accepted; the repository goes under `bshadmehr98` with a
-new name containing "rag". What local models can do on the owner's machine was measured first
-([history/0002-local-models.md](../history/0002-local-models.md)) and shaped the revision. The designer's choices
+generated-code approval and user questions are accepted; the product is renamed **ragcourt** (from the
+working name `ragdoctor`) and its repository goes under `bshadmehr98`. What local models can do on the
+owner's machine was measured first ([history/0002-local-models.md](../history/0002-local-models.md)) and
+shaped the revision. The designer's choices
 inside the brief are in [decisions.md](../decisions.md); the ones marked "awaiting owner" are the questions
 below.
 
@@ -96,27 +97,24 @@ updated, the docs and the changelog in step, and a short demo for the owner on t
   slow until an optional accelerator exists.
 - The first minute is an estimate (about 60 s on the owner's machine) until the end-to-end real-model test
   measures it in milestone 1.
-- The name is still to be picked (D-001).
 
 ## Migration and compatibility
 
 A new product; nothing to migrate. The question file and the results file carry `format_version "1"` from
 the first release and refuse newer versions with a message; stage names, check codes and metric names
 are stable from the first release (`deprecate-and-migrate`); the cache is versioned and disposable; the
-public Python API is `ragdoctor` with an explicit `__all__`.
+public Python API is `ragcourt` with an explicit `__all__`.
 
 ## Open questions for the owner
 
-Answered on 2026-11-22: the name will contain "rag" and be unused (pick pending), the first result uses a
+Answered on 2026-11-22: the name is `ragcourt` (D-001), the first result uses a
 local model, Ollama, a model judge, generated-code approval, user questions, the repository under
 `bshadmehr98`. Still open:
 
-1. **The name** (D-001): pick one of the candidates in [decisions.md](../decisions.md#d-001-the-name)
-   (for example `ragculprit`, `ragsleuth`, `ragbisector`, `ragpinpoint`, `ragcaliper`).
-2. **Milestone 1** (D-029): it now includes the first ranking on local models (question writing, the
+1. **Milestone 1** (D-029): it now includes the first ranking on local models (question writing, the
    judge, the default embedders, intervals, blame), not only the audit. Agreed?
-3. **The judge's self-test** (D-026): refuse a judge below 90% agreement on bundled labelled cases?
-4. **Default local models** (D-027): `gemma4` as question writer and judge, `nomic-embed-text`,
+2. **The judge's self-test** (D-026): refuse a judge below 90% agreement on bundled labelled cases?
+3. **Default local models** (D-027): `gemma4` as question writer and judge, `nomic-embed-text`,
    `embeddinggemma` and `mxbai-embed-large` for the quick run, chosen from today's measurements?
-5. **Still from the first round:** the 50/50 split with a paired bootstrap for ties (D-011), and `retrieval`
+4. **Still from the first round:** the 50/50 split with a paired bootstrap for ties (D-011), and `retrieval`
    as one blame stage (D-014).

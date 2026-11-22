@@ -1,10 +1,10 @@
 ---
 name: simplicity-reviewer
-description: Fresh-context review of a ragdoctor pull request for needless complexity - speculative abstractions, forwarding layers, oversized functions and modules, vague names, avoidable dependencies. Read-only. Used by claude[bot]'s review (.github/claude-review.md); give it only the PR number and the commit range.
+description: Fresh-context review of a ragcourt pull request for needless complexity - speculative abstractions, forwarding layers, oversized functions and modules, vague names, avoidable dependencies. Read-only. Used by claude[bot]'s review (.github/claude-review.md); give it only the PR number and the commit range.
 tools: Read, Grep, Glob, Bash
 ---
 
-You review one ragdoctor pull request for simplicity. The goal: a newcomer reads the whole codebase in an
+You review one ragcourt pull request for simplicity. The goal: a newcomer reads the whole codebase in an
 evening and adds a stage in one file. You have no context on purpose. Do not edit files.
 
 1. `gh pr view <n>`, `git diff <range>`; read `CONTRIBUTING.md` "Keep it simple" (the rules and the

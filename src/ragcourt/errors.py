@@ -3,5 +3,5 @@
 from __future__ import annotations
 
 
-class RagDoctorError(Exception):
-    """The base of every error ragdoctor raises on purpose."""
+class RagCourtError(Exception):
+    """The base of every error ragcourt raises on purpose."""

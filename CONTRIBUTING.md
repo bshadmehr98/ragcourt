@@ -1,4 +1,4 @@
-# Contributing to ragdoctor
+# Contributing to ragcourt
 
 Thank you for helping. This page covers how to set up, the rules the code follows, how it is tested and
 how the design changes. The design itself is in [`design/`](design/README.md); start with
@@ -70,7 +70,7 @@ stage registry, event buses and dependency-injection containers.
 
 - Python 3.11 or newer; ruff with line length 110; pyright strict for `src/`; the public API is fully
   typed and `py.typed` is shipped.
-- The public API is exported from `src/ragdoctor/__init__.py` with an explicit `__all__`; public
+- The public API is exported from `src/ragcourt/__init__.py` with an explicit `__all__`; public
   functions and classes have docstrings.
 - **Layers import only downward** ([`design/current.md`](design/current.md) §3.1): `types` (dataclasses
   and protocols, no logic) → `stages` → `core` (pure functions) and `io` → `commands` (one file each) →
@@ -79,17 +79,17 @@ stage registry, event buses and dependency-injection containers.
 - **The core is useful alone.** It never imports an optional extra at import time; stages that need one
   import it inside the function. `tests/unit/test_import_boundaries.py` checks this.
 - **One client for every model.** Only the model client in `io` talks to the network, and only to an
-  endpoint the user configured. Keys come from environment variables, never from a file ragdoctor writes.
+  endpoint the user configured. Keys come from environment variables, never from a file ragcourt writes.
   No telemetry. Document text never goes to logs.
 - **Measured, or said to be unknown.** A token count from the embedder's own tokenizer is `measured`;
   anything else is labelled `estimated`. An unknown price is unknown, never zero.
 - **Explicit failure.** Never swallow errors silently. Errors crossing the public API are typed
-  (`RagDoctorError` and its subclasses in `errors.py`), and messages say what happened and what to do.
+  (`RagCourtError` and its subclasses in `errors.py`), and messages say what happened and what to do.
   Retryable endpoint failures (timeouts, 429, 5xx) are told apart from permanent ones.
 - **Determinism.** Fixed seeds (the split, bootstrap resampling, sampling documents); explicit ordering
   and tie-breaking by stable ids; never `hash()` for anything stored.
 - Paths are `pathlib.Path`; durations are integer milliseconds; logging goes to
-  `logging.getLogger("ragdoctor")`; output for people is written by `commands` and `cli` only.
+  `logging.getLogger("ragcourt")`; output for people is written by `commands` and `cli` only.
 
 ## Tests
 
@@ -102,7 +102,7 @@ stage registry, event buses and dependency-injection containers.
 | Real models | `tests/real/` | no | a local model server or an endpoint, marker `real_model`; by hand |
 
 - The default suite must stay fast, deterministic and offline: the fake embedder and the scripted model
-  from `ragdoctor.testing`, the bundled corpus in `tests/fixtures/corpus/`, fixed seeds.
+  from `ragcourt.testing`, the bundled corpus in `tests/fixtures/corpus/`, fixed seeds.
 - Every acceptance case has a test in `tests/e2e/` named `test_ac<N>_<slug>`, using only the public API or
   CLI. An acceptance test must fail if its feature is removed.
 - Every metric, interval and blame rule has a test against numbers worked out by hand; every audit check
@@ -114,8 +114,8 @@ stage registry, event buses and dependency-injection containers.
 ### Real-model tests
 
 The real-model tests (`-m real_model`, in `tests/real/`) run on the bundled corpus against a model chosen
-by environment variables: `RAGDOCTOR_TEST_BASE_URL`, `RAGDOCTOR_TEST_API_KEY`,
-`RAGDOCTOR_TEST_EMBED_MODEL`, `RAGDOCTOR_TEST_CHAT_MODEL` and `RAGDOCTOR_TEST_RERANK_MODEL`. A local
+by environment variables: `RAGCOURT_TEST_BASE_URL`, `RAGCOURT_TEST_API_KEY`,
+`RAGCOURT_TEST_EMBED_MODEL`, `RAGCOURT_TEST_CHAT_MODEL` and `RAGCOURT_TEST_RERANK_MODEL`. A local
 server (Ollama, llama.cpp, vLLM, LM Studio) is preferred; in-process local models need their extra. They
 skip with a reason when something is missing. The `real-model-tests` skill in `.claude/skills/` says how
 to run and write them, and how to keep what they show as fixtures for the default suite.

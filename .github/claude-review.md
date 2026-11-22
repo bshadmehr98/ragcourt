@@ -27,7 +27,7 @@ every push to a pull request, and when someone with write access comments `@clau
 5. **The review**, as JSON in a temporary file:
    ```json
    {"commit_id": "<head sha>", "event": "<verdict>", "body": "<summary>",
-    "comments": [{"path": "src/ragdoctor/core/metrics.py", "line": 42, "side": "RIGHT", "body": "..."}]}
+    "comments": [{"path": "src/ragcourt/core/metrics.py", "line": 42, "side": "RIGHT", "body": "..."}]}
    ```
    - One inline comment per kept finding: `**blocking** · AGENTS.md rule 4`, the problem, the fix. Use
      `start_line` and `line` for a range. When the fix is exact, add a GitHub suggestion block (a fenced

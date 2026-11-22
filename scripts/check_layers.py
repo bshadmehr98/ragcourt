@@ -5,11 +5,11 @@
 
 A module imports only from layers below its own. core and io sit side by side and never import each
 other. Within stages, an implementation (``stages/<kind>/<name>.py``) imports only the registry
-(``ragdoctor.stages`` itself), never another implementation: only the pipeline joins stages. A command
+(``ragcourt.stages`` itself), never another implementation: only the pipeline joins stages. A command
 never imports another command. Nothing imports ``cli`` or ``testing``; the package root (the public API)
 and ``testing`` may import anything except ``cli`` and ``commands``.
 
-Usage: ``python scripts/check_layers.py [--root src/ragdoctor]``.
+Usage: ``python scripts/check_layers.py [--root src/ragcourt]``.
 """
 
 from __future__ import annotations
@@ -19,7 +19,7 @@ import ast
 import sys
 from pathlib import Path
 
-PACKAGE = "ragdoctor"
+PACKAGE = "ragcourt"
 LAYER = {"types": 0, "errors": 0, "stages": 1, "core": 2, "io": 2, "commands": 3, "cli": 4}
 TOP = 5  # the package root (__init__, __main__) and testing
 
@@ -40,7 +40,7 @@ def module_parts(path: Path, root: Path) -> tuple[str, ...]:
 
 
 def imported(tree: ast.Module, parts: tuple[str, ...], is_package: bool) -> list[tuple[int, tuple[str, ...]]]:
-    """Every ``ragdoctor`` module this file imports, with its line, relative imports resolved."""
+    """Every ``ragcourt`` module this file imports, with its line, relative imports resolved."""
     found: list[tuple[int, tuple[str, ...]]] = []
     for node in ast.walk(tree):
         if isinstance(node, ast.Import):
@@ -58,11 +58,11 @@ def problem(source: tuple[str, ...], target: tuple[str, ...]) -> str | None:
     """Why importing ``target`` from ``source`` breaks a rule, or None."""
     src, dst = unit_of(source), unit_of(target)
     if dst in ("cli", "testing") and src != dst:
-        return f"nothing imports ragdoctor.{dst}"
+        return f"nothing imports ragcourt.{dst}"
     if src == dst:
         return same_unit_problem(source, target)
     if src in ("", "testing"):
-        return f"the public API does not import ragdoctor.{dst}" if dst == "commands" else None
+        return f"the public API does not import ragcourt.{dst}" if dst == "commands" else None
     if layer_of(dst) >= layer_of(src):
         name = dst or "the package root"
         return f"{src} (layer {layer_of(src)}) may not import {name} (layer {layer_of(dst)})"

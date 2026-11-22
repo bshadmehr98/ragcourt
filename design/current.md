@@ -1,4 +1,4 @@
-# ragdoctor: the design (0.1)
+# ragcourt: the design (0.1)
 
 This is the design as it stands, written from the owner's brief of 2026-11-22
 ([`history/0001-owner-brief.md`](history/0001-owner-brief.md)) and proposed with
@@ -12,7 +12,7 @@ first run, a model judge, Ollama); nothing is built.
 
 ## 1. What it does
 
-ragdoctor is a command-line tool for people building retrieval-augmented generation. Given a folder of
+ragcourt is a command-line tool for people building retrieval-augmented generation. Given a folder of
 their own documents, it **audits** how a chunker cuts them (no model needed), **ranks** chunkers,
 embedding models, retrievers and rerankers by measuring them against questions whose gold answers are
 exact quotes from the documents, **explains** each failed question by naming the one stage that lost it
@@ -23,8 +23,8 @@ writes questions, a **judge** model filters them, and in `doctor` a model makes 
 
 ### Goals
 
-- A first useful result in under a minute with no API key: `ragdoctor rank <folder>` on local models
-  through Ollama, after a one-time `ragdoctor setup` (brief §1; D-006, D-027).
+- A first useful result in under a minute with no API key: `ragcourt rank <folder>` on local models
+  through Ollama, after a one-time `ragcourt setup` (brief §1; D-006, D-027).
 - Numbers measured on the user's documents, with their uncertainty, never general advice (brief §1, §5).
 - Every failed question has one named cause and a suggested fix (brief §1, §4).
 - A newcomer reads the whole codebase in an evening and adds a stage in one file (brief §1, §7, §9).
@@ -67,7 +67,7 @@ a chunker, an embedding model, a retriever and a reranker, and wants evidence fr
 
 ## 3. Architecture
 
-One Python package, `ragdoctor`, standard library only in its core (D-003). No services, no framework.
+One Python package, `ragcourt`, standard library only in its core (D-003). No services, no framework.
 
 ### 3.1 Layers
 
@@ -81,7 +81,7 @@ cli                layer 4  argument parsing and printing
 
 A module imports only from layers below its own. `core` and `io` never import each other: a command
 reads with `io`, computes with `core`, and writes with `io`. Within `stages`, an implementation imports
-only the registry (`ragdoctor.stages`), never another implementation; only the pipeline (`core`) joins
+only the registry (`ragcourt.stages`), never another implementation; only the pipeline (`core`) joins
 stages. A command never imports another command. Nothing imports `cli` or `testing`. The package root
 (the public API) may import from every layer except `commands` and `cli`. `scripts/check_layers.py`
 enforces all of this and runs in `scripts/check.sh`.
@@ -98,7 +98,7 @@ Stages that need a model (an endpoint embedder, an endpoint reranker) receive a 
 | Module | Holds | Design |
 |---|---|---|
 | `types.py` | `Document`, `Chunk`, `Question`, `Pipeline`, `Ranked`, `MetricRow`, `Blame`, `Finding`, `Estimate`, the four stage signatures, `ModelClient` | §2 |
-| `errors.py` | `RagDoctorError` and its subclasses | §14 |
+| `errors.py` | `RagCourtError` and its subclasses | §14 |
 | `stages/__init__.py` | the four decorators, the registry, loading the user's folder | §7.2 |
 | `stages/chunkers/*.py` … `stages/rerankers/*.py` | one stage per file | §7.3, §7.4 |
 | `core/offsets.py` | finding chunk spans in the source | §4.2 |
@@ -109,20 +109,20 @@ Stages that need a model (an endpoint embedder, an endpoint reranker) receive a 
 | `core/blame.py` | blame, ceilings, fixes | §9 |
 | `core/search.py` | the greedy plan and its estimate | §10 |
 | `io/loaders.py` | reading documents | §4.1 |
-| `io/config.py` | `ragdoctor.toml` | §3.3 |
+| `io/config.py` | `ragcourt.toml` | §3.3 |
 | `io/client.py` | the one model client (Ollama and OpenAI-compatible dialects) | §11 |
 | `io/cache.py` | the embedding cache | §10.2 |
 | `io/questions.py` | generating, filtering (code rules and the judge) and storing questions; the judge's self-test | §6 |
 | `io/report.py` | the results file, terminal tables, the HTML report | §13 |
 | `commands/setup.py`, `audit.py`, `rank.py`, `explain.py`, `doctor.py` | one command each | §11.3, §5, §8–§10, §9, §12 |
-| `cli.py` | `ragdoctor …` | §13.1 |
+| `cli.py` | `ragcourt …` | §13.1 |
 | `testing/` | `FakeEmbedder`, `ScriptedModel`, the bundled corpus | §15.2 |
 
 ### 3.3 Files
 
-Everything ragdoctor writes goes in `.ragdoctor/` beside the corpus (or `--workdir`): `cache.sqlite`
+Everything ragcourt writes goes in `.ragcourt/` beside the corpus (or `--workdir`): `cache.sqlite`
 (embeddings, §10.2), `questions.jsonl` (§6.5), `runs/<run-id>/results.json` and `report.html` (§13),
-`doctor/` (§12). The optional `ragdoctor.toml` in the project names endpoints, models, prices, stages to
+`doctor/` (§12). The optional `ragcourt.toml` in the project names endpoints, models, prices, stages to
 consider, `k` and the budget; keys are named by environment variable (`api_key_env = "OPENAI_API_KEY"`),
 never written in the file (D-016).
 
@@ -134,7 +134,7 @@ never written in the file (D-016).
 `html.parser`, keeping headings as Markdown-style `#` lines so heading checks work the same). Files are
 read as UTF-8 (a file that fails is reported and skipped, never guessed). Line endings are normalised to
 `\n`; nothing else in the text is changed, so offsets are offsets into what the user wrote. Hidden
-folders and `.ragdoctor/` are skipped. PDF is not in 0.1 (D-022).
+folders and `.ragcourt/` are skipped. PDF is not in 0.1 (D-022).
 
 ### 4.2 Offsets: from strings to spans
 
@@ -165,7 +165,7 @@ and punctuation by a regular expression, on the source text), so they are compar
 
 ## 5. Audit
 
-`ragdoctor audit <folder> [--chunker NAME[:k=v,…]]… [--embedder NAME] [--show DOC]`. No key and no
+`ragcourt audit <folder> [--chunker NAME[:k=v,…]]… [--embedder NAME] [--show DOC]`. No key and no
 chat model. With no `--chunker`, every built-in native chunker is audited with its defaults. Sizes and
 the input limit come from the embedder: by default the first default local embedder through Ollama
 (measured, §4.3), or `--embedder`. When no embedder is reachable the audit still runs, sizes are
@@ -175,7 +175,7 @@ skipped with a note.
 ### 5.1 Checks
 
 Each check is a function in a table in `core/audit.py`, with a stable code (brief §2; D-024 for the
-thresholds, all overridable in `ragdoctor.toml`):
+thresholds, all overridable in `ragcourt.toml`):
 
 | Code | Flags a chunk that… |
 |---|---|
@@ -201,7 +201,7 @@ checks fires (for CI).
 
 ### 6.1 Generation
 
-`ragdoctor rank` (or `ragdoctor questions` alone) asks the question writer to write questions: the
+`ragcourt rank` (or `ragcourt questions` alone) asks the question writer to write questions: the
 default local chat model (D-027), or the configured one.
 Passages are sampled from the documents (not from any chunker's output: brief §3), with a fixed seed,
 proportional to document length: windows of about 2,000 characters cut at paragraph boundaries. For
@@ -250,7 +250,7 @@ questions. With fewer than 30 held-out questions the output warns that intervals
 
 ### 6.5 The question file
 
-`.ragdoctor/questions.jsonl`, first line a header `{"format_version": "1", "corpus_hash": …, "model": …,
+`.ragcourt/questions.jsonl`, first line a header `{"format_version": "1", "corpus_hash": …, "model": …,
 "seed": …, "dropped": {reason: count}}`, then one question per line: `id`, `question`, `style`,
 `document`, `start`, `end`, `quote`, `split`. Reused by later runs while the corpus hash matches; a newer
 `format_version` is refused with a message.
@@ -264,7 +264,7 @@ a generic answer is not correct). It replies JSON `{verdict, reason}`; a reply t
 retried once, then the question is kept and the failure counted.
 
 Before its verdicts are used, a judge passes a **self-test** (D-026): about 40 labelled cases bundled with
-ragdoctor (correct, wrong, generic and refused answers; valid and invalid questions). Below 90% agreement
+ragcourt (correct, wrong, generic and refused answers; valid and invalid questions). Below 90% agreement
 the model is refused as judge, its errors are shown, and the run stops with a message naming better
 candidates. The result is cached per model and prompt version and printed in every run's output.
 
@@ -288,7 +288,7 @@ scores are broken by chunk index, so results are deterministic.
 ### 7.2 Registration and the user's folder
 
 ```python
-from ragdoctor.stages import chunker
+from ragcourt.stages import chunker
 
 @chunker("by_paragraph")
 def by_paragraph(text: str, min_chars: int = 200) -> list[str]:
@@ -297,7 +297,7 @@ def by_paragraph(text: str, min_chars: int = 200) -> list[str]:
 
 `@chunker`, `@embedder`, `@retriever` and `@reranker` register a function (or, for an embedder, a factory
 returning an `Embedder`) under a name; registering a name twice is an error that names both files. The
-built-ins are imported from `stages/<kind>/`; the user's own are loaded from `ragdoctor_stages/` in the
+built-ins are imported from `stages/<kind>/`; the user's own are loaded from `ragcourt_stages/` in the
 project (or `--stages DIR`), every `.py` file in it imported in sorted order. These are the user's own
 code and run in-process like any Python they write (D-018); code written by a model is different (§12).
 
@@ -329,7 +329,7 @@ Thin adapters, each one file, each behind an optional extra imported only inside
 | `chonkie` | `chonkie` | chunkers `chonkie.token`, `chonkie.sentence`, `chonkie.recursive`, `chonkie.semantic` |
 | `langchain` | `langchain-text-splitters` | chunkers `langchain.recursive`, `langchain.markdown` |
 
-A missing extra gives `ExtraMissing` naming `pip install 'ragdoctor[<extra>]'`.
+A missing extra gives `ExtraMissing` naming `pip install 'ragcourt[<extra>]'`.
 
 ## 8. The pipeline and metrics
 
@@ -410,7 +410,7 @@ A fix is suggested from measurements already made in the run, never from a model
   a chunker that respects sentences or headings, a larger depth, a reranker. `explain` always names one
   cause and one fix (brief §1).
 
-`ragdoctor explain [RUN]` prints, per miss: the question, the quote and its place, the cause with its
+`ragcourt explain [RUN]` prints, per miss: the question, the quote and its place, the cause with its
 evidence, the fix; then the counts per cause. `--show ID` prints the quote's surroundings with the chunk
 boundaries marked (§5.2).
 
@@ -427,11 +427,11 @@ Greedy by stage, embedders first (brief §6), on dev questions, by the chosen me
 4. **Rerankers:** `none` and each candidate reranker on the best so far.
 
 A stage's best is the top entry on dev; when entries are tied (§8.4), the cheaper, then the smaller, then
-the first listed is kept and the tie is reported. Candidates come from `ragdoctor.toml` or flags; by
+the first listed is kept and the tie is reported. Candidates come from `ragcourt.toml` or flags; by
 default every available built-in. Every evaluated configuration's held-out numbers appear in that stage's
 leaderboard; the "best overall pipeline" is the last step's choice, reported on held-out questions.
 
-**The quick run** is what `rank` does when there is no `ragdoctor.toml` and no `--full`: about 40
+**The quick run** is what `rank` does when there is no `ragcourt.toml` and no `--full`: about 40
 questions, step 1 only (the default local embedders on the default chunker, `dense`, no reranker), the
 leaderboard with intervals, the ceilings and the blame of every held-out miss, then one line saying what
 the full search would add and its estimate. It is the first-minute result (D-006); its time is measured by
@@ -440,11 +440,11 @@ with a configuration.
 
 ### 10.2 The cache
 
-Embeddings are cached in `.ragdoctor/cache.sqlite` by `sha256(model identity + "\0" + text)`, where the
+Embeddings are cached in `.ragcourt/cache.sqlite` by `sha256(model identity + "\0" + text)`, where the
 model identity is the endpoint's base URL and model name (or the local model's name and revision), and
 the vector is stored as packed float32 with its dimension. A cached embedding is never sent again; a
 second identical run makes no embedding calls. The cache has its own version; a layout change starts a
-new file. `--no-cache` and `ragdoctor cache clear` exist (D-016).
+new file. `--no-cache` and `ragcourt cache clear` exist (D-016).
 
 ### 10.3 Estimate and budget
 
@@ -476,7 +476,7 @@ timing output, since the first call to an Ollama model includes loading it.
 
 ### 11.2 Privacy
 
-Ollama on `localhost` is on the machine; with no configuration it is the only address ragdoctor
+Ollama on `localhost` is on the machine; with no configuration it is the only address ragcourt
 contacts. Nothing leaves the machine unless the user configured an endpoint, and then only to that
 endpoint: the
 document windows for question generation and for `doctor`, the questions (alone, for the
@@ -486,7 +486,7 @@ no update check. Logs never contain document text or keys. `docs/privacy.md` lis
 
 ### 11.3 Setup
 
-`ragdoctor setup`, once per machine: checks that Ollama answers on `localhost` (or says how to install
+`ragcourt setup`, once per machine: checks that Ollama answers on `localhost` (or says how to install
 and start it), reads the GPU memory and RAM Ollama reports, recommends models that fit from a small table
 justified by measurement (D-027; on an 8 GB GPU: `gemma4` as question writer and judge,
 `nomic-embed-text`, `embeddinggemma` and `mxbai-embed-large` as the quick embedders), shows their download
@@ -495,14 +495,14 @@ nothing but the self-test result in the cache. Any Ollama model can be named ins
 
 ## 12. Doctor
 
-`ragdoctor doctor <folder>`:
+`ragcourt doctor <folder>`:
 
 1. **Sample:** up to 8 documents (fixed seed, by size and type), each cut to about 4,000 characters.
 2. **Describe:** the chat model returns JSON: the structure it sees (headings, tables, code, lists,
    boilerplate, average paragraph length) and up to three recommended built-in chunkers with parameters.
    Recommendations naming unknown stages or parameters are dropped and reported.
 3. **Write (optional):** the model may return one chunker file, `def chunk(text: str) -> list[str]`,
-   standard library only. It is saved to `.ragdoctor/doctor/<sha256-prefix>.py`.
+   standard library only. It is saved to `.ragcourt/doctor/<sha256-prefix>.py`.
 4. **Ask:** the code is printed in full with its SHA-256, and the user is asked to run it (`y/N`). It
    never runs without that answer, or `--approve <sha256>` matching exactly this file (D-017).
 5. **Run isolated:** in a subprocess (`python -I`, a temporary working folder, an environment without
@@ -521,13 +521,13 @@ nothing but the self-test result in the cache. Any Ollama model can be named ins
 ### 13.1 Commands
 
 ```text
-ragdoctor setup [--yes]
-ragdoctor audit <folder> [--chunker SPEC]… [--embedder NAME] [--show DOC] [--json] [--fail-on CODE…]
-ragdoctor questions <folder> [--questions N] [--questions-file FILE]
-ragdoctor rank <folder> [--full] [--questions-file FILE] [--judge MODEL] [--metric NAME] [--k N] [--budget-usd X] [--budget-minutes M] [--yes] [--html]
-ragdoctor explain [RUN] [--show QUESTION-ID]
-ragdoctor doctor <folder> [--approve SHA256]
-ragdoctor cache clear
+ragcourt setup [--yes]
+ragcourt audit <folder> [--chunker SPEC]… [--embedder NAME] [--show DOC] [--json] [--fail-on CODE…]
+ragcourt questions <folder> [--questions N] [--questions-file FILE]
+ragcourt rank <folder> [--full] [--questions-file FILE] [--judge MODEL] [--metric NAME] [--k N] [--budget-usd X] [--budget-minutes M] [--yes] [--html]
+ragcourt explain [RUN] [--show QUESTION-ID]
+ragcourt doctor <folder> [--approve SHA256]
+ragcourt cache clear
 ```
 
 Common: `--workdir`, `--config`, `--stages DIR`, `--seed`, `--json`, `-q`. Exit codes: 0 done, 1 error, 2
@@ -540,7 +540,7 @@ Plain text tables, no colour when not a terminal, every number with its interval
 
 ### 13.3 The results file
 
-`.ragdoctor/runs/<run-id>/results.json`, `format_version "1"`: the run's settings and seed, the
+`.ragcourt/runs/<run-id>/results.json`, `format_version "1"`: the run's settings and seed, the
 corpus and question-set hashes, the plan and the estimate, every evaluated configuration with its
 metrics (mean and interval, dev and held-out), per-question ranks for held-out questions, the ties, the
 chosen pipeline, ceilings, blame per miss with its evidence and fix, the actual time and cost. `explain`
@@ -548,7 +548,7 @@ and the HTML report read only this file.
 
 ### 13.4 The HTML report
 
-`rank --html` (and `ragdoctor report [RUN]`) writes one self-contained `report.html` from the results file:
+`rank --html` (and `ragcourt report [RUN]`) writes one self-contained `report.html` from the results file:
 the leaderboard per stage with interval bars and ties marked, the chosen pipeline and its ceilings, the
 misses grouped by cause, each opening to the quote shown on its source text with the chunk boundaries,
 and the audit summary of the chosen chunker. Standard library templating, inline CSS, a few lines of
@@ -556,7 +556,7 @@ inline JavaScript for filtering, no network requests when opened (D-019).
 
 ## 14. Errors and determinism
 
-Errors are `RagDoctorError` subclasses: `ConfigError`, `ExtraMissing`, `ChunkNotInSource`,
+Errors are `RagCourtError` subclasses: `ConfigError`, `ExtraMissing`, `ChunkNotInSource`,
 `EndpointError` (retryable or not), `BudgetExceeded`, `FormatVersionError`, `GeneratedCodeRejected`.
 Every message says what happened and what to do. With the same documents, questions, seed and stages, a
 run gives the same results file except for timings and its run id.
@@ -570,7 +570,7 @@ deterministic), real models by hand (`real_model`).
 
 ### 15.2 The bundled corpus and the fakes
 
-`tests/fixtures/corpus/` (also shipped as `ragdoctor.testing.corpus`): a dozen short documents written for
+`tests/fixtures/corpus/` (also shipped as `ragcourt.testing.corpus`): a dozen short documents written for
 the tests, each with cases on purpose (a table, a code block, a running header, a near-duplicate, a long
 section, plain prose), and a hand-checked `questions.jsonl`. `FakeEmbedder`: deterministic vectors from
 hashed word n-grams with a tokenizer and a limit, so similar texts are close and results are stable.
@@ -596,7 +596,7 @@ and reranking to its blame and fix, with real output from the bundled corpus.
 Each is a test `tests/e2e/test_ac<N>_<slug>.py` through the public API or CLI that fails if the feature
 is removed, except guarantee 26, which needs real models and is a marked test in `tests/real/`.
 
-1. **Audit needs no key and no chat model.** `ragdoctor audit` on the bundled corpus reports every check
+1. **Audit needs no key and no chat model.** `ragcourt audit` on the bundled corpus reports every check
    of §5.1 on the document planted for it; with sockets blocked (no Ollama) it still runs, with sizes
    labelled estimated.
 2. **Checks are precise.** Each check fires on its planted case and not on its planted near miss (a
@@ -634,11 +634,11 @@ is removed, except guarantee 26, which needs real models and is a marked test in
     finished steps reported and nothing called complete.
 17. **Greedy, embedders first.** The plan and the results show the four steps of §10.1 in order, and
     only the configurations they list are evaluated.
-18. **A stage is one file.** A chunker in the user's `ragdoctor_stages/` appears in `audit` and `rank`
+18. **A stage is one file.** A chunker in the user's `ragcourt_stages/` appears in `audit` and `rank`
     with no other change; a duplicate name fails naming both files.
 19. **Nothing leaves without an endpoint.** With no configuration, no address but Ollama on `localhost`
     is contacted by any command; with an endpoint configured, only its host and the local Ollama are; no
-    key appears in any file ragdoctor writes or logs.
+    key appears in any file ragcourt writes or logs.
 20. **Generated code is asked, isolated, validated and measured.** Doctor's chunker does not run when the
     answer is no or the hash differs; a hanging chunker is stopped by the timeout; an invalid output is
     rejected; a valid one is ranked with the baselines and called better only with a significant
@@ -655,7 +655,7 @@ is removed, except guarantee 26, which needs real models and is a marked test in
     self-test, is refused with its errors shown, and no question is filtered by it; one that passes is
     used, and its score appears in the output.
 26. **The first minute** (a real-model test, marker `real_model`, not in the default suite). On the bundled
-    corpus with the default local models already pulled, `ragdoctor rank` with no configuration prints a
+    corpus with the default local models already pulled, `ragcourt rank` with no configuration prints a
     leaderboard with intervals and a cause for every held-out miss in under 60 s on the reference machine
     (an 8 GB RTX 4060 laptop); the measured time is printed and recorded.
 27. **Setup asks before pulling.** `setup` never downloads a model without the user's yes (or `--yes`), and

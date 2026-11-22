@@ -331,7 +331,7 @@ wheels = [
 ]
 
 [[package]]
-name = "ragdoctor"
+name = "ragcourt"
 source = { editable = "." }
 
 [package.dev-dependencies]

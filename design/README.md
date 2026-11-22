@@ -1,4 +1,4 @@
-# Why ragdoctor exists
+# Why ragcourt exists
 
 > Point it at your documents. Using local models on your own machine, it writes questions whose answers
 > are exact quotes from your text, has a judge throw out the bad ones, and ranks chunkers, embedding

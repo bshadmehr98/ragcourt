@@ -26,9 +26,9 @@ htmlcov/
 .env.*
 !.env.example
 
-# ragdoctor's own working folder (embedding cache, generated questions, runs) and output made while
+# ragcourt's own working folder (embedding cache, generated questions, runs) and output made while
 # developing; never commit a user's documents, questions or results
-.ragdoctor/
+.ragcourt/
 out/
 *.log
 

@@ -15,7 +15,7 @@ description: Build an accepted change record or a small change test-first, then 
    - for a bug: a test that reproduces it (`debug-failure`).
 3. **Implement** the smallest code that passes, within CONTRIBUTING.md "Keep it simple" and "Code
    conventions": the layers of `design/current.md` §3.1 (`scripts/check_layers.py`); `core` stays pure
-   functions; errors are `RagDoctorError` subclasses from `src/ragdoctor/errors.py` with messages that say
+   functions; errors are `RagCourtError` subclasses from `src/ragcourt/errors.py` with messages that say
    what to do; nothing reaches the network except through the one client, and only to an endpoint the user
    configured (§11.2).
 4. Fast loop while working: `uv run pytest -x -q <paths>`, `uv run ruff check .`, `uv run pyright`,

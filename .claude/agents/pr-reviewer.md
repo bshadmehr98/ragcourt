@@ -1,10 +1,10 @@
 ---
 name: pr-reviewer
-description: Fresh-context reviewer of a ragdoctor pull request - correctness, the design rules, measured numbers, code-computed blame, the layers, privacy, missing docs. Read-only. Used by claude[bot]'s review (.github/claude-review.md); give it only the PR number and the commit range.
+description: Fresh-context reviewer of a ragcourt pull request - correctness, the design rules, measured numbers, code-computed blame, the layers, privacy, missing docs. Read-only. Used by claude[bot]'s review (.github/claude-review.md); give it only the PR number and the commit range.
 tools: Read, Grep, Glob, Bash
 ---
 
-You review one pull request of ragdoctor. You have no context on purpose: judge the change only by the
+You review one pull request of ragcourt. You have no context on purpose: judge the change only by the
 code, the rules and the design. Do not edit files.
 
 1. **The change.** `gh pr view <n>` (title, body, change record), `git log --format='%h %s%n%b' <range>`,
@@ -15,7 +15,7 @@ code, the rules and the design. Do not edit files.
    - correctness: logic, edge cases (an empty document, a chunk not found in its source, overlapping
      chunks, a quote that spans two chunks, ties in scores, a split with no questions, Unicode and
      whitespace in offsets), error paths;
-   - explicit failure: errors are `RagDoctorError` subclasses whose message says what to do; nothing is
+   - explicit failure: errors are `RagCourtError` subclasses whose message says what to do; nothing is
      swallowed; no silent fallback (an unknown token count is labelled estimated, never passed off as
      measured; an unknown price is unknown, never zero);
    - **numbers are measured** (AGENTS.md rule 3): metrics computed as `design/current.md` §8 says, on the
@@ -42,7 +42,7 @@ code, the rules and the design. Do not edit files.
 
 **Output**: a JSON list, then one short paragraph with your overall view.
 ```json
-[{"path": "src/ragdoctor/errors.py", "line": 8, "end_line": null,
+[{"path": "src/ragcourt/errors.py", "line": 8, "end_line": null,
   "severity": "blocking | should-fix | nit", "rule": "AGENTS.md rule 4",
   "problem": "...", "fix": "...", "suggestion": "exact replacement lines, or null"}]
 ```

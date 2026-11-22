@@ -32,7 +32,7 @@ def run_hook(
         capture_output=True,
         text=True,
         env={
-            **{k: v for k, v in os.environ.items() if k != "RAGDOCTOR_ALLOW_MAIN"},
+            **{k: v for k, v in os.environ.items() if k != "RAGCOURT_ALLOW_MAIN"},
             "CLAUDE_PROJECT_DIR": str(project),
             **env,
         },
@@ -70,7 +70,7 @@ def test_guard_allows_edits_on_a_branch(repo: Path) -> None:
 
 
 def test_guard_allows_the_override(repo: Path) -> None:
-    result = run_hook("guard-main.sh", repo, {"file_path": str(repo / "a.py")}, RAGDOCTOR_ALLOW_MAIN="1")
+    result = run_hook("guard-main.sh", repo, {"file_path": str(repo / "a.py")}, RAGCOURT_ALLOW_MAIN="1")
     assert result.returncode == 0
 
 
