@@ -211,7 +211,49 @@ What it showed:
 
 ## 9. FastAPI documentation, the full default run
 
-FASTAPI_PLACEHOLDER
+The whole of FastAPI's English documentation: 159 Markdown pages, 1.5 MB of text (the 250 images,
+stylesheets and scripts beside them were skipped). Half of the text is one 742 KB changelog. Everything at
+its default: 90 questions per kind, three embedders, five chunkers, three retrievers, the `llm` reranker.
+
+**Questions**: 1,985 drafts, 434 kept, 44 minutes. The changelog's bullet points (`* 📝 Update docs …
+PR [#16032](https://…)`) were drafted again and again and rejected as "not a sentence" because of their
+Markdown links: two fixes followed (links are prose now, and passages are taken one document at a time).
+Distractors kept 2 of 164 drafts: these docs repeat themselves, so the look-alike passage usually answers
+the question too. That kind now stops after 60 drafts when under 1 in 20 is kept, instead of asking for an
+hour.
+
+```text
+embedders    embeddinggemma 0.37 [0.31, 0.42]  = mxbai-embed-large 0.33;  nomic-embed-text 0.32      no winner
+chunkers     markdown 512 0.55 [0.50, 0.60];  sentence 0.46, recursive 256 0.45, fixed 0.45,
+             recursive 512 0.33                                                           winner: markdown
+retrievers   hybrid 0.63 [0.59, 0.68]  = bm25 0.63;  dense 0.55                                   no winner
+rerankers    llm 0.66 [0.62, 0.71]  = none 0.63                                                    no winner
+```
+
+**What it showed:**
+- **Structure wins on structured text.** Cutting at headings (`markdown`) beat every size-based chunker
+  by 0.09 or more, and the default `recursive` at 512 tokens was worst again.
+- **The overall score hid a failure.** `bm25` and `hybrid` tied overall, and the dev questions chose
+  `bm25`. But on paraphrase questions `bm25` scored **0.02**, against `hybrid`'s 0.18: keyword search
+  cannot match "What are some applications for sending data in segments?" to a page that says "use it to
+  stream large binary files", which dense search ranks first. The ceilings said the same (paraphrase: 38%
+  retrieved, 27% in the top 5), and 32 of the 66 misses were `retriever.keyword_only` on paraphrases. ragcourt now prints, under each board:
+
+  ```text
+  Note: on paraphrase questions this choice scores 0.02, separably below markdown:size=512,overlap=64 |
+  mxbai-embed-large | dense | none (0.22). If those questions matter to you, prefer it.
+  ```
+
+  If your users ask in their own words, take `hybrid` here.
+- **The reranker rescued some of it**: paraphrase went from 0.02 to 0.25 with `llm`, at about 2 seconds a
+  question.
+- **One refused call ended a 30-minute step.** Ollama answered `500: prediction aborted, token repeat limit
+  reached` to one reranker call, three times, and the run stopped. Now that call is tried once more with
+  sampling, and if it still fails, that question keeps its retrieval order and the failure is counted
+  under the board.
+- **The time estimate said 125 minutes; the run took about 70** (44 writing questions, 4 embedding, 20
+  reranking). The estimate now uses these measurements. Running `rank` again, with the questions and
+  embeddings reused, took 23 minutes, nearly all of it the reranker. Memory never passed 720 MB.
 
 ## 10. What the real runs changed in ragcourt
 
@@ -225,6 +267,14 @@ Every problem below was found by these runs, then fixed and covered by a test:
 - Ollama's silent truncation (section 4) and HTML menus (section 3).
 - A second run made one needless call to measure the input limit: the limit is now remembered.
 - An interrupted run and a resumed one now give exactly the same results (checked with real models).
+- Run on Chroma's benchmark and the FastAPI docs (sections 8 and 9): the tie-break among tied entries, the
+  notes under each board, user questions with a `start` offset, questions spread over documents,
+  Markdown links in quotes, the early stop for hopeless kinds, surviving a refused call, and measured time
+  estimates.
+- From a security review and a new user's test of the built package: a key never follows a redirect,
+  links out of your documents folder are skipped, terminal control characters from documents or models
+  are shown as escapes, no traceback for a wrong setting or a missing model, one ragcourt per working
+  folder, and chunking in linear time (a 4 MB file: 80 seconds before, 9 now).
 
 ## 11. Public datasets for testing RAG
 
