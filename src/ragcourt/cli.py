@@ -10,11 +10,11 @@ import sys
 from importlib.metadata import version
 from pathlib import Path
 
-from ragcourt.commands import audit, models, prompts, questions, setup
+from ragcourt.commands import audit, cache, doctor, explain, models, prompts, questions, rank, report, setup
 from ragcourt.errors import BudgetExceeded, RagCourtError
 from ragcourt.io.project import ProjectOptions
 
-COMMANDS = [setup, models, prompts, audit, questions]
+COMMANDS = [setup, models, prompts, audit, questions, rank, explain, report, doctor, cache]
 BUDGET_EXIT = 4
 
 

@@ -1,6 +1,6 @@
 You write one hard test question for a search system. Write a question that is answered by the PASSAGE, but
-is worded with the vocabulary of the OTHER passage, which does NOT answer it, so that a search engine could
-be misled to the other passage.
+is worded like the OTHER passage, which does NOT answer it, so that a search engine could be misled to the
+other passage. Use at least two of these words of the other passage in the question: {{term}}
 
 Then copy an exact quote from the PASSAGE (not from the other one) that answers the question: one to three
 consecutive sentences, character for character, nothing added or changed.

@@ -18,7 +18,7 @@ jobs:
       - uses: astral-sh/setup-uv@v10.2.0
         with: { python-version: "${{ matrix.python }}", enable-cache: true }
       # Every extra and the dev dependency group (installed by default).
-      - run: uv sync --all-extras --frozen
+      - run: uv sync --all-extras --no-extra local --frozen
       - run: uv run ruff check .
       - run: uv run ruff format --check .
       - run: uv run pyright

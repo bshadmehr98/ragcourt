@@ -49,10 +49,11 @@ def check_question(question: Question, offer: Offer, context: Context, kept: lis
     verdicts.append(
         Verdict("code rules", passed=True, reason="quote found verbatim; rules and category check passed")
     )
-    for check, template_name, values in _judge_checks(question, offer, index):
+    for check, template_name, values, wanted in _judge_checks(question, offer, index):
         reply = _ask_judge(models, prompts[template_name], values)
-        verdicts.append(_verdict(check, reply, models.judge_name, passing=True))
-        if reply.passed is False:
+        verdict = _verdict(check, reply, models.judge_name, passing=wanted)
+        verdicts.append(verdict)
+        if not verdict.passed:
             return _drop(question, f"not {check} (judge)", verdicts)
     return _closed_book(question, prompts, models, verdicts)
 
@@ -65,16 +66,20 @@ def _reason_of(problem: str, earlier: Question | None) -> str:
     return "not of its category"
 
 
-def _judge_checks(
-    question: Question, offer: Offer, index: CorpusIndex
-) -> list[tuple[str, str, dict[str, str]]]:
+JudgeCheck = tuple[str, str, dict[str, str], bool]  # check, prompt, values, the verdict that passes
+
+
+def _judge_checks(question: Question, offer: Offer, index: CorpusIndex) -> list[JudgeCheck]:
     values = {"question": question.question, "quote": question.quote}
-    checks: list[tuple[str, str, dict[str, str]]] = []
-    extra = CATEGORIES[question.category].JUDGE
-    if extra:
+    checks: list[JudgeCheck] = []
+    category = CATEGORIES[question.category]
+    if category.JUDGE:
         twin = index.text(offer.twin) if offer.twin else ""
-        checks.append((f"of its category ({question.category})", extra, {**values, "twin": twin}))
-    checks.append(("valid", "judge.validity", values))
+        wanted = getattr(category, "JUDGE_WANTS", True)
+        checks.append(
+            (f"of its category ({question.category})", category.JUDGE, {**values, "twin": twin}, wanted)
+        )
+    checks.append(("valid", "judge.validity", values, True))
     return checks
 
 

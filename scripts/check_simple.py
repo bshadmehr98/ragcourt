@@ -94,6 +94,10 @@ def import_problem(node: ast.AST, rel: str) -> str | None:
         names = [node.module or ""]
     # importlib.metadata and importlib.resources read package data; they do not import code by name.
     uses_importlib = any(name in ("importlib", "importlib.util", "importlib.machinery") for name in names)
+    if isinstance(node, ast.ImportFrom) and node.module == "importlib.util":
+        uses_importlib = any(
+            alias.name != "find_spec" for alias in node.names
+        )  # asking whether a package exists
     if uses_importlib and rel not in IMPORTLIB_ALLOWED:
         return "`importlib`: only the stage loader imports code by name"
     return None

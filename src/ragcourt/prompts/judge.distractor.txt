@@ -1,8 +1,8 @@
 You check a misleading test question. The QUESTION is answered by the QUOTE. Decide whether the OTHER
-passage also answers it. The verdict is "yes" only if the OTHER passage does NOT answer the question.
+passage ALSO answers the question: does it state the same fact the quote gives?
 
 QUESTION: {{question}}
 QUOTE: """{{quote}}"""
 OTHER passage: """{{twin}}"""
 
-Reply with JSON only: {"verdict": "yes" or "no", "reason": "one sentence"}
+Reply with JSON only: {"verdict": "yes" if the OTHER passage answers it, "no" if it does not, "reason": "one sentence"}

@@ -109,3 +109,36 @@ def scripted(project: Path, ollama: tuple[str, FakeOllamaState]) -> ScriptedRepl
     state.reply = replies
     (project / "ragcourt.toml").write_text(SCRIPTED_TOML.format(url=url, per_category=3))
     return replies
+
+
+RANK_TOML = """ollama_url = "{url}"
+[models]
+writer = "fake-chat"
+judge = "fake-chat"
+embedders = ["fake-embed", "fake"]
+reranker = "fake-chat"
+doctor = "fake-chat"
+[questions]
+per_category = 6
+min_held_out = 2
+[search]
+chunkers = ["recursive:size=200,overlap=20", "fixed:size=60,overlap=0", "markdown:size=300,overlap=0"]
+resamples = 200
+"""
+
+
+@pytest.fixture
+def rank_project(project: Path, ollama: tuple[str, FakeOllamaState]) -> tuple[Path, FakeOllamaState]:
+    """A project ready for ``rank`` on the bundled corpus with fake models."""
+    url, state = ollama
+    state.reply = ScriptedReplies()
+    (project / "ragcourt.toml").write_text(RANK_TOML.format(url=url))
+    return project, state
+
+
+def results_of(project: Path) -> dict[str, Any]:
+    """The latest run's results.json."""
+    import json
+
+    folders = sorted((project / ".ragcourt" / "runs").glob("*"))
+    return json.loads((folders[-1] / "results.json").read_text())

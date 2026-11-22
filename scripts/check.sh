@@ -11,7 +11,8 @@ PY
 step() { printf '\n\033[1m== %s\033[0m\n' "$*"; }
 
 step "sync"
-if [ -f uv.lock ]; then uv sync --all-extras --frozen; else uv sync --all-extras; fi
+# Every extra but `local` (sentence-transformers pulls in torch, gigabytes): its adapters are tested by hand.
+if [ -f uv.lock ]; then uv sync --all-extras --no-extra local --frozen; else uv sync --all-extras --no-extra local; fi
 step "ruff check";   uv run ruff check .
 step "ruff format";  uv run ruff format --check .
 step "import layers"; uv run python scripts/check_layers.py   # design/current.md §3.1

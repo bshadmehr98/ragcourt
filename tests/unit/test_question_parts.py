@@ -89,7 +89,7 @@ def two_windows():  # type: ignore[no-untyped-def]
         Document("b.md", "The worker retries a failed job later. " * 8),
     ]
     index = index_corpus(documents, 2000)
-    return index, Offer(index.windows[0], term="max_inflight", twin=index.windows[1])
+    return index, Offer(index.windows[0], term="failed, later", twin=index.windows[1])
 
 
 @pytest.mark.parametrize(
@@ -109,13 +109,14 @@ def two_windows():  # type: ignore[no-untyped-def]
         ),
         ("keyword", "worker retries", "", True),
         ("keyword", "does the worker retry?", "", False),
-        ("exact_term", "What is max_inflight?", "max_inflight is 200 by default.", True),
+        ("exact_term", "What does failed, later mean?", "failed, later is the term.", True),
         ("exact_term", "What is the limit?", "max_inflight is 200.", False),
         ("negation", "What is never retried?", "Jobs are never retried.", True),
         ("negation", "What is retried?", "Jobs are retried.", False),
         ("numeric", "How many?", "It is 5.", True),
-        ("numeric", "How many?", "It is five.", False),
-        ("distractor", "How does a failed job get retried later?", "", True),
+        ("numeric", "How many?", "It is five.", True),
+        ("numeric", "How many?", "It is several.", False),
+        ("distractor", "How does the worker job get failed later?", "", True),
         ("distractor", "What about an aborted job?", "", False),
     ],
 )

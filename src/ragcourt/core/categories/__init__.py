@@ -1,9 +1,9 @@
 """Question categories, one file each, in the order questions are written (design §6.7, D-032).
 
-Each file has ``NAME``, ``TESTS`` (what weakness it tests, in a few words), ``JUDGE`` (the prompt of the
-judge's extra check, or None), ``offers(index)`` (which passages may serve it) and ``check(question, quote,
-offer, index)`` (why a draft is not of the category, or None). Adding a category is one file, its prompt
-``writer.<name>.txt`` and its line below.
+Each file has ``NAME``, ``TESTS`` (the weakness it tests, in a few words), ``JUDGE`` (the prompt of the
+judge's extra check, or None; with ``JUDGE_WANTS = False`` that check passes on a "no"), ``offers(index)``
+(which passages may serve it) and ``check(question, quote, offer, index)`` (why a draft is not of the
+category, or None). Adding a category is one file, its prompt ``writer.<name>.txt`` and its line below.
 """
 
 from __future__ import annotations

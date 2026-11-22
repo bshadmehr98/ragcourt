@@ -16,21 +16,18 @@ from typing import Any
 from ragcourt.core.generate import Journal, Progress, Wanted, generate
 from ragcourt.core.offsets import find_text
 from ragcourt.core.question_checks import Models, Outcome
-from ragcourt.core.selftest import run_selftest
 from ragcourt.core.split import assign_splits
 from ragcourt.core.user_questions import read_user_questions
 from ragcourt.core.windows import index_corpus
-from ragcourt.errors import ConfigError
+from ragcourt.flows.judge import JUDGE_PROMPTS, check_judge, judge_line
 from ragcourt.io import question_file
-from ragcourt.io.judge_record import load_selftest, save_selftest
-from ragcourt.io.narration import failed_judge_text, judge_text, roles_text, selftest_text
+from ragcourt.io.narration import judge_text, roles_text
 from ragcourt.io.project import Project
-from ragcourt.io.prompts import judge_cases, load_prompts
+from ragcourt.io.prompts import load_prompts
 from ragcourt.types import Corpus
-from ragcourt.types.questions import Dropped, Question, SelfTest
+from ragcourt.types.questions import Dropped, Question
 
 Say = Callable[[str], None]
-JUDGE_PROMPTS = ("judge.validity", "judge.closed_book")
 REPORT_EVERY = 10  # a progress line every this many questions asked, and when a category is done
 
 
@@ -57,7 +54,7 @@ def ensure_questions(project: Project, corpus: Corpus, options: QuestionOptions,
         and _same(existing[0], header)
     ):
         say(f"Reusing {len(existing[1])} questions from {project.workdir / question_file.QUESTIONS}.")
-        say(_judge_line(project, project.role("judge", options.judge).models[0]))
+        say(judge_line(project, project.role("judge", options.judge).models[0]))
         return existing[1]
     question_file.start_files(project.workdir, header)
     for outcome in done or []:
@@ -69,6 +66,21 @@ def ensure_questions(project: Project, corpus: Corpus, options: QuestionOptions,
         project.workdir, {**header, "complete": True, "dropped": drop_counts(dropped)}, questions
     )
     return questions
+
+
+def question_plan(project: Project, corpus: Corpus, options: QuestionOptions) -> tuple[bool, int, int]:
+    """Before any model call: whether the set is reused, how many questions are still to write, the total."""
+    header = _header(project, corpus, options)
+    existing = question_file.read_questions(project.workdir)
+    wanted = header["per_category"] * len(header["categories"])
+    if existing is not None and existing[0].get("complete") and _same(existing[0], header):
+        return True, 0, len(existing[1])
+    have = (
+        len(existing[1])
+        if existing is not None and _same(existing[0], header, ignore=("per_category",))
+        else 0
+    )
+    return False, max(wanted - have, 0), wanted
 
 
 def _header(project: Project, corpus: Corpus, options: QuestionOptions) -> dict[str, Any]:
@@ -174,30 +186,6 @@ def _user_questions(project: Project, corpus: Corpus, path: Path, done: list[Out
     for outcome in outcomes:
         question_file.append(project.workdir, outcome)
     return outcomes
-
-
-def check_judge(project: Project, model: str, templates: dict[str, str], say: Say) -> SelfTest:
-    """The judge's self-test, from the record or run now and shown case by case; refused below 90%."""
-    hashes = {name: question_file.text_hash(templates[name]) for name in JUDGE_PROMPTS}
-    test = load_selftest(project.workdir, model, hashes)
-    first_time = test is None
-    if test is None:
-        say(f"Running the judge's self-test ({len(judge_cases())} labelled cases) …")
-        results = run_selftest(judge_cases(), templates, project.chat(model))
-        test = SelfTest(model, hashes, results)
-        save_selftest(project.workdir, test)
-    say(selftest_text(test, cases=first_time or not test.passed))
-    if not test.passed:
-        raise ConfigError(failed_judge_text(test))
-    return test
-
-
-def _judge_line(project: Project, model: str) -> str:
-    prompts = load_prompts(project.config.prompts_dir)
-    test = load_selftest(project.workdir, model, {name: prompts[name].hash for name in JUDGE_PROMPTS})
-    if test is None:
-        return f"The judge {model} has no self-test on record."
-    return selftest_text(test, cases=False).strip()
 
 
 def _reporter(say: Say) -> Callable[[Progress], None]:

@@ -10,7 +10,7 @@ from __future__ import annotations
 import argparse
 
 from ragcourt.core.recommend import SIZES_GB, recommend
-from ragcourt.flows.questions import check_judge
+from ragcourt.flows.judge import check_judge
 from ragcourt.io.ask import confirm
 from ragcourt.io.config import CONFIG_FILE
 from ragcourt.io.config_template import config_text

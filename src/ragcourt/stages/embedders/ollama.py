@@ -61,13 +61,14 @@ def ollama(
     model: str = "nomic-embed-text",
     query_prefix: str = AUTO,
     document_prefix: str = AUTO,
+    limit: int = 0,
 ) -> OllamaEmbedder:
-    """An Ollama embedding model with its limit in force measured and its documented prefixes."""
+    """An Ollama model with its limit in force (measured unless given) and its documented prefixes."""
     default_query, default_document = known_prefixes(model)
     return OllamaEmbedder(
         client,
         model,
-        measured_limit(client, model),
+        limit or measured_limit(client, model),
         default_query if query_prefix == AUTO else query_prefix,
         default_document if document_prefix == AUTO else document_prefix,
         client.show(model).digest,

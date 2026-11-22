@@ -12,7 +12,7 @@ from collections.abc import Mapping
 
 from ragcourt.core.recommend import SIZES_GB
 from ragcourt.errors import ConfigError
-from ragcourt.flows.questions import JUDGE_PROMPTS, check_judge
+from ragcourt.flows.judge import JUDGE_PROMPTS, check_judge
 from ragcourt.io.ask import confirm
 from ragcourt.io.config import CONFIG_FILE
 from ragcourt.io.judge_record import load_selftest, record_path

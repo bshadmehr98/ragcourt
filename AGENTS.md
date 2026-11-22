@@ -25,7 +25,7 @@ proposed change record.
 ## Commands
 
 ```bash
-uv sync --all-extras                 # install everything (dev included)
+uv sync --all-extras --no-extra local   # everything but torch (dev included); add `--extra local` for st and cross-encoder
 scripts/check.sh                     # all quality gates: lint, format, import layers, simplicity, types, tests + coverage, build, wheel smoke test
 uv run pytest                        # default suite (fast, offline, deterministic; fake embedder, scripted model)
 uv run pytest -m real_model          # real models: a local server or an endpoint; by hand (real-model-tests)

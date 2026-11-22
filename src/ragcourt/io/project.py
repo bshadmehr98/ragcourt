@@ -47,7 +47,7 @@ class Project:
 
     def embedder(self, name: str, *, use_cache: bool = True) -> Embedder:
         """The embedder ``name``, behind the embedding cache unless told not to."""
-        built = make_embedder(name, self.client)
+        built = make_embedder(name, self.client, self.workdir / "cache" / "limits.json")
         if not use_cache:
             return built
         store = EmbeddingStore.open(self.workdir / "cache" / "embeddings", identity_of(built))

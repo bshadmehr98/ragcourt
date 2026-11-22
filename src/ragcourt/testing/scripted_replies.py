@@ -78,6 +78,8 @@ class ScriptedReplies:
             return _verdict("correct" if knows else "incorrect")
         if any(text in question for text in self.invalid):
             return _verdict("no")
+        if prompt.startswith("You check a misleading"):
+            return _verdict("no")  # the other passage does not answer it
         return _verdict("yes")
 
     def _case_verdict(self, case: dict[str, str]) -> str:
@@ -108,8 +110,8 @@ def _pick_sentence(passage: str, prompt: str, term: str) -> str:
 def _question(prompt: str, quote: str, term: str, twin: str) -> str:
     words: list[str] = re.findall(r"[A-Za-z]{4,}", quote)
     if twin:
-        twin_words = [word for word in re.findall(r"[A-Za-z]{5,}", twin) if word not in quote]
-        return f"How do {' and '.join(twin_words[:3])} work together here?"
+        offered = _after(prompt, "words of the other passage in the question: ").split(", ")
+        return f"How do {' and '.join(offered[:3])} work together here?"
     templates = [
         ("keyword search", " ".join(words[:3])),
         ("does NOT do", f"What is never allowed or not done regarding {' '.join(words[:2])}?"),

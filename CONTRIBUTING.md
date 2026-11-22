@@ -8,7 +8,7 @@ is accepted and being built.
 ## Setup and the quality gates
 
 ```bash
-uv sync --all-extras          # install the package with every extra and the dev tools
+uv sync --all-extras --no-extra local   # the package, the light extras and the dev tools (`--extra local` brings torch)
 scripts/check.sh              # every quality gate; "green" means this exits 0
 ```
 

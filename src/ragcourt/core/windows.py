@@ -6,7 +6,9 @@ any chunker (brief §3).
 
 from __future__ import annotations
 
+import math
 import re
+from collections import Counter
 from collections.abc import Sequence
 from dataclasses import dataclass, field
 
@@ -17,12 +19,21 @@ PARAGRAPH = re.compile(r"\S(?:.*\S)?(?:\n(?!\s*\n).*\S)*", re.MULTILINE)
 MIN_CHARS = 200
 
 
-def windows_of(document: Document, size: int) -> list[Window]:
-    """Runs of whole paragraphs of about ``size`` characters; a longer paragraph is a window alone."""
+def windows_of(document: Document, size: int, boilerplate: frozenset[str] = frozenset()) -> list[Window]:
+    """Runs of whole paragraphs of about ``size`` characters; a longer paragraph is a window alone.
+
+    Paragraphs that repeat across many documents (headers, footers) end a window and are left out, so no
+    question is written about them.
+    """
     found: list[Window] = []
     start: int | None = None
     end = 0
     for match in PARAGRAPH.finditer(document.text):
+        if match.group(0).strip() in boilerplate:
+            if start is not None:
+                found.append(Window(document.id, start, end))
+            start = None
+            continue
         if start is not None and match.end() - start > size:
             found.append(Window(document.id, start, end))
             start = None
@@ -52,9 +63,19 @@ class CorpusIndex:
         return self.counted[term]
 
 
+def repeated_paragraphs(documents: Sequence[Document], share: float = 0.3) -> frozenset[str]:
+    """Paragraphs found in at least ``share`` of the documents, and in two or more (design §5.1's rule)."""
+    counts: Counter[str] = Counter()
+    for document in documents:
+        counts.update({match.group(0).strip() for match in PARAGRAPH.finditer(document.text)})
+    needed = max(2, math.ceil(share * len(documents)))
+    return frozenset(text for text, count in counts.items() if count >= needed)
+
+
 def index_corpus(documents: Sequence[Document], size: int) -> CorpusIndex:
-    """Every window of every document."""
+    """Every window of every document, repeated headers and footers left out."""
+    boilerplate = repeated_paragraphs(documents)
     found: list[Window] = []
     for document in documents:
-        found += windows_of(document, size)
+        found += windows_of(document, size, boilerplate)
     return CorpusIndex({document.id: document.text for document in documents}, found)

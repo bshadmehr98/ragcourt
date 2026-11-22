@@ -27,6 +27,8 @@ def register_fakes() -> None:
     stages.register("embedder", "fake", fake_embedder)
 
 
+from ragcourt.testing.offline import offline_project  # noqa: E402 (needs register_fakes above)
+
 __all__ = [
     "FakeEmbedder",
     "FakeEndpointState",
@@ -38,5 +40,6 @@ __all__ = [
     "fake_endpoint",
     "fake_ollama",
     "fake_tokens",
+    "offline_project",
     "register_fakes",
 ]

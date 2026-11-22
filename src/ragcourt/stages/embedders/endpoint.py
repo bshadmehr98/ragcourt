@@ -1,15 +1,21 @@
-"""The ``endpoint`` embedder: any OpenAI-compatible ``/embeddings`` (design §7.3).
+"""The ``endpoint`` embedder: any OpenAI-compatible ``/embeddings`` (design §7.3, §4.3).
 
-Endpoints do not report per-text token counts, so sizes are estimated and labelled so; the input limit is
-unknown unless given as ``max_tokens``.
+Endpoints do not report per-text token counts. With ``tokenizer="tiktoken:<encoding>"`` (the ``tokens``
+extra) sizes are counted exactly; otherwise they are estimated and labelled so. The input limit is unknown
+unless given as ``max_tokens``.
 """
 
+# pyright: basic, reportMissingImports=false
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import dataclass
 
+from ragcourt.errors import ConfigError, ExtraMissing
 from ragcourt.stages import embedder
 from ragcourt.types import Embedded, ModelClient
+
+Counter = Callable[[str], int]
 
 
 @dataclass(frozen=True)
@@ -22,11 +28,25 @@ class EndpointEmbedder:
     query_prefix: str = ""
     document_prefix: str = ""
     tokenizer: str = "unknown (sizes estimated)"
+    counter: Counter | None = None
 
     def embed(self, texts: list[str], *, as_query: bool = False) -> Embedded:
-        """Vectors from the endpoint; token counts are not available."""
+        """Vectors from the endpoint, and counts when a tokenizer was named."""
         prefix = self.query_prefix if as_query else self.document_prefix
-        return self.client.embed(self.model, [prefix + text for text in texts])
+        sent = [prefix + text for text in texts]
+        vectors = self.client.embed(self.model, sent).vectors
+        counts = [self.counter(text) for text in sent] if self.counter else None
+        return Embedded(vectors, counts)
+
+
+def tiktoken_counter(name: str) -> Counter:
+    """Token counts from a tiktoken encoding (the ``tokens`` extra)."""
+    try:
+        import tiktoken  # noqa: PLC0415 (an optional extra, imported only when used)
+    except ImportError as error:
+        raise ExtraMissing("Counting with tiktoken needs it: pip install 'ragcourt[tokens]'.") from error
+    encoding = tiktoken.get_encoding(name)
+    return lambda text: len(encoding.encode(text))
 
 
 @embedder("endpoint")
@@ -36,6 +56,11 @@ def endpoint(
     max_tokens: int = 0,
     query_prefix: str = "",
     document_prefix: str = "",
+    tokenizer: str = "",
 ) -> EndpointEmbedder:
     """An endpoint model, e.g. ``endpoint:openai/text-embedding-3-small``."""
-    return EndpointEmbedder(client, model, max_tokens or None, query_prefix, document_prefix)
+    if tokenizer and not tokenizer.startswith("tiktoken:"):
+        raise ConfigError(f"tokenizer {tokenizer!r}: write tiktoken:<encoding>, e.g. tiktoken:cl100k_base.")
+    counter = tiktoken_counter(tokenizer.removeprefix("tiktoken:")) if tokenizer else None
+    label = f"{tokenizer} (measured)" if tokenizer else "unknown (sizes estimated)"
+    return EndpointEmbedder(client, model, max_tokens or None, query_prefix, document_prefix, label, counter)
