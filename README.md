@@ -10,8 +10,7 @@ say which stage caused each miss.
 ## What it will do
 
 - **Local models, no key.** `ragcourt setup` finds Ollama, recommends models that fit your machine and
-  pulls them when you say so; after that a first ranking takes about a minute, and nothing leaves your
-  machine.
+  pulls them when you say so; nothing leaves your machine.
 - **`audit`**: chunk your documents and flag chunks cut mid-sentence,
   chunks without their heading, split tables and code blocks, repeated headers and footers,
   near-duplicates, tiny chunks and chunks longer than your embedding model accepts, with the boundaries
@@ -42,7 +41,8 @@ Not yet. When the design is accepted and built:
 ```text
 uv tool install ragcourt
 ragcourt setup          # once: checks Ollama, pulls models that fit, tests the judge
-ragcourt rank docs/     # the first ranking, in about a minute
+ragcourt audit docs/    # seconds: how your chunker cuts your text
+ragcourt rank docs/     # the ranking: shows its plan and time first (15-25 min the first time), then progress
 ```
 
 ## How this is being built

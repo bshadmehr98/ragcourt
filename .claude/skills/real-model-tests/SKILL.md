@@ -10,9 +10,9 @@ model; these tests use real ones.
 
 **The models**
 - By default the local Ollama on `localhost:11434` with the default models of `design/current.md` §11.3
-  (run `ragcourt setup` once, or `ollama pull` them). The first-minute test (guarantee 26) times
-  `ragcourt rank` on the bundled corpus and records the measured time; run it with nothing else using the
-  GPU.
+  (run `ragcourt setup` once, or `ollama pull` them). The tests record how long a full run on the
+  bundled corpus takes, so the plan's time estimate can be checked; run them with nothing else using
+  the GPU.
 - Or an OpenAI-compatible endpoint chosen by environment variables: `RAGCOURT_TEST_BASE_URL`,
   `RAGCOURT_TEST_API_KEY` (empty for a local server), `RAGCOURT_TEST_EMBED_MODEL`,
   `RAGCOURT_TEST_CHAT_MODEL` and, for rerankers, `RAGCOURT_TEST_RERANK_MODEL`. A local server (Ollama,
