@@ -9,7 +9,11 @@ Details: CONTRIBUTING.md, "Real-model tests". The default suite uses the fake em
 model; these tests use real ones.
 
 **The models**
-- An OpenAI-compatible endpoint chosen by environment variables: `RAGDOCTOR_TEST_BASE_URL`,
+- By default the local Ollama on `localhost:11434` with the default models of `design/current.md` §11.3
+  (run `ragdoctor setup` once, or `ollama pull` them). The first-minute test (guarantee 26) times
+  `ragdoctor rank` on the bundled corpus and records the measured time; run it with nothing else using the
+  GPU.
+- Or an OpenAI-compatible endpoint chosen by environment variables: `RAGDOCTOR_TEST_BASE_URL`,
   `RAGDOCTOR_TEST_API_KEY` (empty for a local server), `RAGDOCTOR_TEST_EMBED_MODEL`,
   `RAGDOCTOR_TEST_CHAT_MODEL` and, for rerankers, `RAGDOCTOR_TEST_RERANK_MODEL`. A local server (Ollama,
   llama.cpp, vLLM, LM Studio) keeps the documents on the machine and costs nothing; prefer it.

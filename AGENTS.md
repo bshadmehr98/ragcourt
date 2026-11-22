@@ -7,10 +7,12 @@ People follow the same rules; they are in [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ragdoctor (working name; package, import and command `ragdoctor`) is an open-source command-line tool
 for RAG developers: it ranks chunkers, embedding models, retrievers and rerankers on the user's own
-documents, and says which stage caused each miss. `audit` checks chunks with no model at all; `rank`
-measures pipelines against questions whose gold answers are exact quotes from the source; `explain` names
-the stage that lost each failed question and what would fix it; `doctor` lets a model propose (and
-write) a chunker, which is shown, approved, isolated, validated and measured like any other. Read
+documents, and says which stage caused each miss. It runs on local models through Ollama by default:
+`setup` picks and pulls models that fit the machine; `rank` measures pipelines against questions whose
+gold answers are exact quotes from the source, filtered by a judge model that must first pass a
+self-test; `audit` checks chunks by code; `explain` names the stage that lost each failed question and
+what would fix it; `doctor` lets a model propose (and write) a chunker, which is shown, approved,
+isolated, validated and measured like any other. Read
 [design/current.md](design/current.md) before changing behaviour; its §16 lists the guarantees the tests
 check and its §17 says what is built. Why the design looks like this: the owner's brief in
 [design/history/0001-owner-brief.md](design/history/0001-owner-brief.md),
@@ -42,7 +44,7 @@ src/ragdoctor/
   stages/                      the registry and its decorators (__init__); chunkers/, embedders/, retrievers/, rerankers/: one file per stage (layer 1)
   core/                        pure functions: offsets, pipeline, metrics, stats, blame, search, audit (layer 2)
   io/                          loaders, the model client, the cache, questions, the report, config (layer 2)
-  commands/                    audit, rank, explain, doctor: one file each (layer 3)
+  commands/                    setup, audit, rank, explain, doctor: one file each (layer 3)
   cli.py                       the command line (layer 4)
   testing/                     the fake embedder, the scripted model, the bundled corpus
 tests/unit|contract|integration|e2e   default suite; tests/real: by hand, marked real_model
@@ -63,10 +65,12 @@ docs/  examples/       user docs and runnable examples, both executed by tests o
    even a chunker doctor wrote) is called better without the measurement. Unknown is said, never filled
    in (an estimated token count is labelled estimated; an unknown price is unknown).
 4. **Blame is code:** each miss gets exactly one stage, from offsets and ranks (design §9); a model is
-   never asked who is to blame.
+   never asked who is to blame. A judge only filters questions (and, as a reranker, orders candidates),
+   and only after passing its self-test (design §6.6).
 5. **Gold is independent of chunking:** a question's gold answer is an exact quote found verbatim in the
    source; no question depends on a chunker; a quote that is not found drops its question.
-6. **Nothing leaves the machine** unless the user configured that endpoint; one client for every model;
+6. **Nothing leaves the machine** unless the user configured that endpoint (Ollama on `localhost` is the
+   default); one client for every model; no model is downloaded without the user's yes;
    keys only from the environment; no telemetry; document text never goes to logs.
 7. **Generated code is asked, isolated and validated:** code a model wrote is shown, runs only after the
    user approves it, only in a subprocess with a timeout, and its output is validated before it is used.

@@ -9,12 +9,16 @@ say which stage caused each miss.
 
 ## What it will do
 
-- **`audit`**, with no model and no API key: chunk your documents and flag chunks cut mid-sentence,
+- **Local models, no key.** `ragdoctor setup` finds Ollama, recommends models that fit your machine and
+  pulls them when you say so; after that a first ranking takes about a minute, and nothing leaves your
+  machine.
+- **`audit`**: chunk your documents and flag chunks cut mid-sentence,
   chunks without their heading, split tables and code blocks, repeated headers and footers,
   near-duplicates, tiny chunks and chunks longer than your embedding model accepts, with the boundaries
   shown on your text.
 - **`rank`**: a leaderboard per stage and the best overall pipeline, measured on questions whose gold
-  answers are exact quotes from your documents, with confidence intervals, and "no significant
+  answers are exact quotes from your documents (filtered by a judge model that must pass a self-test
+  first), with confidence intervals, and "no significant
   difference" when the top results are tied.
 - **`explain`**: for every failed question, the one stage that lost it (the chunker, retrieval or
   ranking), computed by code, and what would fix it.
@@ -22,7 +26,7 @@ say which stage caused each miss.
   the code and approve it before it runs, isolated, and it is ranked against the baselines like any
   other.
 
-Nothing leaves your machine unless you configure an endpoint. No telemetry.
+Any OpenAI-compatible endpoint works too, if you configure one. No telemetry.
 
 ## Install and run
 
@@ -30,7 +34,8 @@ Not yet. When the design is accepted and built:
 
 ```text
 uv tool install ragdoctor
-ragdoctor audit docs/
+ragdoctor setup          # once: checks Ollama, pulls models that fit, tests the judge
+ragdoctor rank docs/     # the first ranking, in about a minute
 ```
 
 ## How this is being built
