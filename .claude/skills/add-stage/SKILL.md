@@ -28,7 +28,7 @@ signature; a new kind, a change to a signature, or a new extra is a design chang
    unless the kind's contract asks for a dataclass (`Embedder`); a library adapter only translates.
 6. **Deterministic.** Same input, same output; no randomness without a fixed seed; no network in the
    default suite.
-7. **Tests.** A unit test of the stage on the bundled corpus (`tests/fixtures/corpus/`) with the fake
+7. **Tests.** A unit test of the stage on the bundled corpus (`src/ragcourt/testing/corpus/`) with the fake
    embedder and the scripted model, including its edge cases (empty text, one long line, Unicode); the
    kind's contract test in `tests/contract/`; for an adapter or a model-backed stage, a marked test with
    the real library or model (`real-model-tests`).

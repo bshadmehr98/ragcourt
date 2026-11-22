@@ -24,7 +24,7 @@ model; these tests use real ones.
 **Run**
 - `uv run pytest -m real_model -q`. Tests skip with a precise reason when a variable, an extra or the
   endpoint is missing; a skip is never a pass, so say what was skipped.
-- They run on the bundled corpus (`tests/fixtures/corpus/`) only, so a run costs a few cents at most on a
+- They run on the bundled corpus (`src/ragcourt/testing/corpus/`) only, so a run costs a few cents at most on a
   paid endpoint; the test prints the estimate first.
 
 **Record**

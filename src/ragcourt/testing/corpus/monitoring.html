@@ -1,0 +1,30 @@
+<!doctype html>
+<html>
+<head>
+<title>Monitoring Larkspur</title>
+<style>body { font-family: sans-serif; }</style>
+</head>
+<body>
+<h1>Monitoring</h1>
+<p>Larkspur exposes its numbers in the Prometheus text format on the port given by
+<code>metrics_port</code>, 9187 by default. Each worker serves its own numbers; the queue numbers come
+from the database and are the same on every worker.</p>
+<h2>The numbers</h2>
+<table>
+<tr><th>Metric</th><th>Type</th><th>Meaning</th></tr>
+<tr><td>larkspur_jobs_waiting</td><td>gauge</td><td>jobs waiting, per queue</td></tr>
+<tr><td>larkspur_oldest_waiting_seconds</td><td>gauge</td><td>age of the oldest waiting job, per queue</td></tr>
+<tr><td>larkspur_jobs_finished_total</td><td>counter</td><td>jobs finished by this worker</td></tr>
+<tr><td>larkspur_jobs_failed_total</td><td>counter</td><td>failed attempts on this worker</td></tr>
+</table>
+<h2>What to alert on</h2>
+<p>Alert on the age of the oldest waiting job, not on the number of waiting jobs. A thousand jobs that
+each take a millisecond are no problem; ten jobs that have waited an hour are.</p>
+<pre>
+- alert: LarkspurBacklog
+  expr: larkspur_oldest_waiting_seconds > 600
+  for: 5m
+</pre>
+<script>console.log("not part of the text");</script>
+</body>
+</html>

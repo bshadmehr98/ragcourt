@@ -153,7 +153,7 @@ beyond one TOML file and flags.
 | Real models | `tests/real/` | no | a local model server or an endpoint, marker `real_model`; by hand |
 
 - The default suite must stay fast, deterministic and offline: the fake embedder and the scripted model
-  from `ragcourt.testing`, the bundled corpus in `tests/fixtures/corpus/`, fixed seeds.
+  from `ragcourt.testing`, the bundled corpus (`src/ragcourt/testing/corpus/`), fixed seeds.
 - Every acceptance case has a test in `tests/e2e/` named `test_ac<N>_<slug>`, using only the public API or
   CLI. An acceptance test must fail if its feature is removed.
 - Every metric, interval and blame rule has a test against numbers worked out by hand; every audit check

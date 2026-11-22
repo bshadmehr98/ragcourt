@@ -1,0 +1,19 @@
+Frequently asked questions
+
+Can a job enqueue other jobs?
+Yes. A job can enqueue any number of jobs, and they are committed with the job's own result, so if the
+job fails, the jobs it enqueued are never created.
+
+Does Larkspur work with MySQL?
+No. Larkspur depends on two features of PostgreSQL: locking reads that skip locked rows, and
+notifications on a channel. MySQL has the first but not the second, and polling alone would make every
+worker query the database every poll interval.
+
+How many workers should I run?
+Start with two, so a restart never leaves a queue unserved, and add more when the oldest waiting job is
+regularly older than you would like. The dashboard shows that age for each queue.
+
+Why did my job run twice?
+A job runs again when its worker died or lost its database connection after the job finished but
+before the result was saved. Larkspur guarantees that every job runs at least once, not exactly once, so
+jobs should be safe to run twice: check whether the email was already sent before sending it.
