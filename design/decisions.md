@@ -11,7 +11,8 @@ Design 0001 is proposed and was revised after the owner's answers (2026-11-22). 
 |---|---|---|
 | [D-032](#d-032-questions-by-category-90-each) | Six question categories (different wording, keywords, exact terms, misleading, negation, numbers), 90 each (30 to choose, 60 to report)? | awaiting owner |
 | [D-033](#d-033-blame-a-stage-a-mechanism-evidence-and-a-level) | Blame as a stage plus a mechanism (14 of them), with evidence and `confirmed` or `indicated`? | awaiting owner |
-| [D-034](#d-034-the-first-look-and-the-first-minute) | The first-minute run is "a first look" (8 questions per category, no winner per category); the full set takes 15 to 25 minutes once per corpus? | awaiting owner |
+| [D-035](#d-035-progress-and-resume) | A long run shows its progress and resumes after an interruption? | awaiting owner |
+| [D-036](#d-036-simple-code-small-modules-plain-files) | The simplicity rules, checked by the gate, and the small-module layout? | awaiting owner |
 
 ## The owner's answers (2026-11-22)
 
@@ -30,6 +31,8 @@ Design 0001 is proposed and was revised after the owner's answers (2026-11-22). 
 | D-030 | Nothing happens blindly: a new user must know what is being judged, how, by which model, and why. | owner |
 | D-027 | The default local models are accepted; the user must be able to change them easily (D-031). | owner |
 | D-011 | Choosing on some questions and reporting on others is accepted; but one mixed set of a few dozen is not enough: many questions of each kind are needed (D-032). | owner |
+| D-034 | No first answer in one minute: about 540 questions taking 15 to 25 minutes once is fine. | owner |
+| D-016 | No database; nothing that complicates the code. | owner |
 | D-014 | "retrieval" as one blame stage is not good enough: why a miss happened is the reason to use the product, so blame must be precise (D-033). | owner |
 
 ## D-001: The name: ragcourt  (2026-11-22)
@@ -69,21 +72,16 @@ Design 0001 is proposed and was revised after the owner's answers (2026-11-22). 
   work, the test can take the family's lock itself later.
 - **Status:** designer's choice.
 
-## D-006: The first minute uses a local model  (2026-11-22)
+## D-006: The first result uses a local model; no one-minute target  (2026-11-22)
 
 - **Question:** "a first useful result in under a minute, with no API key" (brief §1).
-- **First proposal (rejected by the owner):** `audit`, with no model at all.
+- **First proposal (rejected):** `audit`, with no model at all.
 - **Owner (2026-11-22):** the first version is not model-free; any local model that fits the machine may
-  be used; Ollama is installed.
-- **Choice:** the first-minute result is `ragcourt rank <folder>` with nothing configured: it finds
-  Ollama on `localhost`, uses the default local models (D-027), writes about 40 questions with quotes,
-  filters them with the judge, and ranks the default embedders on the default chunker with blame for
-  every miss. `ragcourt setup` (run once, not counted in the minute) checks Ollama, recommends models that
-  fit the machine, pulls them after asking, and runs the judge's self-test (D-026). `audit` stays
-  model-free when no model is available, and uses the embedder's measured token counts and limit through
-  Ollama when it is. The minute is a target to be measured (an end-to-end real-model test on the bundled
-  corpus); [history/0002-local-models.md](history/0002-local-models.md) §6 estimates about 60 s on the
-  owner's machine before any concurrency.
+  be used; Ollama is installed. Later the same day: drop the one-minute target (D-034).
+- **Choice:** `ragcourt setup` once (checks Ollama, recommends models that fit, pulls after asking, tests
+  the judge), then `ragcourt rank <folder>`: the full set of questions and the search, with the plan and
+  its time shown before it starts and progress while it runs (D-035). `audit` gives a useful result in
+  seconds meanwhile, with token counts measured through Ollama when it is running.
 - **Status:** owner's answer; the shape is the designer's.
 
 ## D-007: One client, Ollama first  (2026-11-22)
@@ -191,13 +189,17 @@ Design 0001 is proposed and was revised after the owner's answers (2026-11-22). 
   rank; it still never decides blame.
 - **Status:** designer's choice.
 
-## D-016: Files, the cache and the configuration  (2026-11-22)
+## D-016: Plain files, no database  (2026-11-22)
 
-- **Choice:** one working folder, `.ragcourt/`, git-ignored by the template; the embedding cache in
-  SQLite (`sqlite3`, one file, safe across interrupted runs); configuration in an optional
-  `ragcourt.toml` read with `tomllib`; keys only through the environment variable the configuration
-  names.
-- **Status:** designer's choice.
+- **Owner (2026-11-22):** no database, nothing that complicates things.
+- **Choice:** everything ragcourt keeps is a plain file in `.ragcourt/`: the question file (JSONL), the
+  results (JSON), progress (JSONL), the judge's self-test results (JSON), and the embedding cache as one
+  folder per model with `keys.txt` and `vectors.f32`, appended to and read whole into a dictionary
+  (design §10.2). The first proposal's SQLite cache is dropped. Configuration is one optional
+  `ragcourt.toml` read with `tomllib`; keys only through the environment variable it names.
+- **Why it is enough:** a cache of 100,000 vectors of 1,024 dimensions is 400 MB of float32 and loads in
+  seconds; corpora larger than that are past 0.1's limits (design §18).
+- **Status:** owner's requirement; the shape is the designer's.
 
 ## D-017: Approving generated code  (2026-11-22)
 
@@ -366,13 +368,46 @@ Design 0001 is proposed and was revised after the owner's answers (2026-11-22). 
 - **Still never a model:** every check is arithmetic on spans, ranks and scores.
 - **Status:** awaiting owner review.
 
-## D-034: The first look and the first minute  (2026-11-22)
+## D-034: No first answer in one minute  (2026-11-22)
 
-- **Question:** the first result must come in about a minute (D-006), but a trustworthy ranking needs
-  about 540 questions (D-032), which take 15 to 25 minutes to write once.
-- **Choice:** `rank` without `--full` is labelled **a first look**: 8 questions per category, the default
-  embedders, intervals and blame, no winner named per category, ending with the plan and estimate of the
-  full run, which reuses its questions. `rank --full` is the real answer. Whether the first look fits in a
-  minute with categories (hard categories need more requests) is measured in the first-minute test; if it
-  does not, the first look shrinks to the categories that are quick to write.
+- **Question:** the brief's one-minute first result against the ~540 questions a trustworthy ranking
+  needs (D-032).
+- **First proposal:** a labelled "first look" of 8 questions per category.
+- **Owner (2026-11-22):** writing 540 questions taking time is fine; drop the one-minute answer. The
+  designer agreed: a ranking on a handful of questions per category is noise that people would act on.
+- **Result:** no quick mode, no first-minute test; one `rank`, with the plan and time shown first, visible
+  progress and resume (D-035). Guarantee 26 now tests progress and resume.
+- **Status:** owner's answer.
+
+## D-035: Progress and resume  (2026-11-22)
+
+- **Question:** a full run takes 15 to 25 minutes on the owner's machine; over that time a laptop may
+  sleep, a model may fail, the user may press Ctrl-C.
+- **Choice:** progress lines while it runs (per step; per category while questions are written; time
+  left), kept in `progress.jsonl`; every finished unit (question, embedding, evaluated configuration)
+  written as it finishes, so `rank --resume` continues where it stopped and gives the same results as an
+  uninterrupted run (design §10.4, guarantee 26).
+- **Status:** awaiting owner review.
+
+## D-036: Simple code, small modules, plain files  (2026-11-22)
+
+- **Owner (2026-11-22):** the code must not be complicated, yet maintainable, easy to understand and easy
+  to extend: no database, small modules rather than big files, no hard-to-read code such as complex
+  comprehensions; these rules belong in the project's skills and instructions.
+- **Choice:**
+  - the rules in CONTRIBUTING.md "Keep it simple", in three parts: what we build with (the standard
+    library, plain files, sequential code, functions and frozen dataclasses, no magic), how code is
+    shaped (one concept per module, short flat functions, readable expressions, explicit state, names
+    that say what) and how it grows (every extension is one new file and maybe one line in a list);
+  - the limits checked in the gate: modules ≤ 250 lines, functions ≤ 40 lines, ≤ 3 nested blocks,
+    complexity ≤ 10, ≤ 6 parameters with booleans keyword-only, comprehensions with one `for` and at most
+    one `if` and none nested, no nested conditional expressions, walrus, `global`, `eval` or metaclasses,
+    inheritance only for protocols, enums and errors, no junk-drawer module names;
+    `scripts/check_simple.py` checks what ruff cannot, and ruff gains rules for blind excepts, prints,
+    commented-out code, unused arguments, boolean flags, pathlib and docstrings;
+  - the `keep-it-simple` skill as the working checklist, including how to fix a failed check without
+    gaming it; AGENTS.md rule 1, CLAUDE.md, the other skills and the simplicity reviewer point to it;
+  - the module layout of design §3.2: one file per stage, audit check, question category, blame stage and
+    command, with the package's `__init__.py` holding the ordered list.
+- **Kept from the brief:** complexity 10 (brief §9 and the toolchain); the line length of 110.
 - **Status:** awaiting owner review.
