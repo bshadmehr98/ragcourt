@@ -52,7 +52,8 @@ tests/unit|contract|integration|e2e   default suite; tests/real: by hand, marked
 scripts/check.sh                     the one gate
 scripts/check_layers.py  check_simple.py   the import layers; the simplicity rules ruff can't check
 design/                why and how: README, current.md, changes/, decisions.md, history/
-docs/  examples/       user docs and runnable examples, both executed by tests
+tutorial/              the tutorial: RAG and ragcourt from zero, in chapters (its code blocks run in tests)
+docs/  examples/       the short reference and runnable examples, both executed by tests
 ```
 
 ## Rules

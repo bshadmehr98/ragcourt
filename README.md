@@ -26,7 +26,12 @@ ragcourt report             # the same as one HTML file
 Also: change any model with `ragcourt models set`, add your own chunker in one file, let `ragcourt
 doctor` suggest one, bring your own questions, resume long runs, set time and money budgets.
 
-**[Learn ragcourt: the tutorial →](TUTORIAL.md)** Every feature in thirteen short lessons.
+## Learn it
+
+**[The ragcourt tutorial →](tutorial/README.md)** RAG retrieval and ragcourt from zero, in 21 short
+chapters: what RAG is, every chunker, embedder, retriever and reranker, every metric explained with a
+worked example, intervals and ties, why questions fail, every command and setting, your own stages, and
+what we saw on real documents (Kubernetes docs, with local models).
 
 **Nothing happens blindly.** Before any model is called you see which model does each job and what it is
 shown; the judge's prompts and every verdict's reason are yours to read. **Nothing leaves your machine**

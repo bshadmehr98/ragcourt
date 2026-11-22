@@ -1,6 +1,6 @@
 """The documentation stays runnable and its links resolve (CONTRIBUTING.md, "Tests").
 
-Every ``python`` block in README.md and docs/*.md is executed; blocks that must not run use a ``text``
+Every ``python`` block in README.md, tutorial/*.md and docs/*.md is executed; blocks that must not run use a ``text``
 fence. Every relative link in the Markdown pages points at a file that exists.
 """
 
@@ -14,7 +14,11 @@ from pathlib import Path
 import pytest
 
 ROOT = Path(__file__).resolve().parents[2]
-RUNNABLE = [ROOT / "README.md", ROOT / "TUTORIAL.md", *sorted((ROOT / "docs").glob("*.md"))]
+RUNNABLE = [
+    ROOT / "README.md",
+    *sorted((ROOT / "tutorial").glob("*.md")),
+    *sorted((ROOT / "docs").glob("*.md")),
+]
 LINKED = [
     *RUNNABLE,
     ROOT / "AGENTS.md",

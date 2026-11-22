@@ -31,8 +31,8 @@ design changed is in [`design/changes/`](design/changes/).
   the smallest difference; the greedy search; blame by stage and mechanism with probes, fixes, levels and
   ceilings; the plan, estimate and budgets; progress and resume; `ragcourt rank` and `explain`.
 - The HTML report (step 7) and `ragcourt report`; doctor (step 8) with approval by hash and an isolated run.
-- Documentation and twelve offline examples (step 9), and `TUTORIAL.md`: every feature in thirteen
-  short lessons, with a quick tour in the README.
+- Documentation and twelve offline examples (step 9), and `tutorial/`: RAG retrieval and ragcourt from
+  zero in 21 chapters, including the real runs, with a quick tour in the README.
 - HTML pages keep only their marked main content and drop navigation (D-040).
 - Embedders return token counts with their vectors and know questions from chunks (D-041, D-042).
 

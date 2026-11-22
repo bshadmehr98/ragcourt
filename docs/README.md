@@ -1,7 +1,7 @@
 # ragcourt documentation
 
-New here? Start with the tutorial, [Learn ragcourt](../TUTORIAL.md): every feature in short lessons. These
-pages are the reference behind it. The design behind every
+New here? Start with [the tutorial](../tutorial/README.md): RAG retrieval and ragcourt from zero, in 21
+short chapters. These pages are the short reference behind it. The design behind every
 behaviour is in [`../design/current.md`](../design/current.md).
 
 | Page | What it holds |
