@@ -208,6 +208,8 @@ def _reporter(say: Say) -> Callable[[Progress], None]:
         left = max(progress.wanted - progress.kept, 0) * pace * asks_per_kept
         counts = f"{progress.kept}/{progress.wanted} kept, {dropped} dropped, {progress.asked} asked"
         tail = "done" if progress.finished else f"about {left / 60:.0f} min left in this category"
+        if progress.stopped_early:
+            tail = "stopped: under 1 in 20 drafts kept, so these documents hold few such passages"
         say(f"  {progress.category}: {counts}; {tail}")
 
     return report

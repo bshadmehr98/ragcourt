@@ -19,6 +19,9 @@ from ragcourt.core.verdicts import Draft, fill, read_draft
 from ragcourt.core.windows import CorpusIndex
 from ragcourt.types.questions import Dropped, Offer, Question, Span
 
+EARLY_LOOK = 60  # drafts of a category before its yield is judged
+HOPELESS_RATIO = 20  # under 1 kept in 20 drafts: the category stops (D-057)
+
 
 @dataclass(frozen=True)
 class Wanted:
@@ -49,6 +52,12 @@ class Progress:
     kept: int = 0
     dropped: dict[str, int] = field(default_factory=dict[str, int])
     finished: bool = False
+    stopped_early: bool = False
+
+    def hopeless(self) -> bool:
+        """After ``EARLY_LOOK`` drafts, fewer than one in ``HOPELESS_RATIO`` kept: these documents hold too
+        few such passages, and asking on would take long for a category that stays too few to rank."""
+        return self.asked >= EARLY_LOOK and self.kept * HOPELESS_RATIO < self.asked
 
 
 def ordered_offers(index: CorpusIndex, category: str, seed: int) -> list[Offer]:
@@ -76,6 +85,9 @@ def generate(
         limit = wanted.per_category * wanted.max_requests_per_question
         for number, offer in enumerate(ordered_offers(index, category, wanted.seed)):
             if progress.kept >= wanted.per_category or progress.asked >= limit:
+                break
+            if progress.hopeless():
+                progress.stopped_early = True
                 break
             if number in tried:
                 continue

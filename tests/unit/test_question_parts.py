@@ -168,3 +168,11 @@ def test_offers_take_one_passage_from_each_document_in_turn() -> None:
         offer.window.document for offer in ordered_offers(index_corpus([long, *short], 2000), "paraphrase", 0)
     ]
     assert set(order[:4]) == {"long.md", "s0.md", "s1.md", "s2.md"}  # every document before any second
+
+
+def test_a_category_that_almost_never_keeps_a_draft_stops_early() -> None:
+    from ragcourt.core.generate import EARLY_LOOK, Progress
+
+    assert not Progress("distractor", 90, asked=EARLY_LOOK - 1, kept=0).hopeless()
+    assert Progress("distractor", 90, asked=EARLY_LOOK, kept=2).hopeless()
+    assert not Progress("distractor", 90, asked=EARLY_LOOK, kept=3).hopeless()  # 1 in 20 is enough

@@ -603,6 +603,9 @@ the designer's, open to the owner's review. Code comments refer to entries by nu
      suggests the top or more questions. The choice itself stays on dev, so held-out numbers stay honest.
   3. Passages are offered to the writer one document at a time (seeded), so coverage is spread across
      documents instead of following their length.
+  4. A category stops after 60 drafts when fewer than 1 in 20 were kept, and says so: on the FastAPI
+     docs, distractors kept 1 of 60 (the docs repeat themselves, so the look-alike passage also answers),
+     and asking on would have taken an hour for a category that stays too few to rank.
 - **Kept as limits:** plain `http://` with a key is allowed (servers on a local network) and documented;
   the generated chunker's isolation is not a sandbox (approval is the safety step); on Windows a stale
   lock is not detected automatically (the message says which file to delete); Windows and macOS run in CI
