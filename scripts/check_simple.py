@@ -33,7 +33,7 @@ JUNK_NAMES = {"utils", "util", "helpers", "helper", "misc", "common", "manager",
 JUNK_NAMES |= {"handlers", "base", "stuff", "tools"}
 # Protocols, enums, and the one standard-library API that works only by subclassing (D-038).
 ALLOWED_BASES = {"Protocol", "Enum", "StrEnum", "IntEnum", "HTMLParser"}
-IMPORTLIB_ALLOWED = {"src/ragcourt/stages/__init__.py"}  # loading the user's stage folder (design §7.2)
+IMPORTLIB_ALLOWED = {"src/ragcourt/stages/loader.py"}  # loading the user's stage folder (design §7.2)
 
 
 def body_lines(node: ast.FunctionDef | ast.AsyncFunctionDef) -> int:
@@ -103,7 +103,7 @@ def class_problem(node: ast.AST, rel: str) -> str | None:
         return None
     if any(keyword.arg == "metaclass" for keyword in node.keywords):
         return "a metaclass: not allowed"
-    if not rel.startswith("src/") or rel.endswith("/errors.py"):
+    if "src/ragcourt/" not in rel or rel.endswith("/errors.py"):
         return None
     for base in node.bases:
         name = base.attr if isinstance(base, ast.Attribute) else getattr(base, "id", "")

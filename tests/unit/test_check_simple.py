@@ -74,21 +74,23 @@ def test_junk_drawer_names_are_refused(tmp_path: Path, name: str) -> None:
     assert check(path).returncode == 1
 
 
-def test_classes_in_src_subclass_only_protocols_and_enums(tmp_path: Path) -> None:
-    # The rule applies under src/, so the sample is written inside this repository's tree.
-    folder = ROOT / "src" / "ragcourt" / "_scratch_check_simple"
-    folder.mkdir()
-    try:
-        bad = folder / "shapes.py"
-        bad.write_text("class Shape:\n    pass\n\nclass Square(Shape):\n    pass\n")
-        good = folder / "kinds.py"
-        good.write_text(
-            "from enum import StrEnum\nfrom typing import Protocol\n\n"
-            "class Kind(StrEnum):\n    A = 'a'\n\nclass Embed(Protocol):\n    pass\n"
-        )
-        assert check(bad).returncode == 1
-        assert check(good).returncode == 0
-    finally:
-        for path in folder.iterdir():
-            path.unlink()
-        folder.rmdir()
+def test_classes_in_src_subclass_only_protocols_enums_and_htmlparser(tmp_path: Path) -> None:
+    folder = tmp_path / "src" / "ragcourt"  # the rule applies to the package's source
+    folder.mkdir(parents=True)
+    bad = folder / "shapes.py"
+    bad.write_text("class Shape:\n    pass\n\nclass Square(Shape):\n    pass\n")
+    good = folder / "kinds.py"
+    good.write_text(
+        "from enum import StrEnum\nfrom html.parser import HTMLParser\nfrom typing import Protocol\n\n"
+        "class Kind(StrEnum):\n    A = 'a'\n\nclass Embed(Protocol):\n    pass\n\n"
+        "class Text(HTMLParser):\n    pass\n"
+    )
+    errors = folder / "errors.py"
+    errors.write_text("class Oops(Exception):\n    pass\n")
+    outside = tmp_path / "tests" / "shapes.py"
+    outside.parent.mkdir()
+    outside.write_text(bad.read_text())
+    assert check(bad).returncode == 1
+    assert check(good).returncode == 0
+    assert check(errors).returncode == 0
+    assert check(outside).returncode == 0
