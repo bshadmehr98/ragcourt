@@ -15,6 +15,8 @@ from ragcourt.errors import (
     GeneratedCodeRejected,
     RagCourtError,
 )
+from ragcourt.io.config import Config, load_config
+from ragcourt.io.documents import load_documents
 from ragcourt.types import Corpus, Document, Skipped
 
 __version__ = "0.1.0"
@@ -22,6 +24,7 @@ __version__ = "0.1.0"
 __all__ = [
     "BudgetExceeded",
     "ChunkNotInSource",
+    "Config",
     "ConfigError",
     "Corpus",
     "Document",
@@ -32,4 +35,6 @@ __all__ = [
     "RagCourtError",
     "Skipped",
     "__version__",
+    "load_config",
+    "load_documents",
 ]
