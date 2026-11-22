@@ -1,5 +1,6 @@
 """Loading documents (design §4.1)."""
 
+import os
 from pathlib import Path
 
 import pytest
@@ -59,3 +60,52 @@ def test_one_file_can_be_loaded_alone(tmp_path: Path) -> None:
 def test_a_missing_path_says_what_to_give(tmp_path: Path) -> None:
     with pytest.raises(ConfigError, match="does not exist"):
         load_documents(tmp_path / "nowhere")
+
+
+def test_a_byte_order_mark_is_dropped(tmp_path: Path) -> None:
+    write(tmp_path / "bom.md", "﻿# Title\n".encode())
+    assert load_documents(tmp_path).documents[0].text == "# Title\n"
+
+
+@pytest.mark.skipif(os.geteuid() == 0, reason="root reads every file")
+def test_an_unreadable_file_is_skipped_with_its_reason(tmp_path: Path) -> None:
+    write(tmp_path / "ok.md", "fine")
+    write(tmp_path / "locked.md", "secret")
+    (tmp_path / "locked.md").chmod(0)
+    try:
+        corpus = load_documents(tmp_path)
+    finally:
+        (tmp_path / "locked.md").chmod(0o600)
+    assert [document.id for document in corpus.documents] == ["ok.md"]
+    assert corpus.skipped[0].path == "locked.md"
+    assert corpus.skipped[0].reason.startswith("cannot be read")
+
+
+def test_one_file_of_another_kind_is_refused(tmp_path: Path) -> None:
+    write(tmp_path / "paper.pdf", b"%PDF-1.7")
+    with pytest.raises(
+        ConfigError, match=r"not a document ragcourt reads; it reads \.htm, \.html, \.markdown"
+    ):
+        load_documents(tmp_path / "paper.pdf")
+
+
+def test_links_to_files_are_read_and_links_to_folders_reported(tmp_path: Path) -> None:
+    write(tmp_path / "elsewhere" / "inner.md", "inner")
+    write(tmp_path / "docs" / "real.md", "real")
+    (tmp_path / "docs" / "linked.md").symlink_to(tmp_path / "docs" / "real.md")
+    (tmp_path / "docs" / "folder").symlink_to(tmp_path / "elsewhere", target_is_directory=True)
+    (tmp_path / "docs" / "broken.md").symlink_to(tmp_path / "missing.md")
+    corpus = load_documents(tmp_path / "docs")
+    assert [document.id for document in corpus.documents] == ["linked.md", "real.md"]
+    assert [entry.path for entry in corpus.skipped] == ["broken.md", "folder"]
+
+
+def test_suffixes_ignore_case_nested_hidden_folders_are_left_out_and_empty_files_kept(tmp_path: Path) -> None:
+    write(tmp_path / "UPPER.MD", "upper")
+    write(tmp_path / "a" / ".cache" / "b" / "deep.md", "hidden")
+    write(tmp_path / "empty.txt", "")
+    corpus = load_documents(tmp_path)
+    assert [(document.id, document.text) for document in corpus.documents] == [
+        ("UPPER.MD", "upper"),
+        ("empty.txt", ""),
+    ]

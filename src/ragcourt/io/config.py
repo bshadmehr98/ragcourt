@@ -41,7 +41,11 @@ def load_config(project: Path) -> Config:
 
 def _read_toml(path: Path) -> dict[str, Any]:
     try:
-        return tomllib.loads(path.read_text(encoding="utf-8"))
+        return tomllib.loads(path.read_text(encoding="utf-8-sig"))
+    except UnicodeDecodeError as error:
+        raise ConfigError(f"{path} is not UTF-8 (byte {error.start}). Save it as UTF-8.") from error
+    except OSError as error:
+        raise ConfigError(f"{path} cannot be read: {error.strerror or error}.") from error
     except tomllib.TOMLDecodeError as error:
         raise ConfigError(f"{path} is not valid TOML: {error}. Fix that line.") from error
 
@@ -55,6 +59,6 @@ def _check_keys(table: dict[str, Any], path: Path) -> None:
 
 def _text(table: dict[str, Any], key: str, default: str, path: Path) -> str:
     value = table.get(key, default)
-    if not isinstance(value, str) or not value:
+    if not isinstance(value, str) or not value.strip():
         raise ConfigError(f"{path}: {key} must be a non-empty string, not {value!r}.")
     return value
