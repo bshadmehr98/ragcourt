@@ -43,6 +43,25 @@ def legend(entries: dict[str, str]) -> str:
     return "\n".join(lines)
 
 
+# Characters that can move the cursor, hide a line or reorder text on a terminal (C0 but newline and tab,
+# DEL, C1, and the bidirectional controls of "Trojan Source").
+HIDDEN = {
+    *range(0x09),
+    *range(0x0B, 0x20),
+    *range(0x7F, 0xA0),
+    0x200E,
+    0x200F,
+    *range(0x202A, 0x202F),
+    *range(0x2066, 0x206A),
+}
+PRINTABLE = {code: f"\\x{code:02x}" if code < 0x100 else f"\\u{code:04x}" for code in HIDDEN}
+
+
+def printable(text: str) -> str:
+    """``text`` with every character that could hide or rewrite what is shown written as an escape."""
+    return text.translate(PRINTABLE)
+
+
 def section(title: str) -> str:
     """A section heading for terminal output."""
     return f"\n{title}\n{'=' * len(title)}"

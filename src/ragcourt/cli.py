@@ -6,13 +6,16 @@ Exit codes: 0 done, 1 error, 2 usage, 3 a ``--fail-on`` check fired, 4 stopped b
 from __future__ import annotations
 
 import argparse
+import io
 import sys
 from importlib.metadata import version
 from pathlib import Path
+from typing import TextIO
 
 from ragcourt.commands import audit, cache, doctor, explain, models, prompts, questions, rank, report, setup
 from ragcourt.errors import BudgetExceeded, RagCourtError
 from ragcourt.io.project import ProjectOptions
+from ragcourt.io.terminal import printable
 
 COMMANDS = [setup, models, prompts, audit, questions, rank, explain, report, doctor, cache]
 BUDGET_EXIT = 4
@@ -27,7 +30,6 @@ def common_options() -> argparse.ArgumentParser:
         "--stages", type=Path, help="the folder of your own stages (default ragcourt_stages/)"
     )
     common.add_argument("--seed", type=int, help="the seed of every random choice")
-    common.add_argument("--json", action="store_true", help="write data instead of text")
     common.add_argument("-q", "--quiet", action="store_true", help="leave out legends and explanations")
     return common
 
@@ -48,7 +50,18 @@ def build_parser() -> argparse.ArgumentParser:
 
 
 def main(argv: list[str] | None = None) -> int:
-    """Run one command; errors print one message, never a traceback."""
+    """Run one command; errors print one message, never a traceback. Text from documents and models can
+    hold terminal escapes, so everything printed is made printable (D-057)."""
+    _readable_output()
+    streams = sys.stdout, sys.stderr
+    sys.stdout, sys.stderr = SafeStream(sys.stdout), SafeStream(sys.stderr)
+    try:
+        return _run(argv)
+    finally:
+        sys.stdout, sys.stderr = streams
+
+
+def _run(argv: list[str] | None) -> int:
     args = build_parser().parse_args(argv)
     args.options = ProjectOptions(Path.cwd(), args.config, args.stages, args.workdir, args.seed)
     try:
@@ -59,9 +72,36 @@ def main(argv: list[str] | None = None) -> int:
     except RagCourtError as error:
         print(f"ragcourt: {error}", file=sys.stderr)
         return 1
+    except OSError as error:  # a folder that cannot be written, a full disk
+        print(f"ragcourt: {error.strerror or error}: {error.filename or ''}".rstrip(": "), file=sys.stderr)
+        return 1
     except KeyboardInterrupt:
         print("ragcourt: interrupted; `rank --resume` continues where it stopped.", file=sys.stderr)
         return 130
+
+
+class SafeStream:
+    """A terminal stream that writes escapes in place of control and bidirectional characters."""
+
+    def __init__(self, stream: TextIO) -> None:
+        self.stream = stream
+
+    def write(self, text: str) -> int:
+        return self.stream.write(printable(text))
+
+    def flush(self) -> None:
+        self.stream.flush()
+
+    def isatty(self) -> bool:
+        return self.stream.isatty()
+
+
+def _readable_output() -> None:
+    """Progress reaches a log file line by line, and a console that cannot show a character (⟦, «) gets a
+    replacement instead of a crash."""
+    for stream in (sys.stdout, sys.stderr):
+        if isinstance(stream, io.TextIOWrapper):
+            stream.reconfigure(line_buffering=True, errors="replace")
 
 
 if __name__ == "__main__":

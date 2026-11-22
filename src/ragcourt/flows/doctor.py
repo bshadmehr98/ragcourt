@@ -38,6 +38,7 @@ from ragcourt.io.project import Project
 from ragcourt.io.prompts import load_prompt
 from ragcourt.io.rank_output import board_text
 from ragcourt.io.result_data import board_data
+from ragcourt.io.terminal import printable
 from ragcourt.stages.specs import parse_spec
 from ragcourt.types import Corpus
 from ragcourt.types.results import Board, Evaluation, PipelineSpec
@@ -103,6 +104,9 @@ def _generated(
     if code is None:
         say("The model wrote no usable chunker (no `def chunk(text)`).")
         return None
+    if printable(code) != code:
+        say("Rejected: the code holds control or bidirectional characters, which could hide part of it.")
+        return None
     digest = code_hash(code)
     path = project.workdir / "doctor" / f"{digest[:16]}.py"
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -128,6 +132,8 @@ def _register(path: Path, digest: str, corpus: Corpus, timeout: float) -> str:
     """Run the code on every document, validate the output, and register it as a chunker stage."""
     outputs: dict[str, list[str]] = {}
     for document in corpus.documents:
+        if code_hash(path.read_text(encoding="utf-8")) != digest:
+            raise GeneratedCodeRejected(f"{path} changed after it was approved; nothing more was run.")
         outputs[document.text] = validate(document, run_chunker(path, document.text, timeout))
     name = f"doctor-{digest[:8]}"
 

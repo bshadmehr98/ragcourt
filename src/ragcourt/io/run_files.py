@@ -39,7 +39,9 @@ def new_run(workdir: Path, plan: dict[str, Any]) -> Path:
         suffix += 1
         folder = workdir / "runs" / f"{run_id}-{suffix}"
     (folder / "configs").mkdir(parents=True)
-    (folder / "plan.json").write_text(json.dumps({"hash": plan_hash(plan), "plan": plan}, indent=1) + "\n")
+    (folder / "plan.json").write_text(
+        json.dumps({"hash": plan_hash(plan), "plan": plan}, indent=1) + "\n", encoding="utf-8"
+    )
     return folder
 
 
@@ -49,9 +51,20 @@ def unfinished_run(workdir: Path, plan: dict[str, Any]) -> Path | None:
     for folder in sorted((workdir / "runs").glob("*"), reverse=True):
         saved = folder / "plan.json"
         open_run = saved.is_file() and not (folder / RESULTS).exists()
-        if open_run and json.loads(saved.read_text()).get("hash") == wanted:
+        if open_run and json.loads(saved.read_text(encoding="utf-8")).get("hash") == wanted:
             return folder
     return None
+
+
+def find_run(workdir: Path, run_id: str | None) -> Path:
+    """The finished run named ``run_id`` (a folder name in ``runs/``), or the latest one."""
+    if run_id is None:
+        return latest_run(workdir)
+    names = [folder.name for folder in sorted((workdir / "runs").glob("*")) if (folder / RESULTS).is_file()]
+    if run_id not in names:
+        known = ", ".join(names[-5:]) or "none yet"
+        raise ConfigError(f"No finished run {run_id!r} in {workdir / 'runs'} (finished runs: {known}).")
+    return workdir / "runs" / run_id
 
 
 def latest_run(workdir: Path) -> Path:

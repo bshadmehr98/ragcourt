@@ -14,7 +14,8 @@ from ragcourt.types.questions import Offer
 NAME = "exact_term"
 TESTS = "a rare identifier, name or number with its unit"
 JUDGE: str | None = None
-IDENTIFIER = r"-{0,2}[A-Za-z][A-Za-z0-9]*(?:[_\-.:/][A-Za-z0-9]+)+"
+# Starts only where a word starts, and never gives back letters: linear time on very long words.
+IDENTIFIER = r"(?<![A-Za-z0-9])-{0,2}[A-Za-z][A-Za-z0-9]*+(?:[_\-.:/][A-Za-z0-9]++)+"
 CAPITALS = r"\b[A-Z][A-Z0-9]{2,}\b"
 WITH_UNIT = r"\b\d+(?:\.\d+)?\s?(?:ms|s|seconds|minutes|hours|days|MB|GB|KB|%|percent|tokens|bytes)\b"
 TERM = re.compile(f"{IDENTIFIER}|{CAPITALS}|{WITH_UNIT}")

@@ -55,15 +55,18 @@ class EmbeddingStore:
         meta = self.folder / "model.json"
         if not meta.is_file():
             self.folder.mkdir(parents=True, exist_ok=True)
-            meta.write_text(json.dumps({"identity": identity, "version": CACHE_VERSION}) + "\n")
+            meta.write_text(
+                json.dumps({"identity": identity, "version": CACHE_VERSION}) + "\n", encoding="utf-8"
+            )
             return
-        self.dimension = int(json.loads(meta.read_text()).get("dimension", 0))
+        self.dimension = int(json.loads(meta.read_text(encoding="utf-8")).get("dimension", 0))
         keys_file, vectors_file = self.folder / "keys.txt", self.folder / "vectors.f32"
         if not self.dimension or not keys_file.is_file() or not vectors_file.is_file():
             return
         row_bytes = self.dimension * 4
         raw = vectors_file.read_bytes()
-        lines = keys_file.read_text().split("\n")[:-1]  # a last line without its newline is torn
+        # a last line without its newline is torn
+        lines = keys_file.read_text(encoding="utf-8").split("\n")[:-1]
         rows = min(len(lines), len(raw) // row_bytes)
         _trim(vectors_file, raw[: rows * row_bytes], keys_file, lines[:rows])
         values = array.array("f")
@@ -78,11 +81,11 @@ class EmbeddingStore:
         if not self.dimension:
             self.dimension = len(vector)
             meta = self.folder / "model.json"
-            data = json.loads(meta.read_text())
-            meta.write_text(json.dumps({**data, "dimension": self.dimension}) + "\n")
+            data = json.loads(meta.read_text(encoding="utf-8"))
+            meta.write_text(json.dumps({**data, "dimension": self.dimension}) + "\n", encoding="utf-8")
         with (self.folder / "vectors.f32").open("ab") as handle:
             handle.write(array.array("f", vector).tobytes())
-        with (self.folder / "keys.txt").open("a") as handle:
+        with (self.folder / "keys.txt").open("a", encoding="utf-8") as handle:
             handle.write(f"{key} {UNKNOWN_COUNT if count is None else count}\n")
         self.vectors[key] = (list(array.array("f", vector)), UNKNOWN_COUNT if count is None else count)
 
@@ -92,8 +95,8 @@ def _trim(vectors_file: Path, vectors: bytes, keys_file: Path, lines: list[str])
     if len(vectors) != vectors_file.stat().st_size:
         vectors_file.write_bytes(vectors)
     text = "".join(line + "\n" for line in lines)
-    if len(text) != len(keys_file.read_text()):
-        keys_file.write_text(text)
+    if len(text) != len(keys_file.read_text(encoding="utf-8")):
+        keys_file.write_text(text, encoding="utf-8")
 
 
 @dataclass

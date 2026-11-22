@@ -46,6 +46,7 @@ def register(add_parser: AddParser, common: argparse.ArgumentParser) -> None:
     """Add ``audit`` and its options."""
     parser = add_parser(NAME, help=HELP, description=__doc__, parents=[common])
     parser.add_argument("folder", type=Path, help="the documents to audit")
+    parser.add_argument("--json", action="store_true", help="print the audit as JSON")
     parser.add_argument(
         "--chunker",
         action="append",

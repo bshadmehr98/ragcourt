@@ -9,13 +9,18 @@ concurrency:
   cancel-in-progress: true
 jobs:
   test:
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
-      matrix: { python: ["3.11", "3.12", "3.13"] }
+      matrix:
+        os: [ubuntu-latest]
+        python: ["3.11", "3.12", "3.13"]
+        include:   # never run before release: the first CI run says whether Windows and macOS work
+          - { os: windows-latest, python: "3.12" }
+          - { os: macos-latest, python: "3.12" }
     steps:
-      - uses: actions/checkout@v7
-      - uses: astral-sh/setup-uv@v10.2.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7
+      - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7  # v10.2.0
         with: { python-version: "${{ matrix.python }}", enable-cache: true }
       # Every extra and the dev dependency group (installed by default).
       - run: uv sync --all-extras --no-extra local --frozen
@@ -28,8 +33,8 @@ jobs:
     runs-on: ubuntu-latest
     needs: [test]
     steps:
-      - uses: actions/checkout@v7
-      - uses: astral-sh/setup-uv@v10.2.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7
+      - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7  # v10.2.0
       - run: uv build
       - name: Smoke test the wheel in a clean env
         run: |
@@ -42,5 +47,5 @@ jobs:
           if [ -f examples/quickstart.py ]; then   # the README quickstart, with only the wheel installed
             cd "$RUNNER_TEMP" && "$RUNNER_TEMP/smoke/bin/python" "$GITHUB_WORKSPACE/examples/quickstart.py"
           fi
-      - uses: actions/upload-artifact@v7
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9  # v7
         with: { name: dist, path: dist/ }

@@ -54,3 +54,17 @@ def test_relative_links_resolve(page: Path) -> None:
         if path and not (page.parent / path).exists():
             missing.append(target)
     assert not missing, f"{page.relative_to(ROOT)} links to files that don't exist: {missing}"
+
+
+def test_readme_links_into_the_repository_resolve() -> None:
+    """The README uses absolute links (they must work on PyPI too); each must name a file in this tree."""
+    prefixes = (
+        "https://github.com/bshadmehr98/ragcourt/blob/main/",
+        "https://github.com/bshadmehr98/ragcourt/tree/main/",
+    )
+    missing = []
+    for target in LINK.findall((ROOT / "README.md").read_text()):
+        for prefix in prefixes:
+            if target.startswith(prefix) and not (ROOT / target.removeprefix(prefix).split("#")[0]).exists():
+                missing.append(target)
+    assert not missing, f"README.md links to files that don't exist: {missing}"

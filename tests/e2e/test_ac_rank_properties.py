@@ -64,6 +64,8 @@ def test_ac11_size_cannot_win(
         (docs / name).write_text((corpus / name).read_text())
     mine = tmp_path / "mine.jsonl"
     mine.write_text("".join(json.dumps({"question": q, "quote": a}) + "\n" for q, a in WHOLE_QUOTES))
+    toml = project / "ragcourt.toml"  # a budget smaller than a document, as a real one is
+    toml.write_text(toml.read_text().replace("resamples = 200", "resamples = 200\nbudget_tokens = 40"))
     (project / "ragcourt_stages").mkdir()
     (project / "ragcourt_stages" / "whole.py").write_text(
         "from ragcourt.stages import chunker\n\n@chunker('whole')\ndef whole(text):\n    return [text]\n"

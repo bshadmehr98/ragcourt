@@ -62,6 +62,8 @@ def plan_text(plan: dict[str, Any], guess: Any) -> str:
 def _question_step(questions: dict[str, Any], calls: int) -> str:
     if questions["reused"]:
         return f"reuse the {questions['total']} questions already written"
+    if not questions["to_write"]:
+        return f"use your {questions['total']} questions; none to write"
     return f"write up to {questions['to_write']} questions of {questions['total']}, about {calls} model calls"
 
 
@@ -93,7 +95,19 @@ def board_text(board: dict[str, Any], chosen: str | None) -> str:
         lines.append(f"Smallest difference these questions can tell apart: {gaps}.")
     if chosen is not None:
         lines.append(f"Chosen for the next step (on dev questions): {chosen}")
+        lines += _disagreement(board, chosen)
     return "\n".join(lines)
+
+
+def _disagreement(board: dict[str, Any], chosen: str) -> list[str]:
+    """Said when the held-out winner is not the pipeline chosen on dev (D-057)."""
+    winner = board["winner"]
+    if not winner or chosen.startswith(winner):
+        return []
+    return [
+        f"Note: on held-out questions {winner} is separably better than this choice; the dev questions "
+        "could not tell them apart. Prefer the winner, or write more questions (--questions N)."
+    ]
 
 
 def _categories(board: dict[str, Any]) -> list[str]:

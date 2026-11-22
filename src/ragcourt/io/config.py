@@ -110,11 +110,13 @@ def _text(table: Table, key: str, default: str, path: Path) -> str:
 
 
 def _names(value: Any, key: str, path: Path) -> tuple[str, ...]:
-    """A list of names, or one string of names separated by commas."""
+    """A list of names, or one string of names separated by commas; only the categories may be empty
+    (no questions written: only the user's own)."""
     if isinstance(value, str):
         value = [part.strip() for part in value.split(",")]
     items = cast(list[Any], value) if isinstance(value, list) else None
-    if items is None or not items or not all(isinstance(item, str) and item for item in items):
+    empty_allowed = key == "questions.categories"
+    if items is None or not (items or empty_allowed) or not all(isinstance(i, str) and i for i in items):
         raise ConfigError(f"{path}: {key} must be a list of names, not {value!r}.")
     return tuple(str(item) for item in items)
 

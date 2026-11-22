@@ -34,7 +34,9 @@ def make_embedder(name: str, client: ModelClient, limits: Path | None = None) ->
 
 
 def _ollama(model: str, client: ModelClient, limits: Path | None) -> Embedder:
-    known: dict[str, int] = json.loads(limits.read_text()) if limits is not None and limits.is_file() else {}
+    known: dict[str, int] = (
+        json.loads(limits.read_text(encoding="utf-8")) if limits is not None and limits.is_file() else {}
+    )
     key = f"{model}@{client.show(model).digest}"
     params: dict[str, object] = {"model": model}
     if key in known:
@@ -42,7 +44,7 @@ def _ollama(model: str, client: ModelClient, limits: Path | None) -> Embedder:
     built = _build("ollama", params, client)
     if limits is not None and key not in known and built.max_tokens:
         limits.parent.mkdir(parents=True, exist_ok=True)
-        limits.write_text(json.dumps({**known, key: built.max_tokens}, indent=1) + "\n")
+        limits.write_text(json.dumps({**known, key: built.max_tokens}, indent=1) + "\n", encoding="utf-8")
     return built
 
 

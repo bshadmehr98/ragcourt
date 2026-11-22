@@ -32,7 +32,15 @@ FORBIDDEN_CALLS = {"eval", "exec", "__import__", "globals", "locals"}
 JUNK_NAMES = {"utils", "util", "helpers", "helper", "misc", "common", "manager", "managers", "handler"}
 JUNK_NAMES |= {"handlers", "base", "stuff", "tools"}
 # Protocols, enums, and the standard-library APIs that work only by subclassing (D-038).
-ALLOWED_BASES = {"Protocol", "Enum", "StrEnum", "IntEnum", "HTMLParser", "BaseHTTPRequestHandler"}
+ALLOWED_BASES = {
+    "Protocol",
+    "Enum",
+    "StrEnum",
+    "IntEnum",
+    "HTMLParser",
+    "BaseHTTPRequestHandler",
+    "HTTPRedirectHandler",
+}  # the last three: the standard library offers these hooks only as classes
 IMPORTLIB_ALLOWED = {"src/ragcourt/stages/loader.py"}  # loading the user's stage folder (design §7.2)
 
 

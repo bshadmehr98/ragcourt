@@ -5,7 +5,8 @@ mark at the start is dropped); a file that is not valid UTF-8, or cannot be read
 never guessed. Line endings become ``\\n`` and nothing else in the text changes, so offsets are offsets
 into what the user wrote (HTML is the exception: its readable text is extracted first). Hidden files and
 folders, ``.ragcourt/`` among them, are left out. A link to a folder (or a broken link) is not followed but
-reported, so no file is read twice; a link to a file is read like the file.
+reported, so no file is read twice; a link to a file is read like the file only when that file is inside
+the folder (a link elsewhere, to a key file or `/proc`, is reported and skipped).
 """
 
 from __future__ import annotations
@@ -17,6 +18,7 @@ from ragcourt.io.html_text import html_to_text
 from ragcourt.types import Corpus, Document, Skipped
 
 HTML_SUFFIXES = {".html", ".htm"}
+MAX_HTML_BYTES = 5 * 2**20  # the standard parser can need 150 times a hostile file's size in memory
 DOCUMENT_SUFFIXES = {".md", ".markdown", ".txt", ".rst", *HTML_SUFFIXES}
 
 
@@ -47,6 +49,8 @@ def _document_files(folder: Path) -> tuple[list[Path], list[Skipped]]:
         if path.is_symlink() and not path.is_file():
             reason = "a link to a folder or to nothing, not followed; give the folder itself"
             skipped.append(Skipped(relative.as_posix(), reason))
+        elif path.is_symlink() and not path.resolve().is_relative_to(folder.resolve()):
+            skipped.append(Skipped(relative.as_posix(), "a link to a file outside the folder, not followed"))
         elif path.is_file() and path.suffix.lower() in DOCUMENT_SUFFIXES:
             files.append(path)
     return files, skipped
@@ -56,6 +60,11 @@ def _load_files(files: list[Path], root: Path, skipped: list[Skipped]) -> Corpus
     documents: list[Document] = []
     for path in files:
         document_id = path.relative_to(root).as_posix()
+        if path.suffix.lower() in HTML_SUFFIXES and path.stat().st_size > MAX_HTML_BYTES:
+            skipped.append(
+                Skipped(document_id, f"HTML over {MAX_HTML_BYTES // 2**20} MB; convert it to text")
+            )
+            continue
         try:
             raw = path.read_bytes().decode("utf-8-sig")
         except UnicodeDecodeError as error:

@@ -9,7 +9,7 @@ name, sent only in a request header, and never written to any file. Document tex
 
 ## The files ragcourt writes
 
-Everything is a plain file in `.ragcourt/` next to where you run it (or `--workdir`). No database.
+Everything is a plain file in `.ragcourt/` in the folder you run it from (or in `--workdir DIR` instead). No database.
 
 | Path | Holds |
 |---|---|

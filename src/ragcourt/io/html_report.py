@@ -27,6 +27,8 @@ pre,.bar{background:#1c2230}.bar i{background:#e4e8ef}.note{color:#9aa3b5}}
 SCRIPT = """
 function only(category){document.querySelectorAll('[data-category]').forEach(function(item){
 item.style.display=(category===''||item.dataset.category===category)?'':'none';});}
+document.addEventListener('click',function(event){var button=event.target.closest('[data-only]');
+if(button){only(button.dataset.only);}});
 """
 
 
@@ -97,9 +99,10 @@ def _ceilings(ceilings: dict[str, Any]) -> str:
 
 def _misses(blames: list[dict[str, Any]], mechanisms: dict[str, str]) -> str:
     categories = sorted({str(blame["category"]) for blame in blames})
-    buttons = "".join(f"<button onclick=\"only('{_e(name)}')\">{_e(name)}</button> " for name in categories)
+    # Names go in data attributes, never into JavaScript: an escaped name in onclick would run (D-057).
+    buttons = "".join(f"<button data-only='{_e(name)}'>{_e(name)}</button> " for name in categories)
     items = [_miss(blame, mechanisms) for blame in sorted(blames, key=lambda item: str(item["mechanism"]))]
-    filters = f"<p><button onclick=\"only('')\">all</button> {buttons}</p>"
+    filters = f"<p><button data-only=''>all</button> {buttons}</p>"
     body = "".join(items) or "<p>No held-out question was missed.</p>"
     return f"<h2>Misses ({len(blames)})</h2>{filters}{body}"
 

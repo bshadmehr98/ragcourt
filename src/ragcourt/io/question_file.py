@@ -60,8 +60,10 @@ def dropped_from(data: dict[str, Any]) -> Dropped:
 def start_files(workdir: Path, header: dict[str, Any]) -> None:
     """Begin a new question set: a header line and an empty file of dropped questions."""
     workdir.mkdir(parents=True, exist_ok=True)
-    (workdir / QUESTIONS).write_text(json.dumps({"format_version": FORMAT_VERSION, **header}) + "\n")
-    (workdir / DROPPED).write_text("")
+    (workdir / QUESTIONS).write_text(
+        json.dumps({"format_version": FORMAT_VERSION, **header}) + "\n", encoding="utf-8"
+    )
+    (workdir / DROPPED).write_text("", encoding="utf-8")
 
 
 def append(workdir: Path, outcome: Question | Dropped) -> None:
@@ -122,7 +124,11 @@ def check_version(header: dict[str, Any], path: Path) -> None:
 def read_rows(path: Path) -> list[dict[str, Any]]:
     """The rows of a user's question file (JSON lines)."""
     rows: list[dict[str, Any]] = []
-    for number, line in enumerate(path.read_text(encoding="utf-8").splitlines(), start=1):
+    try:
+        text = path.read_text(encoding="utf-8")
+    except (OSError, UnicodeDecodeError) as error:
+        raise ConfigError(f"Cannot read the questions file {path}: {error}.") from error
+    for number, line in enumerate(text.splitlines(), start=1):
         if line.strip():
             try:
                 rows.append(json.loads(line))

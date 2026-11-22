@@ -2,7 +2,8 @@
 
 Timeouts, 429 and 5xx are retried three times with a growing wait; anything else stops at once with an
 ``EndpointError`` that names the address, the status and what to check. Keys travel only in headers and
-never appear in messages.
+never appear in messages. Redirects are refused, so a key is only ever sent to the configured address
+(D-057), and a reply larger than ``MAX_REPLY_BYTES`` is refused.
 """
 
 from __future__ import annotations
@@ -17,7 +18,22 @@ from typing import Any, cast
 from ragcourt.errors import EndpointError
 
 RETRY_WAITS = (1.0, 2.0, 4.0)
+MAX_REPLY_BYTES = 64 * 1024 * 1024
 Sleep = Callable[[float], None]
+
+
+class _NoRedirects(urllib.request.HTTPRedirectHandler):
+    """urllib forwards every header, the key included, to wherever a redirect points: refuse them."""
+
+    def redirect_request(self, req, fp, code, msg, headers, newurl):  # type: ignore[no-untyped-def]  # noqa: ARG002
+        raise EndpointError(
+            f"{req.full_url} redirected ({code}) to {newurl}; ragcourt does not follow redirects, so a key "
+            "is sent only to the address you configured. Put the final address in the configuration.",
+            retryable=False,
+        )
+
+
+_OPENER = urllib.request.build_opener(_NoRedirects)
 
 
 def request_json(
@@ -44,8 +60,8 @@ def _once(url: str, body: dict[str, Any] | None, headers: dict[str, str], timeou
     _check_scheme(url)
     request = urllib.request.Request(url, data=data, headers={"Content-Type": "application/json", **headers})  # noqa: S310
     try:
-        with urllib.request.urlopen(request, timeout=timeout) as response:  # noqa: S310
-            return _parse(url, response.read())
+        with _OPENER.open(request, timeout=timeout) as response:
+            return _parse(url, _read(url, response))
     except urllib.error.HTTPError as error:
         detail = error.read().decode("utf-8", "replace")[:300]
         retryable = error.code == 429 or error.code >= 500
@@ -55,6 +71,15 @@ def _once(url: str, body: dict[str, Any] | None, headers: dict[str, str], timeou
         timed_out = isinstance(error, TimeoutError) or isinstance(reason, TimeoutError)
         message = f"{url} could not be reached: {reason}. Is the server running, and is the address right?"
         raise EndpointError(message, retryable=timed_out) from error
+
+
+def _read(url: str, response: Any) -> bytes:
+    raw = response.read(MAX_REPLY_BYTES + 1)
+    if len(raw) > MAX_REPLY_BYTES:
+        raise EndpointError(
+            f"{url} answered more than {MAX_REPLY_BYTES // 2**20} MB; refused.", retryable=False
+        )
+    return cast(bytes, raw)
 
 
 def _check_scheme(url: str) -> None:
@@ -79,8 +104,8 @@ def stream_json_lines(url: str, body: dict[str, Any], *, timeout: float = 3600.0
     _check_scheme(url)
     request = urllib.request.Request(url, data=data, headers={"Content-Type": "application/json"})  # noqa: S310
     try:
-        with urllib.request.urlopen(request, timeout=timeout) as response:  # noqa: S310
-            raw_lines = list(response)
+        with _OPENER.open(request, timeout=timeout) as response:
+            raw_lines = _read(url, response).splitlines()
     except urllib.error.URLError as error:
         raise EndpointError(f"{url} could not be reached: {error.reason}.", retryable=False) from error
     return [_parse(url, raw) for raw in raw_lines if raw.strip()]

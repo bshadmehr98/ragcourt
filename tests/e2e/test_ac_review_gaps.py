@@ -1,5 +1,6 @@
 """Guarantees 12, 14, 16, 23, 26, 28, 32 and 33, closing the gaps the test audit found (design §16)."""
 
+import json
 import re
 import shutil
 import time
@@ -156,3 +157,36 @@ def test_ac33_the_probes_change_the_blame(
     lost = before.count("embedder.meaning") + before.count("chunker.diluted")
     assert after.count("chunker.diluted") >= lost > 0  # every clean chunk not retrieved is now "diluted"
     assert "embedder.meaning" not in after or lost == 0
+
+
+def test_a_held_out_winner_other_than_the_dev_choice_is_pointed_out() -> None:
+    scoring = Scoring(HELD, "m", 30, {"keyword": resamples(40, 500, "0:keyword")})
+    clear = board_data(
+        board("reranker", [pipeline("good", [1.0] * 40), pipeline("bad", [0.0] * 40)], scoring)
+    )
+    assert "Note: on held-out questions good | e | dense | none is separably better" in board_text(
+        clear, "bad | e | dense | none"
+    )
+    assert "Note:" not in board_text(clear, "good | e | dense | none (tied on dev with 1 more)")
+
+
+def test_a_run_on_your_own_questions_only_calls_no_writer_or_judge(
+    rank_project: tuple[Path, FakeOllamaState], corpus: Path, run: Run, tmp_path: Path
+) -> None:
+    project, _ = rank_project
+    toml = project / "ragcourt.toml"
+    toml.write_text(toml.read_text().replace("[questions]", "[questions]\ncategories = []"))
+    texts = {path.name: path.read_text() for path in corpus.iterdir() if path.suffix == ".md"}
+    rows = []
+    for name, text in sorted(texts.items()):
+        for sentence in [line for line in text.splitlines() if len(line.split()) >= 8][:2]:
+            rows.append(
+                json.dumps({"question": f"What does {name} say here?", "quote": sentence, "document": name})
+            )
+    mine = tmp_path / "mine.jsonl"
+    mine.write_text("\n".join(rows) + "\n")
+    code, out, err = run("rank", corpus, "--yes", "--questions-file", mine)
+    assert code == 0, err
+    assert f"use your {len(rows)} questions; none to write" in out
+    assert "only your own questions are used" in out and "Judge self-test" not in out
+    assert set(results_of(project)["questions"]["by_category"]) == {"user"}

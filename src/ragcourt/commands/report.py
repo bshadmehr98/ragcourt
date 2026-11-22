@@ -23,6 +23,6 @@ def register(add_parser: AddParser, common: argparse.ArgumentParser) -> None:
 def run(args: argparse.Namespace) -> int:
     """Write the report and say where."""
     project = open_project(args.options)
-    folder = project.workdir / "runs" / args.run_id if args.run_id else run_files.latest_run(project.workdir)
+    folder = run_files.find_run(project.workdir, args.run_id)
     print(write_report(folder, run_files.read_results(folder), MEANINGS))
     return 0

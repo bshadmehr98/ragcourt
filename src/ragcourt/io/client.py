@@ -7,6 +7,8 @@ name is an Ollama model on this machine. Nothing else is ever contacted (design 
 from __future__ import annotations
 
 import time
+from collections.abc import Callable
+from typing import TypeVar
 
 from ragcourt.errors import ConfigError, EndpointError
 from ragcourt.io.http import Sleep
@@ -16,6 +18,18 @@ from ragcourt.types import ChatRequest, Embedded, ModelInfo
 from ragcourt.types.config import Config
 
 ENDPOINT_PREFIX = "endpoint:"
+T = TypeVar("T")
+
+
+def _shaped(model: str, call: Callable[[], T]) -> T:
+    """A reply missing a field, or of the wrong type, is the server's error, said in one line (D-057)."""
+    try:
+        return call()
+    except (KeyError, IndexError, TypeError, ValueError, AttributeError) as error:
+        raise EndpointError(
+            f"The server of {model!r} answered in an unexpected shape ({type(error).__name__}: {error}).",
+            retryable=False,
+        ) from error
 
 
 class Client:
@@ -41,19 +55,18 @@ class Client:
     def chat(self, request: ChatRequest) -> str:
         """The model's reply as text."""
         server, model = self._route(request.model)
-        return server.chat(
-            ChatRequest(model, request.prompt, request.json_reply, request.temperature, request.seed)
-        )
+        shaped = ChatRequest(model, request.prompt, request.json_reply, request.temperature, request.seed)
+        return _shaped(request.model, lambda: server.chat(shaped))
 
     def embed(self, model: str, texts: list[str]) -> Embedded:
         """Vectors and, where the server reports them, token counts."""
         server, name = self._route(model)
-        return server.embed(name, texts)
+        return _shaped(model, lambda: server.embed(name, texts))
 
     def show(self, model: str) -> ModelInfo:
         """The model's input limit, size and digest, where known."""
         server, name = self._route(model)
-        return server.show(name)
+        return _shaped(model, lambda: server.show(name))
 
     def rerank(self, model: str, query: str, documents: list[str]) -> list[float]:
         """Scores from an endpoint's ``/rerank``; Ollama has no such route (D-015)."""
@@ -62,7 +75,7 @@ class Client:
             raise ConfigError(
                 f"Ollama has no rerank route; name an endpoint model for {model!r}, or use the llm reranker."
             )
-        return server.rerank(name, query, documents)
+        return _shaped(model, lambda: server.rerank(name, query, documents))
 
     def ollama_answers(self) -> bool:
         """True when Ollama answers on its address."""

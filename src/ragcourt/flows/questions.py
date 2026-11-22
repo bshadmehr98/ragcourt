@@ -72,6 +72,7 @@ def question_plan(project: Project, corpus: Corpus, options: QuestionOptions) ->
     """Before any model call: whether the set is reused, how many questions are still to write, the total."""
     header = _header(project, corpus, options)
     existing = question_file.read_questions(project.workdir)
+    own = len(question_file.read_rows(options.questions_file)) if options.questions_file else 0
     wanted = header["per_category"] * len(header["categories"])
     if existing is not None and existing[0].get("complete") and _same(existing[0], header):
         return True, 0, len(existing[1])
@@ -80,7 +81,7 @@ def question_plan(project: Project, corpus: Corpus, options: QuestionOptions) ->
         if existing is not None and _same(existing[0], header, ignore=("per_category",))
         else 0
     )
-    return False, max(wanted - have, 0), wanted
+    return False, max(wanted - have, 0), wanted + own
 
 
 def _header(project: Project, corpus: Corpus, options: QuestionOptions) -> dict[str, Any]:
@@ -90,7 +91,7 @@ def _header(project: Project, corpus: Corpus, options: QuestionOptions) -> dict[
         "writer": ", ".join(project.role("writer", options.writer).models),
         "judge": ", ".join(project.role("judge", options.judge).models),
         "seed": project.config.seed,
-        "per_category": options.per_category or settings.per_category,
+        "per_category": settings.per_category if options.per_category is None else options.per_category,
         "categories": list(settings.categories),
         "user_questions": str(options.questions_file) if options.questions_file else None,
         "prompts": {name: prompt.hash for name, prompt in load_prompts(project.config.prompts_dir).items()},
@@ -151,6 +152,19 @@ def revalidate(questions: list[Question], texts: dict[str, str]) -> list[Questio
 def _write(
     project: Project, corpus: Corpus, options: QuestionOptions, done: list[Outcome], say: Say
 ) -> list[Outcome]:
+    outcomes = list(done)
+    if options.questions_file is not None:
+        outcomes += _user_questions(project, corpus, options.questions_file, done)
+    settings = project.config.questions
+    wanted = Wanted(
+        settings.per_category if options.per_category is None else options.per_category,
+        settings.categories,
+        settings.max_requests_per_question,
+        project.config.seed,
+    )
+    if not wanted.per_category or not wanted.categories:
+        say("No questions to write: only your own questions are used; the writer and judge are not called.")
+        return outcomes
     writer = project.role("writer", options.writer)
     judge = project.role("judge", options.judge)
     say(roles_text([writer, judge]))
@@ -158,16 +172,6 @@ def _write(
     hashes = {name: prompts[name].hash for name in JUDGE_PROMPTS}
     say(judge_text(judge, hashes, [prompt.name for prompt in prompts.values() if prompt.replaced]))
     check_judge(project, judge.models[0], {name: prompt.text for name, prompt in prompts.items()}, say)
-    outcomes = list(done)
-    if options.questions_file is not None:
-        outcomes += _user_questions(project, corpus, options.questions_file, done)
-    settings = project.config.questions
-    wanted = Wanted(
-        options.per_category or settings.per_category,
-        settings.categories,
-        settings.max_requests_per_question,
-        project.config.seed,
-    )
     models = Models(
         project.chat(writer.models[0]),
         project.chat(writer.models[0], json_reply=False),

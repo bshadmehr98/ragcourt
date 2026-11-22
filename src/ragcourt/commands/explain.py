@@ -21,13 +21,14 @@ def register(add_parser: AddParser, common: argparse.ArgumentParser) -> None:
     parser.add_argument(
         "--show", metavar="QUESTION-ID", help="one miss with the chunk boundaries around its quote"
     )
+    parser.add_argument("--json", action="store_true", help="print every miss as JSON")
     parser.set_defaults(run=run)
 
 
 def run(args: argparse.Namespace) -> int:
     """Explain the run's misses."""
     project = open_project(args.options)
-    folder = project.workdir / "runs" / args.run_id if args.run_id else run_files.latest_run(project.workdir)
+    folder = run_files.find_run(project.workdir, args.run_id)
     results = run_files.read_results(folder)
     if args.json:
         print(json.dumps(results["blames"], indent=1, ensure_ascii=False))

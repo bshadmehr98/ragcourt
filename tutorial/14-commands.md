@@ -40,7 +40,7 @@
 
 | Flag | Means |
 |---|---|
-| `--workdir DIR` | where `.ragcourt/` is (default: the current folder) |
+| `--workdir DIR` | the folder ragcourt keeps its files in (default: `.ragcourt/` in the current folder) |
 | `--config FILE` | another `ragcourt.toml` |
 | `--stages DIR` | the folder of your own stages (chapter 16) |
 | `--seed N` | the seed of every random choice |
