@@ -16,9 +16,16 @@ def test_replies_come_in_order_and_requests_are_recorded() -> None:
     assert model.requests == [first, second]
 
 
-def test_a_reply_function_sees_each_request() -> None:
+def test_a_reply_function_sees_each_request_and_requests_are_recorded() -> None:
     model = ScriptedModel(lambda request: request.prompt.upper())
-    assert model.chat(ChatRequest(model="m", prompt="hello")) == "HELLO"
+    request = ChatRequest(model="m", prompt="hello")
+    assert model.chat(request) == "HELLO"
+    assert model.requests == [request]
+
+
+def test_one_string_is_not_a_script() -> None:
+    with pytest.raises(TypeError, match="not one string"):
+        ScriptedModel('{"verdict": "yes"}')
 
 
 def test_running_out_of_replies_says_which_request() -> None:
@@ -31,6 +38,6 @@ def test_running_out_of_replies_says_which_request() -> None:
 def test_embeddings_come_from_the_fake_embedder_with_token_counts() -> None:
     model = ScriptedModel(embedder=FakeEmbedder(dimensions=8))
     embedded = model.embed("nomic-embed-text", ["one two", "three"])
-    assert embedded.vectors == FakeEmbedder(dimensions=8).embed(["one two", "three"])
+    assert embedded == FakeEmbedder(dimensions=8).embed(["one two", "three"])
     assert embedded.token_counts == [2, 1]
     assert model.embedded == [("nomic-embed-text", ["one two", "three"])]

@@ -18,6 +18,10 @@ class ScriptedModel:
     """Implements the ``ModelClient`` protocol from a script; its state is what it was sent."""
 
     def __init__(self, replies: Replies = (), embedder: FakeEmbedder | None = None) -> None:
+        if isinstance(replies, str):
+            raise TypeError(
+                "ScriptedModel takes a list of replies or a function, not one string: use [reply]."
+            )
         self.replies = replies
         self.embedder = embedder or FakeEmbedder()
         self.requests: list[ChatRequest] = []
@@ -39,4 +43,4 @@ class ScriptedModel:
     def embed(self, model: str, texts: list[str]) -> Embedded:
         """Fake vectors and fake token counts for ``texts``; the call is recorded."""
         self.embedded.append((model, list(texts)))
-        return Embedded(vectors=self.embedder.embed(texts), token_counts=self.embedder.count_tokens(texts))
+        return self.embedder.embed(texts)

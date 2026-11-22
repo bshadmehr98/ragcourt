@@ -5,7 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Protocol
 
-from ragcourt.types.stages import Vector
+from ragcourt.types.stages import Embedded
 
 
 @dataclass(frozen=True)
@@ -15,14 +15,6 @@ class ChatRequest:
     model: str
     prompt: str
     json_reply: bool = True
-
-
-@dataclass(frozen=True)
-class Embedded:
-    """Vectors for a batch of texts, with the token counts the model reported, if it did."""
-
-    vectors: list[Vector]
-    token_counts: list[int] | None
 
 
 class ModelClient(Protocol):

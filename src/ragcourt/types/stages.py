@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Callable
+from dataclasses import dataclass
 from typing import Protocol
 
 Vector = list[float]
@@ -20,6 +21,18 @@ Retriever = Callable[..., Search]
 Reranker = Callable[..., list[float]]
 
 
+@dataclass(frozen=True)
+class Embedded:
+    """Vectors for a batch of texts, and each text's length in the model's tokens when it was counted.
+
+    ``token_counts`` is None when the embedder cannot count; sizes are then estimated (design §4.3).
+    Counting comes with embedding because that is how Ollama reports it: one count per call (D-041).
+    """
+
+    vectors: list[Vector]
+    token_counts: list[int] | None
+
+
 class Embedder(Protocol):
     """An embedding model as the pipeline sees it; a registered embedder is a factory returning one."""
 
@@ -30,7 +43,7 @@ class Embedder(Protocol):
 
     @property
     def max_tokens(self) -> int | None:
-        """The input limit in the model's own tokens, or None when unknown."""
+        """The input limit that is in force, in the model's own tokens, or None when unknown (D-040)."""
         ...
 
     @property
@@ -38,10 +51,10 @@ class Embedder(Protocol):
         """How tokens are counted, in a few words (design §4.3)."""
         ...
 
-    def embed(self, texts: list[str]) -> list[Vector]:
-        """One vector per text, in order. Never caches: the cache wraps the embedder."""
-        ...
+    def embed(self, texts: list[str], *, as_query: bool = False) -> Embedded:
+        """One vector per text, in order, with the token counts. Never caches: the cache wraps it.
 
-    def count_tokens(self, texts: list[str]) -> list[int] | None:
-        """Each text's length in the model's tokens (measured), or None when they cannot be counted."""
+        ``as_query`` says the texts are questions, not chunks, for models that embed the two with
+        different prefixes (D-042).
+        """
         ...

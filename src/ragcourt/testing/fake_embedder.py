@@ -13,7 +13,7 @@ import math
 import re
 from dataclasses import dataclass
 
-from ragcourt.types import Vector
+from ragcourt.types import Embedded, Vector
 
 TOKEN = re.compile(r"\w+|[^\w\s]")
 PAIR_WEIGHT = 0.5
@@ -41,13 +41,13 @@ class FakeEmbedder:
     dimensions: int = 256
     tokenizer: str = "fake: words and punctuation"
 
-    def embed(self, texts: list[str]) -> list[Vector]:
-        """One unit-length vector per text (all zeros for a text with no words)."""
-        return [self._vector(text) for text in texts]
+    def embed(self, texts: list[str], *, as_query: bool = False) -> Embedded:  # noqa: ARG002
+        """One unit-length vector per text (all zeros for a text with no words), and its token count.
 
-    def count_tokens(self, texts: list[str]) -> list[int] | None:
-        """Each text's length in fake tokens."""
-        return [len(fake_tokens(text)) for text in texts]
+        Questions and chunks are embedded the same way: the fake has no prefixes.
+        """
+        vectors = [self._vector(text) for text in texts]
+        return Embedded(vectors=vectors, token_counts=[len(fake_tokens(text)) for text in texts])
 
     def _vector(self, text: str) -> Vector:
         tokens = fake_tokens(text)[: self.max_tokens]
