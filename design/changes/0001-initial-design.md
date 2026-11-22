@@ -2,8 +2,9 @@
 
 ## Status
 
-`proposed` (2026-11-22), from the owner's brief ([history/0001-owner-brief.md](../history/0001-owner-brief.md)).
-Waiting for the owner's acceptance; no product code is written until then.
+`accepted` (2026-11-22) by the owner, together with D-032, D-033, D-035 and D-036; proposed the same day
+from the owner's brief ([history/0001-owner-brief.md](../history/0001-owner-brief.md)). Built in the
+milestone below; [current.md](../current.md) §17 says which steps are done.
 
 **Revised 2026-11-22** after the owner's first answers: the first result uses a local model (Ollama),
 not the model-free audit; a model judge filters questions (the brief's exclusion of judges was wrong);
@@ -11,8 +12,7 @@ generated-code approval and user questions are accepted; the product is renamed 
 working name `ragdoctor`) and its repository goes under `bshadmehr98`. What local models can do on the
 owner's machine was measured first ([history/0002-local-models.md](../history/0002-local-models.md)) and
 shaped the revision. The designer's choices
-inside the brief are in [decisions.md](../decisions.md); the ones marked "awaiting owner" are the questions
-below.
+inside the brief are in [decisions.md](../decisions.md), next to the owner's answers.
 
 ## Context
 
@@ -107,19 +107,19 @@ changelog in step, and one demo for the owner on the bundled corpus and a corpus
 
 ## Consequences
 
-- A developer with Ollama gets, after a one-time `setup`, a first ranking of local embedders on their own
-  documents in about a minute, with intervals and a cause for every miss, and the audit of their chunks in
-  seconds; the full search and fixes follow with `rank --full`.
+- A developer with Ollama gets, after a one-time `setup`, the audit of their chunks in seconds and, in
+  15 to 25 minutes on a GPU like the owner's (once per corpus, resumable), a ranking of every stage on about
+  540 questions in six categories, with intervals and a stage and a mechanism for every miss.
 - Question filtering rests on a local judge; the self-test makes a bad judge visible and refuses it, but
   question quality still depends on the local model (measured on one corpus only so far).
 - Fair comparison of chunkers rests on span gold; the price is that chunkers which add or rewrite text
   cannot be evaluated in 0.1 (§18).
-- Blame is transparent and testable, and coarse: `retrieval` lumps the embedder and the retriever unless
-  the search measured an alternative.
+- Blame is transparent and testable: a stage and one of fourteen mechanisms, from spans, ranks and probes;
+  a blame that no measured alternative confirms is labelled `indicated`.
 - The core has no dependencies and plain-Python scoring; very large corpora (beyond about 200k chunks) are
   slow until an optional accelerator exists.
-- The first minute is an estimate (about 60 s on the owner's machine) until the end-to-end real-model test
-  measures it in milestone 1.
+- The 15 to 25 minutes is an estimate (`inferred`) until the end-to-end real-model test times a full run
+  in milestone 1.
 
 ## Migration and compatibility
 
@@ -134,12 +134,7 @@ Answered on 2026-11-22: the name `ragcourt` (D-001); local models through Ollama
 judge (D-012) with an explained self-test (D-026, D-030); generated-code approval (D-017); user questions
 (D-025); the repository under `bshadmehr98` (D-004); one milestone (D-029); the default models, easy to
 change (D-027, D-031); choosing and reporting on different questions, many of each kind (D-011); a better
-blame than one `retrieval` stage (D-014); no one-minute answer (D-034); no database (D-016). Open, in
-[decisions.md](../decisions.md):
-
-1. **Question categories** (D-032): the six categories and 90 questions each (30 to choose, 60 to
-   report)?
-2. **Blame** (D-033): four stages, fourteen mechanisms, probes, and `confirmed` or `indicated`?
-3. **Progress and resume** (D-035)?
-4. **The simplicity rules and the small-module layout** (D-036), as written in CONTRIBUTING.md and checked
-   by `scripts/check_simple.py`?
+blame than one `retrieval` stage (D-014); no one-minute answer (D-034); no database (D-016).
+Accepted on 2026-11-22 with the rest of the design: the six question categories, 90 each (D-032); blame
+by stage and mechanism (D-033); progress and resume (D-035); the simplicity rules and the small-module
+layout (D-036). Nothing is open.

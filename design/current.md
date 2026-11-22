@@ -1,14 +1,14 @@
 # ragcourt: the design (0.1)
 
 This is the design as it stands, written from the owner's brief of 2026-11-22
-([`history/0001-owner-brief.md`](history/0001-owner-brief.md)) and proposed with
+([`history/0001-owner-brief.md`](history/0001-owner-brief.md)) and accepted with
 [`changes/0001-initial-design.md`](changes/0001-initial-design.md). Its §16 lists the guarantees the tests
 check; §17 says what is built and what is still planned. The smaller choices are in
 [`decisions.md`](decisions.md). Section numbers are stable: code comments and the skills refer to them
 ("design §9.1").
 
-**Status:** proposed, and revised after the owner's answers (2026-11-22: a local model from the first run,
-a model judge, Ollama, the name ragcourt, nothing happens blindly, one milestone); nothing is built.
+**Status:** accepted by the owner (2026-11-22) after four rounds of answers; being built in one
+milestone, and §17 says what is done.
 
 ## 1. What it does
 

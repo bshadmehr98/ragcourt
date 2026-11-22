@@ -3,17 +3,6 @@
 Smaller choices and the owner's answers. "Owner" entries are the owner's words or choices; the others are
 the designer's, open to the owner's review. Code comments refer to entries by number.
 
-## Awaiting owner review
-
-Design 0001 is proposed and was revised after the owner's answers (2026-11-22). Open now:
-
-| Id | The question | Status |
-|---|---|---|
-| [D-032](#d-032-questions-by-category-90-each) | Six question categories (different wording, keywords, exact terms, misleading, negation, numbers), 90 each (30 to choose, 60 to report)? | awaiting owner |
-| [D-033](#d-033-blame-a-stage-a-mechanism-evidence-and-a-level) | Blame as a stage plus a mechanism (14 of them), with evidence and `confirmed` or `indicated`? | awaiting owner |
-| [D-035](#d-035-progress-and-resume) | A long run shows its progress and resumes after an interruption? | awaiting owner |
-| [D-036](#d-036-simple-code-small-modules-plain-files) | The simplicity rules, checked by the gate, and the small-module layout? | awaiting owner |
-
 ## The owner's answers (2026-11-22)
 
 | Id | Decision | Who |
@@ -34,6 +23,7 @@ Design 0001 is proposed and was revised after the owner's answers (2026-11-22). 
 | D-034 | No first answer in one minute: about 540 questions taking 15 to 25 minutes once is fine. | owner |
 | D-016 | No database; nothing that complicates the code. | owner |
 | D-014 | "retrieval" as one blame stage is not good enough: why a miss happened is the reason to use the product, so blame must be precise (D-033). | owner |
+| D-032, D-033, D-035, D-036 | Accepted with design 0001: six question categories, 90 each; blame as a stage and a mechanism; progress and resume; the simplicity rules and the small-module layout. | owner |
 
 ## D-001: The name: ragcourt  (2026-11-22)
 
@@ -346,7 +336,7 @@ Design 0001 is proposed and was revised after the owner's answers (2026-11-22). 
   shown in the plan before it starts; the counts and categories are settings.
 - **Not in 0.1:** questions that need two passages (multi-hop), and unanswerable questions; both need a
   different gold than one quote.
-- **Status:** awaiting owner review.
+- **Status:** accepted by the owner (2026-11-22).
 
 ## D-033: Blame: a stage, a mechanism, evidence and a level  (2026-11-22)
 
@@ -366,7 +356,7 @@ Design 0001 is proposed and was revised after the owner's answers (2026-11-22). 
   stage, gets the question right; otherwise `indicated`, with the command that would confirm it. The share
   of confirmed blames is printed (§9.3, §9.5).
 - **Still never a model:** every check is arithmetic on spans, ranks and scores.
-- **Status:** awaiting owner review.
+- **Status:** accepted by the owner (2026-11-22).
 
 ## D-034: No first answer in one minute  (2026-11-22)
 
@@ -387,7 +377,7 @@ Design 0001 is proposed and was revised after the owner's answers (2026-11-22). 
   left), kept in `progress.jsonl`; every finished unit (question, embedding, evaluated configuration)
   written as it finishes, so `rank --resume` continues where it stopped and gives the same results as an
   uninterrupted run (design §10.4, guarantee 26).
-- **Status:** awaiting owner review.
+- **Status:** accepted by the owner (2026-11-22).
 
 ## D-036: Simple code, small modules, plain files  (2026-11-22)
 
@@ -410,4 +400,4 @@ Design 0001 is proposed and was revised after the owner's answers (2026-11-22). 
   - the module layout of design §3.2: one file per stage, audit check, question category, blame stage and
     command, with the package's `__init__.py` holding the ordered list.
 - **Kept from the brief:** complexity 10 (brief §9 and the toolchain); the line length of 110.
-- **Status:** awaiting owner review.
+- **Status:** accepted by the owner (2026-11-22).

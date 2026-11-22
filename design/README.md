@@ -6,10 +6,10 @@
 > says which stage lost it and what would have found it, and it shows where your chunker cuts your text
 > badly. Code does the measuring and the blaming.
 
-**Status:** the design ([changes/0001](changes/0001-initial-design.md)) is proposed (2026-11-22, from the
-owner's brief in [history/0001-owner-brief.md](history/0001-owner-brief.md)), revised after the owner's
-first answers, and waits for the owner;
-[current.md](current.md) §17 says what is implemented (nothing yet).
+**Status:** the design ([changes/0001](changes/0001-initial-design.md)) was accepted by the owner on
+2026-11-22, after four rounds of answers to the brief in
+[history/0001-owner-brief.md](history/0001-owner-brief.md); [current.md](current.md) §17 says what is
+implemented.
 
 ## The problem
 
@@ -28,7 +28,7 @@ first answers, and waits for the owner;
 ## The core ideas
 
 1. **Local first.** Ollama on the user's machine writes the questions, judges them and embeds the chunks;
-   a first ranking arrives in about a minute with no key, and nothing leaves the machine.
+   no key is needed and nothing leaves the machine.
 2. **Gold is a span of the source.** A model writes a question and an exact quote; the quote must be
    found verbatim, so gold never depends on a chunker and every chunker is judged on the same questions.
    A judge, which must first pass a self-test, drops questions that are invalid or answerable from memory.
@@ -37,8 +37,10 @@ first answers, and waits for the owner;
 4. **Measured, on held-out questions, with intervals.** Choose on one half, report on the other; say "no
    significant difference" when that is the truth; measure recall within a token budget so size cannot
    win.
-5. **Blame is arithmetic.** Not in any chunk: the chunker. Not in the top 50: retrieval. In the top 50
-   but below k: ranking. Each stage's ceiling shows how much it costs.
+5. **Blame is arithmetic.** Each miss gets a stage (chunker, embedder, retriever, ranking) and a
+   mechanism (cut across a boundary, past the embedder's limit, lost to a look-alike passage, pushed out by
+   the reranker, …), from spans, ranks and cheap probes, never from a model; each stage's ceiling shows
+   how much it costs.
 6. **A stage is one file.** Four kinds, one decorator each, the user's own folder loaded the same way.
 7. **Models are visible.** One client for Ollama and any OpenAI-compatible endpoint, nothing sent
    elsewhere without configuration, a printed estimate and a budget; generated code is shown, approved,
@@ -53,7 +55,7 @@ Answer generation and judging answers, vector databases, images, audio, video, a
 | File | What it holds |
 |---|---|
 | [`current.md`](current.md) | the design as it stands: concepts, rules, the guarantees the tests check, what is implemented |
-| [`changes/0001-initial-design.md`](changes/0001-initial-design.md) | the first design, from the owner's brief (proposed), with its build order and open questions |
+| [`changes/0001-initial-design.md`](changes/0001-initial-design.md) | the first design, from the owner's brief (accepted), with its build order |
 | [`history/0001-owner-brief.md`](history/0001-owner-brief.md) | the owner's brief, word for word |
 | [`history/0000-research.md`](history/0000-research.md) | what exists already (AutoRAG, Chroma's chunking study, chunkvet, ragblame, Ragas and others), the name checks, what is still to research |
 | [`history/0002-local-models.md`](history/0002-local-models.md) | local models measured on the owner's machine: embedders, question writers, judges, the first-minute estimate |

@@ -18,9 +18,9 @@ check and its §17 says what is built. Why the design looks like this: the owner
 [design/history/0001-owner-brief.md](design/history/0001-owner-brief.md),
 [design/changes/](design/changes/) and [design/decisions.md](design/decisions.md).
 
-**Status:** design 0001 is proposed and waits for the owner's acceptance. Nothing of the product is
-built: the package holds its version and its base error. Do not implement anything the design does not
-say; a gap becomes a `D-` entry or a proposed change record.
+**Status:** design 0001 is accepted (2026-11-22) and being built in one milestone; design §17 says which
+steps are done. Do not implement anything the design does not say; a gap becomes a `D-` entry or a
+proposed change record.
 
 ## Commands
 
