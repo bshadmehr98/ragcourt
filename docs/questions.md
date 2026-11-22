@@ -47,9 +47,11 @@ a duplicate; not valid (judge); answerable without the documents (the writer ans
 ragcourt questions docs/ --questions-file mine.jsonl
 ```
 
-One JSON object per line: `question`, `quote`, and optionally `document`. The quote must be found; a quote
-found in more than one document needs `document`; a question without a quote is rejected (it cannot be
-scored). Your questions are never dropped by the judge.
+One JSON object per line: `question`, `quote`, and optionally `document` and `start`. The quote must be
+found; a quote found in more than one document needs `document`, and one found twice in a document needs
+`start` (its character offset there); a question without a quote is rejected (it cannot be scored). Your
+questions are never dropped by the judge. With `--questions 0` (or `categories = []`) only your questions
+are used, and no writer or judge is called.
 
 ```python
 import json

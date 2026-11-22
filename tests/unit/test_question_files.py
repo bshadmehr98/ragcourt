@@ -113,3 +113,14 @@ def test_a_quote_twice_in_one_document_and_a_row_that_is_not_an_object() -> None
     outcomes = read_user_questions(rows, {"a.md": "Again. Again."})
     assert isinstance(outcomes[0], Dropped) and outcomes[0].reason.startswith("ambiguous")
     assert isinstance(outcomes[1], Dropped) and outcomes[1].reason.startswith("not a JSON object")
+
+
+def test_a_start_offset_tells_which_of_two_places_is_meant() -> None:
+    text = "Again. Some text between. Again."
+    rows: list[Any] = [
+        {"question": "Which one?", "quote": "Again.", "document": "a.md", "start": 26},
+        {"question": "Which one?", "quote": "Again.", "document": "a.md", "start": 3},
+    ]
+    kept, wrong = read_user_questions(rows, {"a.md": text})
+    assert isinstance(kept, Question) and (kept.start, kept.end) == (26, 32)
+    assert isinstance(wrong, Dropped) and "give its start" in wrong.reason

@@ -65,7 +65,8 @@ ragcourt rank my_docs/ --questions-file mine.jsonl
 ```
 
 The quote must be in your documents, exactly (spaces and line breaks may differ). Add `"document"` when it
-appears in more than one file. Your questions are the kind `user`: never dropped by the judge, never
+appears in more than one file, and `"start"` (its character offset in that document) when it appears more
+than once in the same file. A public dataset with gold character spans converts directly. Your questions are the kind `user`: never dropped by the judge, never
 checked against memory, ranked in their own column. A quote that is not found, or found in two places
 without a `document`, is dropped with the reason.
 

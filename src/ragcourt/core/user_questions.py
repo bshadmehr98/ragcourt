@@ -31,11 +31,13 @@ def _one(number: int, row: dict[str, Any], texts: dict[str, str]) -> Question | 
     found = (
         [] if problem else _places(quote, [str(document)] if document is not None else sorted(texts), texts)
     )
+    if not problem and len(found) > 1:
+        found = _at_start(quote, found[0][0], row.get("start"), texts) or found
     if not problem and not found:
         problem = "quote not found verbatim"
     if not problem and len(found) > 1:
         names = ", ".join(name for name, _, _ in found[:3])
-        problem = f"ambiguous: the quote is found more than once ({names}); quote more of the text"
+        problem = f"ambiguous: the quote is found more than once ({names}); quote more, or give its start"
     if problem:
         return Dropped(USER, problem, question, quote, (), number)
     name, start, end = found[0]
@@ -62,6 +64,14 @@ def _missing(question: str, quote: str, document: object, texts: dict[str, str])
     if document is not None and str(document) not in texts:
         return f"no document {document!r}"
     return None
+
+
+def _at_start(quote: str, name: str, start: object, texts: dict[str, str]) -> list[tuple[str, int, int]]:
+    """The quote at the ``start`` the user gave (a character offset in that document), if it is there."""
+    if not isinstance(start, int) or isinstance(start, bool) or start < 0:
+        return []
+    span = find_text(texts[name], quote, start)
+    return [(name, span[0], span[1])] if span is not None and span[0] == start else []
 
 
 def _places(quote: str, names: list[str], texts: dict[str, str]) -> list[tuple[str, int, int]]:
