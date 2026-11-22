@@ -606,6 +606,8 @@ the designer's, open to the owner's review. Code comments refer to entries by nu
   4. A category stops after 60 drafts when fewer than 1 in 20 were kept, and says so: on the FastAPI
      docs, distractors kept 1 of 60 (the docs repeat themselves, so the look-alike passage also answers),
      and asking on would have taken an hour for a category that stays too few to rank.
+  5. A user question may give `start`, its quote's character offset, so a quote found twice in one
+     document is not dropped as ambiguous (67 of Chroma's 472 gold questions were).
 - **Kept as limits:** plain `http://` with a key is allowed (servers on a local network) and documented;
   the generated chunker's isolation is not a sandbox (approval is the safety step); on Windows a stale
   lock is not detected automatically (the message says which file to delete); Windows and macOS run in CI
