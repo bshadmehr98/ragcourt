@@ -52,10 +52,17 @@ class Progress:
 
 
 def ordered_offers(index: CorpusIndex, category: str, seed: int) -> list[Offer]:
-    """The category's offers in a fixed, seeded order."""
+    """The category's offers in a fixed, seeded order that takes one passage from each document in turn,
+    so one very long document (a changelog) does not supply most of the questions (D-057)."""
     offers = CATEGORIES[category].offers(index)
     random.Random(f"{seed}:{category}").shuffle(offers)  # noqa: S311 (a seeded order, not a secret)
-    return offers
+    turn: dict[str, int] = {}
+    keyed: list[tuple[int, int, Offer]] = []
+    for position, offer in enumerate(offers):
+        document = offer.window.document
+        turn[document] = turn.get(document, -1) + 1
+        keyed.append((turn[document], position, offer))
+    return [offer for _, _, offer in sorted(keyed, key=lambda item: item[:2])]
 
 
 def generate(

@@ -140,3 +140,31 @@ def test_offers_per_category() -> None:
     assert len(CATEGORIES["negation"].offers(index)) == 1 and len(CATEGORIES["numeric"].offers(index)) == 1
     assert len(CATEGORIES["keyword"].offers(index)) == 2
     assert index.documents_with("cron") == 1 and index.documents_with("cron") == 1  # remembered
+
+
+def test_a_sentence_with_markdown_links_is_prose_and_a_line_of_code_is_not() -> None:
+    linked = (
+        "Deploy your app to **[FastAPI Cloud](https://fastapicloud.com)** with one command: `fastapi deploy`."
+    )
+    assert rule_problem("How is the app put online?", linked, "paraphrase") is None
+    code = "CurrentUser = Annotated[User, Depends(get_current_user)] if x else (y)"
+    assert (
+        rule_problem("How is a user found?", code, "paraphrase")
+        == "the quote is not a sentence (a name or a line of code)"
+    )
+
+
+def test_offers_take_one_passage_from_each_document_in_turn() -> None:
+    from ragcourt.core.generate import ordered_offers
+
+    def text(name: str, count: int) -> str:
+        return "".join(
+            f"In {name} part {n} explains a different matter at some length.\n\n" for n in range(count)
+        )
+
+    long = Document("long.md", text("long", 600))
+    short = [Document(f"s{n}.md", text(f"s{n}", 40)) for n in range(3)]
+    order = [
+        offer.window.document for offer in ordered_offers(index_corpus([long, *short], 2000), "paraphrase", 0)
+    ]
+    assert set(order[:4]) == {"long.md", "s0.md", "s1.md", "s2.md"}  # every document before any second

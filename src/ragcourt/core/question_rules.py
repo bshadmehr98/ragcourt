@@ -12,6 +12,7 @@ MIN_QUOTE_WORDS = 6
 MAX_QUOTE_TOKENS = 120
 MIN_QUESTION_WORDS = 3
 CODE_CHARS = re.compile(r"[{}();=<>\[\]$`|]")
+MARKDOWN_LINK = re.compile(r"\[([^\]\n]*)\]\([^)\s]*\)")
 
 
 def rule_problem(question: str, quote: str, category: str) -> str | None:
@@ -19,7 +20,8 @@ def rule_problem(question: str, quote: str, category: str) -> str | None:
     words = quote.split()
     if len(words) < MIN_QUOTE_WORDS:
         return f"the quote has {len(words)} words; at least {MIN_QUOTE_WORDS}"
-    if not re.search(r"[A-Za-z]{3,}", quote) or len(CODE_CHARS.findall(quote)) > len(words) / 2:
+    prose = MARKDOWN_LINK.sub(r"\1", quote)  # [text](https://…) is prose with a link, not code
+    if not re.search(r"[A-Za-z]{3,}", quote) or len(CODE_CHARS.findall(prose)) > len(words) / 2:
         return "the quote is not a sentence (a name or a line of code)"
     if count_tokens(quote) > MAX_QUOTE_TOKENS:
         return f"the quote is longer than {MAX_QUOTE_TOKENS} tokens"
