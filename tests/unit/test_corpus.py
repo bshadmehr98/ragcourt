@@ -9,6 +9,7 @@ from ragcourt import Document, load_documents
 from ragcourt.testing import corpus_path, fake_tokens
 
 HEADER = "Larkspur Docs · version 3.2"
+FOOTER = "Edit this page on the Larkspur wiki · Larkspur contributors"
 
 
 @pytest.fixture(scope="module")
@@ -33,10 +34,14 @@ def test_a_dozen_documents_in_every_format(documents: dict[str, Document]) -> No
     assert set(suffixes) == {"md", "txt", "rst", "html"}
 
 
-def test_a_running_header_repeats_across_a_third_of_the_documents(documents: dict[str, Document]) -> None:
+def test_a_running_header_and_footer_repeat_across_a_third_of_the_documents(
+    documents: dict[str, Document],
+) -> None:
     with_header = [doc for doc in documents.values() if doc.text.startswith(HEADER)]
+    with_footer = [doc for doc in documents.values() if doc.text.rstrip().endswith(FOOTER)]
     assert len(with_header) >= 0.3 * len(documents)
     assert len(with_header) < len(documents)
+    assert len(with_footer) == len(with_header)
 
 
 def test_tables_in_markdown_and_html(documents: dict[str, Document]) -> None:

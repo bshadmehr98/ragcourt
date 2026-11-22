@@ -28,7 +28,10 @@ uv pip install -q --python "$TMP/venv/bin/python" dist/*.whl
 import importlib, sys
 m = importlib.import_module("${PKG_IMPORT}")
 assert m.__version__, "missing __version__"
-print("import ok:", m.__name__, m.__version__)
+from ragcourt.testing import corpus_path
+corpus = sorted(p.name for p in corpus_path().iterdir())
+assert len(corpus) == 13, f"the bundled corpus is not in the wheel: {corpus}"
+print("import ok:", m.__name__, m.__version__, "and the bundled corpus")
 PY
 if [ -f examples/quickstart.py ]; then   # the README quickstart, with only the wheel installed
   (cd "$TMP" && "$TMP/venv/bin/python" "$OLDPWD/examples/quickstart.py")

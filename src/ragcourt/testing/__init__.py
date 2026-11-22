@@ -9,7 +9,7 @@ from ragcourt.testing.scripted_model import ScriptedModel
 
 
 def corpus_path() -> Path:
-    """The folder of the bundled corpus: a dozen short documents with a planted case each."""
+    """The folder of the bundled corpus: thirteen short documents with planted cases (design §15.2)."""
     return Path(__file__).parent / "corpus"
 
 
