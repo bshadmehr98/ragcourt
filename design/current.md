@@ -23,8 +23,10 @@ writes questions, a **judge** model filters them, and in `doctor` a model makes 
 
 ### Goals
 
-- A first useful result in under a minute with no API key: `ragcourt rank <folder>` on local models
-  through Ollama, after a one-time `ragcourt setup` (brief §1; D-006, D-027).
+- A useful result with no API key, on local models through Ollama: `audit` in seconds; the full ranking
+  after a one-time `setup`, with its time shown before it starts and its progress while it runs. The
+  brief's "under a minute" was dropped by the owner: trustworthy numbers need about 540 questions,
+  written once per corpus (D-006, D-034).
 - Numbers measured on the user's documents, with their uncertainty, never general advice (brief §1, §5).
 - Every failed question has one named cause and a suggested fix (brief §1, §4).
 - A newcomer reads the whole codebase in an evening and adds a stage in one file (brief §1, §7, §9).
@@ -67,7 +69,6 @@ a chunker, an embedding model, a retriever and a reranker, and wants evidence fr
 | **run** | one `rank` invocation: its plan, its estimate, its results file (§13.3) |
 | **local model** | a model served by Ollama on this machine (§11.1) |
 | **judge** | a chat model that grades a closed-book answer or a question's validity against the quote; never used for blame or metrics (§6.6) |
-| **quick run** | the first-minute `rank`: about 40 questions, the default embedders on the default chunker (§10.1) |
 
 ## 3. Architecture
 
@@ -99,35 +100,40 @@ Stages that need a model (an endpoint embedder, an endpoint reranker) receive a 
 
 ### 3.2 Modules
 
+Small modules of one concept each (CONTRIBUTING.md "Keep it simple", D-036): where the design has a list
+of similar things (stages, audit checks, question categories, blame mechanisms, commands), each is its
+own file and the package's `__init__.py` holds the ordered list.
+
 | Module | Holds | Design |
 |---|---|---|
-| `types.py` | `Document`, `Chunk`, `Question`, `Pipeline`, `Ranked`, `MetricRow`, `Blame`, `Finding`, `Estimate`, the four stage signatures, `ModelClient` | §2 |
+| `types/documents.py`, `questions.py`, `results.py`, `stages.py`, `models.py` | frozen dataclasses (`Document`, `Chunk`, `Question`, `Verdict`, `MetricRow`, `Blame`, `Plan`, …), the four stage signatures, the `ModelClient` protocol; no logic | §2 |
 | `errors.py` | `RagCourtError` and its subclasses | §14 |
 | `stages/__init__.py` | the four decorators, the registry, loading the user's folder | §7.2 |
-| `stages/chunkers/*.py` … `stages/rerankers/*.py` | one stage per file | §7.3, §7.4 |
-| `core/offsets.py` | finding chunk spans in the source | §4.2 |
-| `core/audit.py` | the audit checks | §5 |
-| `core/pipeline.py` | running one pipeline over questions | §8.1 |
-| `core/metrics.py` | every metric | §8.3 |
-| `core/stats.py` | bootstrap intervals and ties | §8.4 |
-| `core/blame.py` | blame, ceilings, fixes | §9 |
-| `core/search.py` | the greedy plan and its estimate | §10 |
-| `io/loaders.py` | reading documents | §4.1 |
-| `io/config.py` | `ragcourt.toml` | §3.3 |
-| `io/client.py` | the one model client (Ollama and OpenAI-compatible dialects) | §11 |
-| `io/cache.py` | the embedding cache | §10.2 |
-| `io/questions.py` | generating, filtering (code rules and the judge) and storing questions; the judge's self-test | §6 |
-| `io/report.py` | the results file, terminal tables, the HTML report | §13 |
-| `commands/setup.py`, `models.py`, `prompts.py`, `audit.py`, `questions.py`, `rank.py`, `explain.py`, `report.py`, `doctor.py` | one command each | §11.3, §11.4, §6.6, §5, §6, §8–§10, §9, §13.4, §12 |
+| `stages/<kind>/<name>.py` | one stage per file | §7.3, §7.4 |
+| `core/offsets.py`, `core/tokens.py` | finding chunk spans in the source; the reference tokenization | §4.2, §4.3 |
+| `core/audit/<check>.py` | one audit check per file; `__init__.py` lists them | §5.1 |
+| `core/categories/<category>.py` | one question category per file: which passages it may use, how membership is checked; `__init__.py` lists them | §6.7 |
+| `core/filters.py`, `core/split.py` | the code rules for questions; dev and held-out | §6.2, §6.4 |
+| `core/pipeline.py`, `core/metrics.py`, `core/stats.py` | running one pipeline; every metric; intervals, ties, smallest difference | §8 |
+| `core/blame/<stage>.py` | the mechanisms of one stage, in order; `__init__.py` runs the stages in order and picks the cause | §9.1 |
+| `core/probes.py`, `core/fixes.py` | what blame measures besides ranks; fixes and evidence levels | §9.3, §9.4 |
+| `core/search.py`, `core/plan.py` | the greedy steps; the plan and its estimate | §10 |
+| `io/documents.py`, `io/config.py` | reading documents; `ragcourt.toml` | §4.1, §3.3 |
+| `io/client.py`, `io/ollama.py`, `io/openai_compat.py` | the one client (retries, JSON replies) and its two dialects | §11.1 |
+| `io/cache.py` | the embedding cache in plain files | §10.2 |
+| `io/writer.py`, `io/judge.py` | asking the writer for a question; asking the judge, and its self-test | §6.1, §6.6 |
+| `io/question_file.py`, `io/results_file.py` | reading and writing the question file and the results file | §6.5, §13.3 |
+| `io/terminal.py`, `io/progress.py`, `io/html_report.py` | tables and the legend; progress lines; the HTML report | §13, §10.4 |
+| `commands/<command>.py` | one command per file (`setup`, `models`, `prompts`, `audit`, `questions`, `rank`, `explain`, `report`, `doctor`, `cache`): read with `io`, compute with `core`, write with `io` | §13.1 |
 | `prompts/*.txt`, `prompts/judge_cases.jsonl` | every prompt a model is given, and the judge's labelled self-test cases, as readable files | §6.6 |
 | `cli.py` | `ragcourt …` | §13.1 |
-| `testing/` | `FakeEmbedder`, `ScriptedModel`, the bundled corpus | §15.2 |
+| `testing/` | `FakeEmbedder`, `ScriptedModel`, a fake Ollama server, the bundled corpus | §15.2 |
 
 ### 3.3 Files
 
-Everything ragcourt writes goes in `.ragcourt/` beside the corpus (or `--workdir`): `cache.sqlite`
-(embeddings, §10.2), `questions.jsonl` (§6.5), `runs/<run-id>/results.json` and `report.html` (§13),
-`doctor/` (§12). The optional `ragcourt.toml` in the project names endpoints, models, prices, stages to
+Everything ragcourt writes goes in `.ragcourt/` beside the corpus (or `--workdir`), as plain files a
+user can open; there is no database (D-016): `cache/embeddings/` (§10.2), `questions.jsonl` (§6.5),
+`runs/<run-id>/` with `progress.jsonl`, `results.json` and `report.html` (§10.4, §13), `doctor/` (§12). The optional `ragcourt.toml` in the project names endpoints, models, prices, stages to
 consider, `k` and the budget; keys are named by environment variable (`api_key_env = "OPENAI_API_KEY"`),
 never written in the file (D-016).
 
@@ -576,21 +582,16 @@ When a category has a different winner from the overall one ("`bm25` leads on `e
 says so with both intervals. Because each step varies one stage, the search also gives blame its
 `confirmed` alternatives (§9.3).
 
-**The quick run** is what `rank` does unless `--full` is given: 8 questions per category (about 50),
-step 1 only (the default local embedders on the default chunker, `dense`, no reranker), the leaderboard
-with intervals, the ceilings and the blame of every held-out miss. It is labelled **a first look**: every
-category is too few to rank (§6.8), so it names no winner per category and its overall intervals are
-wide; it ends with the plan and estimate of the full run, whose questions it reuses. It is the first-minute
-result (D-006); its time is measured by a real-model test on the bundled corpus (§16, guarantee 26). The
-full search is `rank --full` (or `rank.mode = "full"` in `ragcourt.toml`).
-
 ### 10.2 The cache
 
-Embeddings are cached in `.ragcourt/cache.sqlite` by `sha256(model identity + "\0" + text)`, where the
-model identity is the endpoint's base URL and model name (or the local model's name and revision), and
-the vector is stored as packed float32 with its dimension. A cached embedding is never sent again; a
-second identical run makes no embedding calls. The cache has its own version; a layout change starts a
-new file. `--no-cache` and `ragcourt cache clear` exist (D-016).
+Embeddings are cached in plain files, one folder per model under `.ragcourt/cache/embeddings/`, named
+after the model identity (the endpoint's base URL and model name, or the local model's name and
+digest). Each folder holds `model.json` (identity, dimension, cache version), `keys.txt` (one
+`sha256(text)` per line) and `vectors.f32` (the vectors, float32, in the same order), both only ever
+appended to. Loading reads the two files into a dictionary; a torn last write (a key without its vector)
+is trimmed. A cached embedding is never sent again; a second identical run makes no embedding calls. A
+layout change bumps the cache version and starts new folders. `--no-cache` and `ragcourt cache clear`
+exist (D-016).
 
 ### 10.3 The plan, the estimate and the budget
 
@@ -603,6 +604,19 @@ the configured prices, or `unknown`. `--budget-usd` and `--budget-minutes` stop 
 that would exceed them: the steps done are reported, the step not run is named, and nothing is presented
 as complete. Without `--yes`, the first run in a project, and any run estimated over one minute or over
 $0, asks before starting; the plan is printed either way.
+
+### 10.4 Progress and resume
+
+A full run is long (writing about 540 questions, then the search), so it is never silent and never lost
+(D-035):
+
+- **Progress:** one line per step as it starts and ends, and while questions are written a line per
+  category with asked, kept and dropped so far and the time left, from the measured pace. The same lines
+  go to `runs/<run-id>/progress.jsonl`.
+- **Resume:** every finished unit is written as it finishes: each question to `questions.jsonl`, each
+  embedding to the cache, each evaluated configuration to `runs/<run-id>/`. `rank --resume` (or `rank`
+  answering yes when it finds an unfinished run with the same plan) continues from there; a run whose plan
+  changed (other documents, models or settings) starts afresh and says why.
 
 ## 11. Models
 
@@ -638,7 +652,7 @@ no update check. Logs never contain document text or keys. `docs/privacy.md` lis
 `ragcourt setup`, once per machine: checks that Ollama answers on `localhost` (or says how to install
 and start it), reads the GPU memory and RAM Ollama reports, recommends models that fit from a small table
 justified by measurement (D-027; on an 8 GB GPU: `gemma4` as question writer and judge,
-`nomic-embed-text`, `embeddinggemma` and `mxbai-embed-large` as the quick embedders), shows their download
+`nomic-embed-text`, `embeddinggemma` and `mxbai-embed-large` as the first embedders to compare), shows their download
 sizes, pulls the missing ones only after the user agrees, and runs the judge's self-test, shown case by
 case (§6.6). It writes `ragcourt.toml` with the chosen model for each role, each line under a comment that
 says what the role does and how to change it (§11.4), and the self-test result in the cache. Any Ollama
@@ -647,7 +661,7 @@ model can be named instead, at the prompt or later.
 ### 11.4 Roles and how to change them
 
 Every model has a **role**: `writer` (writes questions and quotes), `judge` (§6.6), `embedders` (the
-candidates of the search; the quick run uses the first three), `reranker` (the chat model of the `llm`
+candidates of the search), `reranker` (the chat model of the `llm`
 reranker) and `doctor` (§12). Changing one is one command or one line (D-031):
 
 - `ragcourt models` shows each role: the model, where the choice came from, why it is the default,
@@ -693,7 +707,7 @@ ragcourt prompts [show NAME]
 ragcourt audit <folder> [--chunker SPEC]… [--embedder NAME] [--show DOC] [--json] [--fail-on CODE…]
 ragcourt questions <folder> [--questions N] [--questions-file FILE]
 ragcourt questions show [--dropped] [--reason R]
-ragcourt rank <folder> [--full] [--questions-file FILE] [--judge MODEL] [--metric NAME] [--k N] [--budget-usd X] [--budget-minutes M] [--yes] [--html]
+ragcourt rank <folder> [--resume] [--questions-file FILE] [--judge MODEL] [--metric NAME] [--k N] [--budget-usd X] [--budget-minutes M] [--yes] [--html]
 ragcourt explain [RUN] [--show QUESTION-ID]
 ragcourt doctor <folder> [--approve SHA256]
 ragcourt cache clear
@@ -828,10 +842,10 @@ is removed, except guarantee 26, which needs real models and is a marked test in
 25. **The judge proves itself first.** A scripted judge that grades refusals as correct fails the
     self-test, is refused with its errors shown, and no question is filtered by it; one that passes is
     used, and its score appears in the output.
-26. **The first minute** (a real-model test, marker `real_model`, not in the default suite). On the bundled
-    corpus with the default local models already pulled, `ragcourt rank` with no configuration prints a
-    leaderboard with intervals and a cause for every held-out miss in under 60 s on the reference machine
-    (an 8 GB RTX 4060 laptop); the measured time is printed and recorded.
+26. **A long run shows progress and resumes.** `rank` prints its progress (step, questions kept per
+    category, time left) as it goes; a run killed mid-way and started again with `--resume` continues from
+    the questions, embeddings and configurations already finished, and its results equal those of an
+    uninterrupted run.
 27. **Setup asks before pulling.** `setup` never downloads a model without the user's yes (or `--yes`), and
     shows each model's size first.
 28. **The plan comes before any model call.** `rank` prints every step with its role, model, the source of
@@ -872,5 +886,5 @@ held-out questions; the greedy search can miss a combination that only wins join
 `indicated` rests on probes, not on a measured alternative; questions need one quote (no question that
 needs two passages); a small corpus may not support every category; question
 quality and the judge's verdicts are only as good as the local model (the self-test guards the judge, not
-the writer); the first minute assumes the models are already pulled and a GPU like the owner's (8 GB);
-on CPU only it will be slower.
+the writer); a full run takes 15 to 25 minutes on a GPU like the owner's (8 GB) and much longer on CPU
+only.

@@ -61,7 +61,7 @@ intervals with ties (§8); blame, ceilings and measured fixes (§9); greedy sear
 and the budget (§10); one model client and privacy (§11); doctor with approval, isolation, validation and
 measurement (§12); output (§13); errors (§14); tests, docs and examples (§15); 33 guarantees (§16).
 
-The owner's answers: the first minute is a quick `rank` on local models (D-006); Ollama is the local
+The owner's answers: the first result uses local models (D-006); Ollama is the local
 runtime (D-007); a model judge filters questions (D-012). Designer's choices: no core dependencies
 (D-003); one client with an `ollama` and an `openai` dialect (D-007); token counts measured through
 Ollama or a tokenizer, otherwise labelled (D-008); a fixed reference tokenization for token metrics
@@ -77,7 +77,12 @@ command (D-031).
 After the third round: questions come in six categories aimed at known weaknesses, 90 each, reported per
 category (D-032, tried in [history/0003-question-categories.md](../history/0003-question-categories.md));
 blame names a stage and one of fourteen mechanisms with its evidence and whether a measurement confirms
-it (D-033); the first-minute run is labelled a first look (D-034).
+it (D-033).
+
+After the fourth round: no one-minute answer; the full run shows its plan and time first, then its
+progress, and resumes after an interruption (D-034, D-035). No database: everything is a plain file,
+the embedding cache included (D-016). Code stays simple by rules the gate checks, a working checklist
+(the `keep-it-simple` skill) and a layout where every extension is one new file (D-036).
 
 ### Milestone
 
@@ -90,14 +95,14 @@ tests and its commits:
 | 2. Audit | the four native chunkers, `core/offsets`, `core/audit` with the eight checks, `commands/audit` | 1, 2, 3 |
 | 3. Local models | `io/client` (`ollama` dialect, a fake Ollama server for tests), the `ollama` embedder with measured token counts, `setup`, `models`, `prompts`, `ragcourt.toml` with roles | 4, 19, 27, 30 |
 | 4. Questions and the judge | `io/questions`: the six categories with their passage rules and code checks, generation, code rules, the judge with its prompts, labelled cases and self-test, the explanations of §6.6, user questions, splits, the question file, `questions show` | 5, 6, 7, 8, 25, 29, 31 |
-| 5. The first ranking | `io/cache`, the `dense` retriever, `core/pipeline`, `metrics`, `stats` (per category, overall, smallest difference), `blame` with the chunker and embedder mechanisms and the probes, the plan, the first look of `rank`, the legend | 9, 10, 11, 12, 15, 26, 28, 32 |
+| 5. The first ranking | `io/cache`, the `dense` retriever, `core/pipeline`, `metrics`, `stats` (per category, overall, smallest difference), `blame` with the chunker and embedder mechanisms and the probes, the plan, progress and resume, `rank`, the legend | 9, 10, 11, 12, 15, 26, 28, 32 |
 | 6. The full search and explain | the `openai` dialect, the `endpoint` embedder, `bm25` and `hybrid`, the `llm`, `endpoint` and `cross-encoder` rerankers, the `tokens`, `local`, `chonkie` and `langchain` extras, `core/search`, the estimate and budget, the retriever and ranking mechanisms, evidence levels and fixes, `explain`, the results file in full | 13, 14, 16, 17, 21, 33 |
 | 7. The HTML report | `io/report` HTML, `rank --html`, `report` | 23 |
 | 8. Doctor | `commands/doctor`: sampling, description, recommendations, the generated chunker with approval, the subprocess runner, validation and measurement | 20 |
 | 9. Docs and examples | every page of `docs/` (with `judge.md`, `models.md` and the walk-through), every example, the README quickstart | 24 |
 
-The milestone ends with `scripts/check.sh` green, all 33 guarantees passing, the first-minute test run on
-the reference machine, the reviewer agents run on the branch, `design/current.md` §17 updated, the
+The milestone ends with `scripts/check.sh` green, all 33 guarantees passing, a full run timed on the
+reference machine, the reviewer agents run on the branch, `design/current.md` §17 updated, the
 changelog in step, and one demo for the owner on the bundled corpus and a corpus of the owner's choice.
 
 ## Consequences
@@ -125,15 +130,16 @@ public Python API is `ragcourt` with an explicit `__all__`.
 
 ## Open questions for the owner
 
-Answered on 2026-11-22: the name `ragcourt` (D-001); a local model from the first run through Ollama
-(D-006, D-007); a model judge (D-012) with an explained self-test (D-026, D-030); generated-code approval
-(D-017); user questions (D-025); the repository under `bshadmehr98` (D-004); one milestone (D-029); the
-default models, easy to change (D-027, D-031); choosing and reporting on different questions, with many
-questions of each kind (D-011); a better blame than one `retrieval` stage (D-014). Open, in
+Answered on 2026-11-22: the name `ragcourt` (D-001); local models through Ollama (D-006, D-007); a model
+judge (D-012) with an explained self-test (D-026, D-030); generated-code approval (D-017); user questions
+(D-025); the repository under `bshadmehr98` (D-004); one milestone (D-029); the default models, easy to
+change (D-027, D-031); choosing and reporting on different questions, many of each kind (D-011); a better
+blame than one `retrieval` stage (D-014); no one-minute answer (D-034); no database (D-016). Open, in
 [decisions.md](../decisions.md):
 
 1. **Question categories** (D-032): the six categories and 90 questions each (30 to choose, 60 to
    report)?
 2. **Blame** (D-033): four stages, fourteen mechanisms, probes, and `confirmed` or `indicated`?
-3. **The first look** (D-034): the one-minute run as a labelled first look, and the full set (15 to 25
-   minutes, once per corpus) as the real answer?
+3. **Progress and resume** (D-035)?
+4. **The simplicity rules and the small-module layout** (D-036), as written in CONTRIBUTING.md and checked
+   by `scripts/check_simple.py`?
