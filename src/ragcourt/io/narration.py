@@ -8,6 +8,7 @@ never decides; the self-test case by case; and the drops by reason.
 from __future__ import annotations
 
 import textwrap
+from pathlib import Path
 
 from ragcourt.io.terminal import section, table
 from ragcourt.types.config import Role
@@ -38,7 +39,8 @@ def source_words(role: Role) -> str:
         return "built-in default"
     if role.source == "flag":
         return "command-line flag"
-    return role.source
+    path = Path(role.source)
+    return str(path.relative_to(Path.cwd())) if path.is_relative_to(Path.cwd()) else role.source
 
 
 def roles_text(roles: list[Role]) -> str:

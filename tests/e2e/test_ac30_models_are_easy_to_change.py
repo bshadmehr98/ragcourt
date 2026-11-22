@@ -22,7 +22,7 @@ def test_set_keeps_comments_and_self_tests_a_new_judge(
     assert "# my comment" in text and 'judge = "other-judge"' in text and 'writer = "fake-chat"' in text
     assert "Judge self-test: other-judge" in out
     table = run("models")[1]
-    assert "other-judge" in table and str(toml) in table
+    assert "other-judge" in table and "ragcourt.toml" in table
 
 
 def test_set_embedders_writes_a_list_and_a_flag_overrides_for_one_run(
