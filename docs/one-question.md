@@ -32,7 +32,7 @@ assert (question["category"], question["split"]) == ("paraphrase", "held-out")
 assert [v["check"] for v in question["verdicts"]] == ["code rules", "valid", "answerable without documents"]
 assert results["chosen"] == "fixed:size=60,overlap=0 | - | bm25 | none"
 assert blame["mechanism"] == "retriever.keyword_only" and blame["level"] == "indicated"
-assert "fake-embed finds it" in blame["evidence"]
+assert blame["evidence"].endswith("dense search with fake-embed ranks it 23")
 ```
 
 ## 1. The document
@@ -83,14 +83,15 @@ first hit: not in the top 50
 
 ```text
 cause: retriever.keyword_only | indicated
-evidence: BM25 does not retrieve the chunk; fake-embed finds it
-fix: dense or hybrid retrieval; measured here and not finding it either: retriever dense, retriever hybrid
+evidence: BM25 does not retrieve the chunk; dense search with fake-embed ranks it 23
+fix: dense or hybrid retrieval; measured here, and it misses the top k there too: retriever dense, retriever hybrid
 ```
 
 The question shares no word with its answer (it is a paraphrase), so a keyword retriever cannot find it.
-The probes show an embedder does (with another chunker, in the first step), so the cause is the retriever's
-method, not the vectors. The level is `indicated`: the dense and hybrid pipelines measured in this run, with
-the same chunker, did not find it either, so no measurement confirms the fix.
+The probes show dense search does retrieve it, at rank 23 (with another chunker, in the first step), so
+the cause is the retriever's method, not the vectors. The level is `indicated`: the dense and hybrid
+pipelines measured in this run, with the same chunker, do not bring it into the top 5 either, so no
+measurement confirms the fix.
 
 `ragcourt explain --show ID` prints where the quote sits among the chunks:
 

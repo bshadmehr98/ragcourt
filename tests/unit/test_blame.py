@@ -114,7 +114,7 @@ def test_confirmed_needs_a_measured_alternative_differing_only_in_that_stage() -
     chosen = PipelineSpec("c1", "e1", "dense", "none")
     other_chunker = evaluation(PipelineSpec("c2", "e1", "dense", "none"), 1.0)
     level, fix = fix_for("chunker.split", "q1", chosen, [other_chunker])
-    assert level == "confirmed" and "chunker c2 finds it" in fix
+    assert level == "confirmed" and "with chunker c2 it reaches the top k" in fix
     two_changes = evaluation(PipelineSpec("c2", "e2", "dense", "none"), 1.0)
     level, fix = fix_for("chunker.split", "q1", chosen, [two_changes])
     assert level == "indicated" and "--chunkers" in fix and "not measured" in fix
@@ -127,7 +127,7 @@ def test_confirmed_needs_a_measured_alternative_differing_only_in_that_stage() -
     level, fix = fix_for(
         "chunker.split", "q1", chosen, [evaluation(PipelineSpec("c2", "e1", "dense", "none"), 0.0)]
     )
-    assert level == "indicated" and "not finding it either: chunker c2" in fix
+    assert level == "indicated" and "it misses the top k there too: chunker c2" in fix
 
 
 def blame(question: str, stage: str) -> Blame:

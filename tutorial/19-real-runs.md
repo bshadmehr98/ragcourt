@@ -150,17 +150,17 @@ reaches the top 5.
 [paraphrase] What auxiliary containers operate alongside the principal software unit…
   cause: retriever.keyword_only, confirmed
   evidence: BM25 does not retrieve the chunk; dense search ranks it 1
-  fix: dense or hybrid retrieval: retriever dense finds it (measured in this run)
+  fix: dense or hybrid retrieval: with retriever dense it reaches the top k (measured in this run)
 
 [paraphrase] What happens to a running application when its health check repeatedly fails…
   cause: ranking.not_rescued, confirmed
   evidence: retrieved at rank 15, below k = 5; no reranker
-  fix: a reranker that lifts it, or a larger k: reranker llm finds it (measured in this run)
+  fix: a reranker that lifts it, or a larger k: with reranker llm it reaches the top k (measured in this run)
 
 [exact_term] What is described under the section titled 'other-pod-conditions'?
   cause: ranking.not_rescued, indicated
   evidence: retrieved at rank 12, below k = 5; no reranker
-  fix: a reranker that lifts it, or a larger k; measured here and not finding it either: reranker
+  fix: a reranker that lifts it, or a larger k; measured here, and it misses the top k there too: reranker
 ```
 
 The first is a question that uses none of the passage's words ("auxiliary containers" for *sidecar

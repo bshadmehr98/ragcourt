@@ -73,10 +73,10 @@ things for each miss:
 ## Confirmed or indicated
 
 - **confirmed**: a pipeline measured in this same run that differs *only* in the blamed stage finds the
-  question. The fix names it: "retriever dense finds it (measured in this run)". This is as close to proof
+  question. The fix names it: "with retriever dense it reaches the top k (measured in this run)". This is as close to proof
   as a measurement gets.
 - **indicated**: the probes point to the cause, but no such pipeline was measured. The fix says "not
-  measured" and gives the command that would measure it, or "measured here and not finding it either"
+  measured" and gives the command that would measure it, or "measured here, and it misses the top k there too"
   when the alternatives tried did not help.
 
 The share of confirmed causes is printed. More candidates per step means more confirmed causes.

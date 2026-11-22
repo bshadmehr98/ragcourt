@@ -15,10 +15,14 @@ def keyword_only(facts: Facts) -> str | None:
     """The retriever is BM25, it misses the chunk, and dense search finds it."""
     if facts.retriever != "bm25" or not _lost(facts):
         return None
-    finders = [name for name, rank in facts.other_embedders.items() if rank is not None]
+    finders = [(name, rank) for name, rank in facts.other_embedders.items() if rank is not None]
     if facts.dense_rank is None and not finders:
         return None
-    where = f"dense search ranks it {facts.dense_rank}" if facts.dense_rank else f"{finders[0]} finds it"
+    where = (
+        f"dense search ranks it {facts.dense_rank}"
+        if facts.dense_rank
+        else f"dense search with {finders[0][0]} ranks it {finders[0][1]}"
+    )
     return f"BM25 does not retrieve the chunk; {where}"
 
 
