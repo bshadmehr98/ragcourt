@@ -6,7 +6,7 @@ import argparse
 
 from ragcourt.io.project import AddParser, open_project
 from ragcourt.io.prompts import load_prompt, load_prompts
-from ragcourt.io.terminal import table
+from ragcourt.io.terminal import for_people, table
 
 NAME = "prompts"
 HELP = "list the prompts models are given, or `prompts show NAME` to print one"
@@ -14,7 +14,7 @@ HELP = "list the prompts models are given, or `prompts show NAME` to print one"
 
 def register(add_parser: AddParser, common: argparse.ArgumentParser) -> None:
     """Add ``prompts``."""
-    parser = add_parser(NAME, help=HELP, description=__doc__, parents=[common])
+    parser = add_parser(NAME, help=HELP, description=for_people(__doc__), parents=[common])
     parser.add_argument("action", nargs="?", choices=["show"], help="show one prompt")
     parser.add_argument("name", nargs="?", help="the prompt to show, e.g. judge.validity")
     parser.set_defaults(run=run)

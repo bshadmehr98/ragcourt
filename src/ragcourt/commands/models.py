@@ -20,7 +20,7 @@ from ragcourt.io.narration import source_words
 from ragcourt.io.project import AddParser, Project, ProjectOptions, open_project
 from ragcourt.io.prompts import load_prompts
 from ragcourt.io.question_file import text_hash
-from ragcourt.io.terminal import table
+from ragcourt.io.terminal import for_people, table
 from ragcourt.io.toml_edit import set_role, toml_value
 from ragcourt.types.config import ROLES
 
@@ -30,7 +30,7 @@ HELP = "show the model of each role, `models set ROLE MODEL` to change one, `mod
 
 def register(add_parser: AddParser, common: argparse.ArgumentParser) -> None:
     """Add ``models``."""
-    parser = add_parser(NAME, help=HELP, description=__doc__, parents=[common])
+    parser = add_parser(NAME, help=HELP, description=for_people(__doc__), parents=[common])
     parser.add_argument("action", nargs="?", choices=["set", "test"], help="set a role, or test the judge")
     parser.add_argument("role", nargs="?", help="writer, judge, embedders, reranker or doctor")
     parser.add_argument("model", nargs="?", help="a model, or several separated by commas for embedders")

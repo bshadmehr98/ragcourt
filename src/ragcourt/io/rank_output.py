@@ -9,7 +9,7 @@ from __future__ import annotations
 from typing import Any
 
 from ragcourt.io.narration import ROLE_JOBS
-from ragcourt.io.terminal import legend, section, table
+from ragcourt.io.terminal import legend, plural, section, table
 
 LEGEND = {
     "hit": "a chunk whose span holds the whole gold quote",
@@ -42,7 +42,7 @@ def plan_text(plan: dict[str, Any], guess: Any) -> str:
         ["4. retrievers", f"{', '.join(candidates['retrievers'])}; the best chunker and embedder"],
         ["5. rerankers", f"none, {', '.join(candidates['rerankers'])}; the best so far"],
     ]
-    header = f"{plan['documents']} documents; metric {plan['metric']}; k = {plan['settings']['k']}."
+    header = f"{plural(plan['documents'], 'document')}; metric {plan['metric']}; k = {plan['settings']['k']}."
     lines = [
         section("Plan"),
         header,
@@ -52,7 +52,8 @@ def plan_text(plan: dict[str, Any], guess: Any) -> str:
     ]
     lines.append(table(["step", "what"], steps))
     lines.append(
-        f"\nAbout {guess.minutes:.0f} minutes, estimated from measured speeds (less with a warm cache)."
+        f"\nAbout {plural(max(1, round(guess.minutes)), 'minute')}, estimated from measured speeds "
+        "(less with a warm cache)."
     )
     calls = f"{guess.embed_texts} texts to embed and {guess.rerank_calls} reranking calls"
     lines.append(f"Up to {calls}. Local models cost nothing.")
@@ -85,7 +86,7 @@ def board_text(board: dict[str, Any], chosen: str | None) -> str:
     title = f"Leaderboard: {board['stage']}s ({board['metric']}, held-out)"
     lines = [section(title), table(["", "pipeline", "overall", *categories], rows), _verdict(board)]
     for name, count in sorted(board["too_few"].items()):
-        lines.append(f"{name}: too few to rank ({count} held-out questions).")
+        lines.append(f"{name}: too few to rank ({plural(count, 'held-out question')}).")
     for name, label in sorted(board["category_leaders"].items()):
         lines.append(f"On {name}, {label} leads (separably).")
     if board["smallest_difference"]:

@@ -39,13 +39,15 @@ Then, as everywhere in ragcourt, the suggestion is **measured**, not trusted.
 From the bundled example (`examples/doctor.py`), one recommended built-in chunker and one the model wrote:
 
 ```text
-sentence:size=120: worse than the best baseline, fixed:size=60,overlap=0 (-0.18 [-0.30, -0.05]).
-doctor-19bf2b3c: no significant difference from the best baseline, fixed:size=60,overlap=0 (+0.12 [-0.01, +0.24]).
+sentence:size=120: no significant difference from the best baseline, fixed:size=60,overlap=0 (-0.15 [-0.30, +0.00]).
+doctor-19bf2b3c: no significant difference from the best baseline, fixed:size=60,overlap=0 (+0.00 [-0.15, +0.15]).
 ```
 
-The numbers are the difference from the best built-in and its paired 95% interval (chapter 11). The
-first interval is all below 0: clearly worse. The second contains 0: it may be a little better, but these
-questions cannot tell. The written chunker is named `doctor-<hash>` in leaderboards.
+The numbers are the difference from the best built-in and its paired 95% interval (chapter 11), over
+the same kinds of questions the leaderboard ranks. Both intervals contain 0: on these few questions
+neither suggestion can be told apart from the best built-in, so neither is called better. With an
+interval all above 0 the verdict would be "better than", all below 0 "worse than". The written chunker is
+named `doctor-<hash>` in leaderboards.
 
 A model's opinion of your documents is a good place to start; it is not evidence. This is why every
 suggestion goes through the same measurement as everything else.

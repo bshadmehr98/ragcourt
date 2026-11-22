@@ -8,6 +8,7 @@ from ragcourt.core.blame import MEANINGS
 from ragcourt.io import run_files
 from ragcourt.io.html_report import write_report
 from ragcourt.io.project import AddParser, open_project
+from ragcourt.io.terminal import for_people
 
 NAME = "report"
 HELP = "write report.html for a run: one file, no network requests"
@@ -15,7 +16,7 @@ HELP = "write report.html for a run: one file, no network requests"
 
 def register(add_parser: AddParser, common: argparse.ArgumentParser) -> None:
     """Add ``report``."""
-    parser = add_parser(NAME, help=HELP, description=__doc__, parents=[common])
+    parser = add_parser(NAME, help=HELP, description=for_people(__doc__), parents=[common])
     parser.add_argument("run_id", nargs="?", metavar="RUN", help="a run id (default: the latest)")
     parser.set_defaults(run=run)
 

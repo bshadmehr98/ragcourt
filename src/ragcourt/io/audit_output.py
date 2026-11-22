@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from ragcourt.io.terminal import legend, section, table
+from ragcourt.io.terminal import legend, plural, section, table
 from ragcourt.types.audit import AuditReport, ChunkerAudit, Finding
 
 EXAMPLES_PER_CHECK = 2
@@ -35,10 +35,13 @@ def _header(report: AuditReport) -> str:
     limit = "unknown" if report.limit is None else f"{report.limit} tokens"
     sizes = "measured" if report.sizes_measured else "estimated (characters / 4)"
     skipped = f", {len(report.skipped)} skipped" if report.skipped else ""
-    return (
-        f"Audit of {report.documents} documents{skipped} with {len(report.results)} chunkers.\n"
-        f"Sizes: {sizes}, by {report.embedder}; input limit: {limit}."
-    )
+    chunkers = plural(len(report.results), "chunker")
+    lines = [
+        f"Audit of {plural(report.documents, 'document')}{skipped} with {chunkers}.",
+        f"Sizes: {sizes}, by {report.embedder}; input limit: {limit}.",
+    ]
+    lines += [f"  skipped {path}: {reason}" for path, reason in report.skipped]
+    return "\n".join(lines)
 
 
 def _size_row(result: ChunkerAudit) -> list[object]:

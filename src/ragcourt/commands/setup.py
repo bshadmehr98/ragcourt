@@ -17,7 +17,7 @@ from ragcourt.io.config_template import config_text
 from ragcourt.io.machine import gpu_gb, ram_gb
 from ragcourt.io.project import AddParser, Project, ProjectOptions, open_project
 from ragcourt.io.prompts import load_prompts
-from ragcourt.io.terminal import table
+from ragcourt.io.terminal import for_people, table
 
 NAME = "setup"
 HELP = "once per machine: check Ollama, recommend models that fit, pull them after you agree"
@@ -28,7 +28,7 @@ OLLAMA_HELP = (
 
 def register(add_parser: AddParser, common: argparse.ArgumentParser) -> None:
     """Add ``setup``."""
-    parser = add_parser(NAME, help=HELP, description=__doc__, parents=[common])
+    parser = add_parser(NAME, help=HELP, description=for_people(__doc__), parents=[common])
     parser.add_argument("--yes", action="store_true", help="pull the missing models without asking")
     parser.set_defaults(run=run)
 

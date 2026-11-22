@@ -14,6 +14,7 @@ from ragcourt.flows.doctor import DoctorOptions, run_doctor
 from ragcourt.flows.questions import QuestionOptions
 from ragcourt.io.documents import load_documents
 from ragcourt.io.project import AddParser, open_project
+from ragcourt.io.terminal import for_people
 
 NAME = "doctor"
 HELP = "a model recommends (and may write) a chunker; everything is measured; code runs only if you approve"
@@ -21,7 +22,7 @@ HELP = "a model recommends (and may write) a chunker; everything is measured; co
 
 def register(add_parser: AddParser, common: argparse.ArgumentParser) -> None:
     """Add ``doctor``."""
-    parser = add_parser(NAME, help=HELP, description=__doc__, parents=[common])
+    parser = add_parser(NAME, help=HELP, description=for_people(__doc__), parents=[common])
     parser.add_argument("folder", type=Path, help="the documents")
     parser.add_argument(
         "--approve", metavar="SHA256", help="run the generated chunker if its hash is exactly this"

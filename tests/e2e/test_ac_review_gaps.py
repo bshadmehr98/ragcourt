@@ -140,7 +140,8 @@ def test_ac32_too_few_to_rank_is_said_and_kept_out(
     assert code == 0
     for board_ in results_of(project)["boards"]:
         for name, count in board_["too_few"].items():
-            assert count < 4 and f"{name}: too few to rank ({count} held-out questions)." in out
+            held = f"{count} held-out question" + ("" if count == 1 else "s")
+            assert count < 4 and f"{name}: too few to rank ({held})." in out
 
 
 def test_ac33_the_probes_change_the_blame(

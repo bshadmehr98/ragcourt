@@ -22,7 +22,7 @@ from ragcourt.core.doctor import (
     samples_text,
     validate,
 )
-from ragcourt.core.leaderboard import Scoring, board, by_category
+from ragcourt.core.leaderboard import Scoring, board, by_category, ranked_categories, values
 from ragcourt.core.relevance import token_map
 from ragcourt.core.stats import paired_difference, resamples, separable
 from ragcourt.core.verdicts import fill
@@ -113,7 +113,8 @@ def _generated(
     path.write_text(code, encoding="utf-8")
     say(f"\nThe chunker the model wrote ({path}):\n\n{code}\nSHA-256: {digest}\n{NOT_A_SANDBOX}")
     if not _approved(options.approve, digest):
-        say("Not run.")
+        mismatch = options.approve is not None
+        say("Not run: --approve does not match this code's SHA-256." if mismatch else "Not run.")
         return None
     try:
         return _register(path, digest, corpus, options.timeout)
@@ -205,7 +206,7 @@ def _best_baseline(evaluations: list[Evaluation], leaderboard: Board, baselines:
 
 
 def _by_category(evaluation: Evaluation, scoring: Scoring) -> dict[str, list[float]]:
-    values: dict[str, list[float]] = {}
-    for category, members in by_category(scoring.questions).items():
-        values[category] = [evaluation.results[question.id].metrics[scoring.metric] for question in members]
-    return values
+    """The categories the leaderboard ranks (not those too few to rank), so verdict and board agree."""
+    ranked, _ = ranked_categories(scoring.questions, scoring.min_per_category)
+    groups = by_category(scoring.questions)
+    return {name: values(evaluation, groups[name], scoring.metric) for name in ranked}

@@ -19,10 +19,10 @@ from ragcourt.types.config import ROLES, Budget, Config, Endpoint, QuestionSetti
 CONFIG_FILE = "ragcourt.toml"
 Table = dict[str, Any]
 TOP_KEYS = {
-    "stages_dir": "the folder of your own stages (design §7.2)",
+    "stages_dir": "the folder of your own stages",
     "seed": "the seed of every random choice",
     "ollama_url": "where Ollama answers (default http://localhost:11434)",
-    "prompts_dir": "a folder of your own prompt files (design §6.6)",
+    "prompts_dir": "a folder of your own prompt files",
     "models": "[models]: the model of each role (writer, judge, embedders, reranker, doctor)",
     "endpoints": "[endpoints.NAME]: an OpenAI-compatible endpoint (base_url, api_key_env)",
     "prices": "[prices]: dollars per million tokens, by model",

@@ -14,6 +14,7 @@ from ragcourt.io import question_file
 from ragcourt.io.documents import load_documents
 from ragcourt.io.project import AddParser, open_project
 from ragcourt.io.question_output import show_text, summary_text
+from ragcourt.io.terminal import for_people
 
 NAME = "questions"
 HELP = "write the question set (the writer and judge models), or `questions show` to read it"
@@ -21,7 +22,7 @@ HELP = "write the question set (the writer and judge models), or `questions show
 
 def register(add_parser: AddParser, common: argparse.ArgumentParser) -> None:
     """Add ``questions`` and its options."""
-    parser = add_parser(NAME, help=HELP, description=__doc__, parents=[common])
+    parser = add_parser(NAME, help=HELP, description=for_people(__doc__), parents=[common])
     parser.add_argument("folder", help="the documents, or `show` to list the question set")
     parser.add_argument("--questions", type=int, metavar="N", help="questions per category (default 90)")
     parser.add_argument(

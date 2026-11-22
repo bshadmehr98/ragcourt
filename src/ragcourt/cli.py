@@ -14,11 +14,13 @@ from typing import TextIO
 
 from ragcourt.commands import audit, cache, doctor, explain, models, prompts, questions, rank, report, setup
 from ragcourt.errors import BudgetExceeded, RagCourtError
-from ragcourt.io.project import ProjectOptions
+from ragcourt.io.lock import workdir_lock
+from ragcourt.io.project import WORKDIR, ProjectOptions
 from ragcourt.io.terminal import printable
 
 COMMANDS = [setup, models, prompts, audit, questions, rank, explain, report, doctor, cache]
 BUDGET_EXIT = 4
+WRITERS = {"audit", "questions", "rank", "doctor", "cache"}  # commands that write the working folder
 
 
 def common_options() -> argparse.ArgumentParser:
@@ -65,7 +67,7 @@ def _run(argv: list[str] | None) -> int:
     args = build_parser().parse_args(argv)
     args.options = ProjectOptions(Path.cwd(), args.config, args.stages, args.workdir, args.seed)
     try:
-        return int(args.run(args))
+        return _command(args)
     except BudgetExceeded as error:
         print(f"ragcourt: {error}", file=sys.stderr)
         return BUDGET_EXIT
@@ -78,6 +80,13 @@ def _run(argv: list[str] | None) -> int:
     except KeyboardInterrupt:
         print("ragcourt: interrupted; `rank --resume` continues where it stopped.", file=sys.stderr)
         return 130
+
+
+def _command(args: argparse.Namespace) -> int:
+    if args.command not in WRITERS:
+        return int(args.run(args))
+    with workdir_lock(args.workdir or Path.cwd() / WORKDIR):
+        return int(args.run(args))
 
 
 class SafeStream:

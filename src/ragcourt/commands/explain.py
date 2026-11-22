@@ -9,6 +9,7 @@ from ragcourt.core.blame import MEANINGS
 from ragcourt.io import run_files
 from ragcourt.io.explain_output import explain_text, show_text
 from ragcourt.io.project import AddParser, open_project
+from ragcourt.io.terminal import for_people
 
 NAME = "explain"
 HELP = "every missed question of a run: the stage, the mechanism, the evidence and the fix"
@@ -16,7 +17,7 @@ HELP = "every missed question of a run: the stage, the mechanism, the evidence a
 
 def register(add_parser: AddParser, common: argparse.ArgumentParser) -> None:
     """Add ``explain``."""
-    parser = add_parser(NAME, help=HELP, description=__doc__, parents=[common])
+    parser = add_parser(NAME, help=HELP, description=for_people(__doc__), parents=[common])
     parser.add_argument("run_id", nargs="?", metavar="RUN", help="a run id (default: the latest)")
     parser.add_argument(
         "--show", metavar="QUESTION-ID", help="one miss with the chunk boundaries around its quote"

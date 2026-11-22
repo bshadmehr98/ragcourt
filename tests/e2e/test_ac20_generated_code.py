@@ -48,7 +48,17 @@ def test_not_run_without_a_yes_or_with_another_hash(
     assert "dropped 'magic'" in out and "sentence:size=100:" in out
     assert "doctor-" not in out.split("Not run.")[1]
     code, out, _ = run_doctor(rank_project, corpus, run, GOOD, "--approve", "0" * 64)
-    assert "Not run." in out
+    assert "Not run: --approve does not match this code's SHA-256." in out
+
+
+def test_code_with_hidden_characters_is_refused_before_it_is_shown(
+    rank_project: tuple[Path, FakeOllamaState], corpus: Path, run: Run
+) -> None:
+    hiding = "def chunk(text):\n    return [text]  # \x1b[1A\x1b[2K\n"
+    out = run_doctor(rank_project, corpus, run, hiding)[1]
+    assert "Rejected: the code holds control or bidirectional characters" in out and "SHA-256" not in out
+    trojan = "def chunk(text):\n    return [text]  # \u202e reversed\n"
+    assert "Rejected:" in run_doctor(rank_project, corpus, run, trojan)[1]
 
 
 def test_a_hanging_or_inventing_chunker_is_rejected(
@@ -79,3 +89,8 @@ def test_an_approved_valid_chunker_is_measured_with_the_baselines(
         word in verdicts[0] for word in ("no significant difference from", "better than", "worse than")
     )
     assert "the best baseline" in verdicts[0] and "[" in verdicts[0]
+    tied = [line for line in out.splitlines() if line.startswith("=  ")]
+    for line in out.splitlines():  # the verdict agrees with the board: tied rows are never better or worse
+        name_of = line.split(":")[0]
+        if "the best baseline" in line and any(row.split()[1].startswith(name_of) for row in tied):
+            assert "no significant difference from" in line

@@ -19,6 +19,7 @@ from ragcourt.io.documents import load_documents
 from ragcourt.io.html_report import write_report
 from ragcourt.io.project import AddParser, open_project
 from ragcourt.io.rank_output import summary_text
+from ragcourt.io.terminal import for_people
 
 NAME = "rank"
 HELP = "rank pipelines on your documents with intervals, and blame every miss (shows its plan first)"
@@ -34,7 +35,7 @@ def names(text: str | None, separator: str = ",") -> tuple[str, ...] | None:
 
 def register(add_parser: AddParser, common: argparse.ArgumentParser) -> None:
     """Add ``rank`` and its options."""
-    parser = add_parser(NAME, help=HELP, description=__doc__, parents=[common])
+    parser = add_parser(NAME, help=HELP, description=for_people(__doc__), parents=[common])
     parser.add_argument("folder", type=Path, help="the documents")
     parser.add_argument(
         "--resume", action="store_true", help="continue the last unfinished run with the same plan"

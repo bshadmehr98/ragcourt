@@ -21,6 +21,7 @@ from ragcourt.errors import ConfigError
 from ragcourt.io.audit_output import audit_data, audit_text
 from ragcourt.io.documents import load_documents
 from ragcourt.io.project import AddParser, Project, open_project, try_embedder
+from ragcourt.io.terminal import for_people
 from ragcourt.stages.specs import check_params, parse_spec
 from ragcourt.text_units import estimate_tokens
 from ragcourt.types import Corpus, Embedder
@@ -44,7 +45,7 @@ FAIL_EXIT = 3
 
 def register(add_parser: AddParser, common: argparse.ArgumentParser) -> None:
     """Add ``audit`` and its options."""
-    parser = add_parser(NAME, help=HELP, description=__doc__, parents=[common])
+    parser = add_parser(NAME, help=HELP, description=for_people(__doc__), parents=[common])
     parser.add_argument("folder", type=Path, help="the documents to audit")
     parser.add_argument("--json", action="store_true", help="print the audit as JSON")
     parser.add_argument(
@@ -71,6 +72,11 @@ def run(args: argparse.Namespace) -> int:
         raise ConfigError(f"Unknown check {', '.join(unknown)}; the checks are {', '.join(CODES)}.")
     project = open_project(args.options)
     corpus = load_documents(args.folder)
+    if not corpus.documents:
+        reasons = "".join(f"\n  skipped {entry.path}: {entry.reason}" for entry in corpus.skipped)
+        raise ConfigError(
+            f"No documents to audit in {args.folder}: give .md, .txt, .rst or .html files.{reasons}"
+        )
     name = args.embedder or project.config.role("embedders").models[0]
     embedder, reason = try_embedder(project, name)
     specs = args.chunker or [*NATIVE_CHUNKERS, *project.user_stage_names("chunker")]

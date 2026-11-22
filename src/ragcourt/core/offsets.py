@@ -38,7 +38,7 @@ def chunk_spans(document: Document, pieces: list[str], chunker: str) -> list[Chu
         if span is None:
             raise ChunkNotInSource(
                 f"Chunker {chunker!r} returned chunk {position} of {document.id!r}, which is not in the "
-                f"source: {piece[:80]!r}. A chunker must return text from the document (design §4.2)."
+                f"source: {piece[:80]!r}. A chunker must return text from the document, unchanged."
             )
         start, end = span
         chunks.append(Chunk(document.id, len(chunks), start, end, document.text[start:end]))

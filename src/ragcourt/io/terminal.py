@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 from collections.abc import Sequence
 
 
@@ -60,6 +61,19 @@ PRINTABLE = {code: f"\\x{code:02x}" if code < 0x100 else f"\\u{code:04x}" for co
 def printable(text: str) -> str:
     """``text`` with every character that could hide or rewrite what is shown written as an escape."""
     return text.translate(PRINTABLE)
+
+
+DESIGN_REFERENCE = re.compile(r"\s*\((?:design |brief )?(?:§|D-)[^)]*\)")
+
+
+def for_people(text: str | None) -> str:
+    """A module docstring as help text: without references into the design, which users do not have."""
+    return DESIGN_REFERENCE.sub("", text or "").replace("``", "`")
+
+
+def plural(count: int, word: str) -> str:
+    """``1 document``, ``2 documents``."""
+    return f"{count} {word}" if count == 1 else f"{count} {word}s"
 
 
 def section(title: str) -> str:
