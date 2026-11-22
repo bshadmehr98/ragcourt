@@ -214,7 +214,7 @@ def _step(
         step, evaluations, Scoring(split.held_out, metric, config.questions.min_held_out, split.held_draws)
     )
     state.boards.append(leaderboard)
-    say(board_text(board_data(leaderboard), _chosen_note(choice, leaderboard)))
+    say(board_text(board_data(leaderboard), _chosen_note(choice)))
     labels = [evaluation.spec.label for evaluation in evaluations]
     state.steps.append(
         {
@@ -227,13 +227,13 @@ def _step(
     run_files.log_progress(evaluator.folder, {"step": step, "event": "end", "chosen": choice.best.label})
 
 
-def _chosen_note(choice: Choice, leaderboard: Board) -> str:
-    """The chosen entry, and why it may differ from the held-out leader."""
+def _chosen_note(choice: Choice) -> str:
+    """The chosen entry, and the rule that chose it among ties (a held-out disagreement is said under
+    the board)."""
     note = choice.best.label
     if choice.tied:
-        note += f" (tied on dev with {len(choice.tied)} more; kept the cheaper, then the higher on dev, then the smaller)"
-    if leaderboard.winner is not None and leaderboard.winner != choice.best:
-        note += "\nDev and held-out questions disagree here; with this few questions the choice is uncertain."
+        rule = "kept the cheaper, then the higher on dev, then the smaller"
+        note += f" (tied on dev with {len(choice.tied)} more; {rule})"
     return note
 
 
