@@ -44,6 +44,10 @@ The design is in [design/current.md](https://github.com/bshadmehr98/ragcourt/blo
 and [design/decisions.md](https://github.com/bshadmehr98/ragcourt/blob/main/design/decisions.md). Contributors: [CONTRIBUTING.md](https://github.com/bshadmehr98/ragcourt/blob/main/CONTRIBUTING.md); AI coding
 tools: [AGENTS.md](https://github.com/bshadmehr98/ragcourt/blob/main/AGENTS.md).
 
+Security problems: privately, as [SECURITY.md](https://github.com/bshadmehr98/ragcourt/blob/main/SECURITY.md)
+says. Everyone taking part follows the
+[code of conduct](https://github.com/bshadmehr98/ragcourt/blob/main/CODE_OF_CONDUCT.md).
+
 ## License
 
 Apache-2.0. Copyright 2026 Bahman Shadmehr.

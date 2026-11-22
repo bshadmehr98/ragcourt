@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Learn ragcourt (the tutorial)
+    url: https://github.com/bshadmehr98/ragcourt/blob/main/tutorial/README.md
+    about: Every feature, from zero, before opening an issue.
+  - name: Report a security problem
+    url: https://github.com/bshadmehr98/ragcourt/security/advisories/new
+    about: Privately, please; see SECURITY.md.
