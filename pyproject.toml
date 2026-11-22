@@ -94,6 +94,7 @@ max-statements = 30
 "scripts/**" = ["T201", "D103"]
 "src/ragcourt/cli.py" = ["T201"]          # the command line prints
 "src/ragcourt/commands/*.py" = ["T201"]   # commands write output for people
+"src/ragcourt/errors.py" = ["N818"]       # the error names of design §14 say what happened without "Error"
 
 [tool.pyright]
 include = ["src", "tests", "scripts"]
