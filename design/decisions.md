@@ -428,3 +428,46 @@ the designer's, open to the owner's review. Code comments refer to entries by nu
   A typo that is silently ignored would run with a setting the user believes is off (D-030: nothing
   happens blindly). Each step of the milestone adds its settings to the one list in `io/config.py`.
 - **Status:** designer's choice.
+
+## D-040: Reading real documents  (2026-11-22)
+
+- **Found** by loading real corpora (design/history/0004-real-data.md) and by the step-1 reviews:
+  HTML pages of real sites are mostly menus (the Python docs, Wikipedia); HTML may leave out `</tr>`,
+  `</td>` and `</head>`, and the first version dropped whole tables or the whole body when it did; a
+  byte-order mark hid a file's first heading; one unreadable file stopped the whole load.
+- **Choice:** keep only the main content when a page marks it (`<main>`, `role="main"`) and always drop
+  `<nav>` and `<aside>`; close implied end tags as a browser does; inside a table everything is cell
+  text; drop a leading byte-order mark; skip and report unreadable files and links to folders; refuse a
+  single file of another kind. Site-specific clutter that is not marked (Wikipedia's language list) is
+  left for the audit's `boilerplate.repeated` check.
+- **Status:** designer's choice.
+
+## D-041: Ollama embeddings: one text per call, the limit in force measured  (2026-11-22)
+
+- **Measured** on Ollama 0.34.4 (design/history/0004-real-data.md): `/api/embed` returns one
+  `prompt_eval_count` for the whole call (4 + 8 tokens gave 12), so per-text counts need one text per
+  call, and that was no slower (nomic 98 vs 95 texts/s, mxbai 52 vs 49, bge-m3 40 vs 42). Inputs over the
+  limit are cut silently by default (`truncate: false` gives HTTP 400). The limit in force is the
+  smallest of the model's context length, `num_ctx` and `num_batch`: `bge-m3` cut at 2,048 of its 8,192
+  until `num_batch` was raised; `all-minilm` cut at 256 of 512.
+- **Choice:** an embedder returns token counts with its vectors (`Embedded`); the `ollama` embedder sends
+  one text per call with `num_ctx` and `num_batch` set to the context length, and measures the limit in
+  force once per model with an over-long probe (its count is the limit). Design §4.3, §7.1 and §11.1 are
+  updated. Open for step 3: how a stage receives the client (a factory parameter), and the client's other
+  routes (`/api/show`, `/api/tags`, `/api/pull`, `/rerank`), seed and temperature in `ChatRequest`.
+- **Status:** designer's choice, from measurement.
+
+## D-042: Query and document prefixes  (2026-11-22)
+
+- **Question:** several embedding models document different prefixes for questions and for passages
+  (`nomic-embed-text`: `search_query:` / `search_document:`; `mxbai-embed-large`: an instruction before
+  queries; `embeddinggemma`: task prompts). An embedder that cannot tell a question from a chunk cannot
+  use them.
+- **Measured** on Chroma's chunking-evaluation questions (hit@5 over 800-character chunks): with and
+  without the documented prefixes, nomic 57 vs 58 of 62 and 106 vs 107 of 116, mxbai 62 vs 62 and 92 vs
+  95, embeddinggemma 62 vs 62 and 109 vs 105. The effect is small and goes both ways, which is a reason to
+  measure it on the user's documents rather than assume it.
+- **Choice:** `Embedder.embed(texts, *, as_query=False)`; the `ollama` embedder takes `query_prefix` and
+  `document_prefix` parameters, with each known model's documented prefixes as its defaults, shown in the
+  plan (D-030); the cache keys on the exact text sent, prefix included.
+- **Status:** designer's choice.

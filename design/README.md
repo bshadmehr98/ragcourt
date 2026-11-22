@@ -59,6 +59,9 @@ Answer generation and judging answers, vector databases, images, audio, video, a
 | [`history/0001-owner-brief.md`](history/0001-owner-brief.md) | the owner's brief, word for word |
 | [`history/0000-research.md`](history/0000-research.md) | what exists already (AutoRAG, Chroma's chunking study, chunkvet, ragblame, Ragas and others), the name checks, what is still to research |
 | [`history/0002-local-models.md`](history/0002-local-models.md) | local models measured on the owner's machine: embedders, question writers, judges, the first-minute estimate |
+| [`history/0003-question-categories.md`](history/0003-question-categories.md) | whether a local model can write questions of each category, and code can check them |
+| [`history/0004-real-data.md`](history/0004-real-data.md) | step 1 on real corpora; what Ollama's embedding API really reports (counts per call, limits in force) |
+| [`history/0005-rag-datasets.md`](history/0005-rag-datasets.md) | public RAG datasets and how well each fits ragcourt's verbatim-quote gold |
 | [`decisions.md`](decisions.md) | the owner's answers and the designer's choices, each open to review |
 
 ## How this is being built

@@ -141,11 +141,16 @@ never written in the file (D-016).
 
 ### 4.1 Loading documents
 
-`.md`, `.markdown`, `.txt`, `.rst` and `.html`/`.htm` (text extracted with the standard library's
-`html.parser`, keeping headings as Markdown-style `#` lines so heading checks work the same). Files are
-read as UTF-8 (a file that fails is reported and skipped, never guessed). Line endings are normalised to
-`\n`; nothing else in the text is changed, so offsets are offsets into what the user wrote. Hidden
-folders and `.ragcourt/` are skipped. PDF is not in 0.1 (D-022).
+`.md`, `.markdown`, `.txt`, `.rst` and `.html`/`.htm`. HTML is read with the standard library's
+`html.parser` into Markdown-shaped text: headings as `#` lines, tables as `| a | b |` rows under a
+`| --- |` line, `<pre>` as fenced code, so the audit reads it like Markdown; end tags HTML lets authors
+leave out are closed where a browser would close them; when the page marks its main content (`<main>`
+or `role="main"`) only that is kept, and `<nav>` and `<aside>` are always dropped, so a site's menus do
+not become part of every document (D-040). Files are read as UTF-8, a leading byte-order mark dropped; a
+file that is not UTF-8 or cannot be read is reported and skipped, never guessed. Line endings are
+normalised to `\n`; nothing else in the text is changed, so offsets are offsets into what the user wrote
+(an external set of gold offsets, such as Chroma's, matched 790 of 790). Hidden files and folders and
+`.ragcourt/` are skipped; a link to a folder is reported, not followed. PDF is not in 0.1 (D-022).
 
 ### 4.2 Offsets: from strings to spans
 
@@ -163,9 +168,15 @@ Empty and whitespace-only strings are dropped and counted. Chunks are kept in th
 
 ### 4.3 Token counts
 
-Chunk sizes are counted in the **embedder's own tokens** (brief §5). For an Ollama embedder the count is
-the one Ollama reports when it embeds the chunk (`prompt_eval_count`) and the input limit comes from
-`/api/show`, so nothing else is needed. Any other embedder states its tokenizer: `tiktoken:<encoding>` or
+Chunk sizes are counted in the **embedder's own tokens** (brief §5), and an embedder returns them with
+the vectors (`Embedded`, §7.1). For an Ollama embedder each text is sent in its own call, because Ollama
+reports one `prompt_eval_count` per call, not per text; one text per call measured no slower than
+batches (D-041). The input limit **in force** is not simply `/api/show`'s context length: Ollama cuts
+the input silently at the smallest of the context length, the request's `num_ctx` and its `num_batch`
+(`bge-m3` advertises 8,192 tokens and used 2,048 by default; `all-minilm` 512 and 256). The `ollama`
+embedder sets both options to the context length, and measures the limit in force once per model with an
+over-long probe text, whose count is the limit; that measured limit is what `size.over_limit` and
+`chunker.over_limit` use. Any other embedder states its tokenizer: `tiktoken:<encoding>` or
 `hf:<tokenizer id>` (both through the optional `tokens` extra), or a function of its own. When no count can be
 loaded, sizes use the fallback estimate (characters / 4) and every size and every "over the limit" flag
 from it is labelled **estimated** in every output; a measured count is labelled **measured** (D-008).
@@ -352,7 +363,7 @@ questions".
 | Kind | Signature (in `types`) | Notes |
 |---|---|---|
 | chunker | `(text: str) -> list[str]` | the pipeline finds offsets (§4.2) |
-| embedder | an `Embedder`: `model`, `max_tokens`, `tokenizer`, `embed(texts: list[str]) -> list[list[float]]` | called in batches; never caches (the cache wraps it, §10.2) |
+| embedder | an `Embedder`: `model`, `max_tokens`, `tokenizer`, `embed(texts, *, as_query=False) -> Embedded` (vectors and token counts) | `as_query` lets a model use its query prefix (D-042); never caches (the cache wraps it, §10.2) |
 | retriever | `(chunks: list[str], vectors: list[list[float]] \| None, embed_query) -> search(query, depth) -> list[(index, score)]` | builds its index once per chunk set |
 | reranker | `(query: str, candidates: list[str]) -> list[float]` | scores; the pipeline sorts |
 
@@ -626,7 +637,8 @@ A full run is long (writing about 540 questions, then the search), so it is neve
 `types`, with two dialects (D-007):
 
 - **`ollama`** (the default; `http://localhost:11434`): chat with JSON output and thinking turned off,
-  embeddings with their token counts, `/api/show` for input limits and sizes, `/api/ps` and `/api/tags`
+  embeddings with their token counts (one text per call, `num_ctx` and `num_batch` set to the context
+  length, D-041), `/api/show` for context lengths and sizes, `/api/ps` and `/api/tags`
   for what is loaded and installed, and `/api/pull` only from `setup`, after the user agrees.
 - **`openai`**: any OpenAI-compatible endpoint (a hosted API, llama.cpp, vLLM, LM Studio): chat
   completions, embeddings, and the `/rerank` route of §7.3.
@@ -874,13 +886,15 @@ is removed, except guarantee 26, which needs real models and is a marked test in
 
 Updated as the milestone's steps land.
 
-**Implemented** (step 1 of 9, foundations): the `types` package (documents, stage signatures, the
-`ModelClient` protocol); the errors of §14; the stage registry with its four decorators, the built-in
-folders and the user's `ragcourt_stages/` (§7.2); reading documents, HTML included (§4.1);
-`ragcourt.toml` with its first setting, `stages_dir` (§3.3, D-039); `ragcourt.testing` with
-`FakeEmbedder`, `ScriptedModel` and the bundled corpus (§15.2). Guarantee 22 passes; guarantee 18 passes
-for the registry and is extended when `audit` (step 2) and `rank` (step 5) exist. The repository, its gate
-(with the import-layer and simplicity checks) and its workflow exist.
+**Implemented** (step 1 of 9, foundations): the `types` package (documents, stage signatures with
+`Embedded` and `as_query`, the `ModelClient` protocol); the errors of §14; the stage registry with its four
+decorators, the built-in folders and the user's `ragcourt_stages/` (§7.2); reading documents, HTML
+included (§4.1, D-040); `ragcourt.toml` with its first setting, `stages_dir` (§3.3, D-039);
+`ragcourt.testing` with `FakeEmbedder`, `ScriptedModel` and the bundled corpus (§15.2). Tried on real
+corpora ([history/0004](history/0004-real-data.md)). Guarantee 22 passes; guarantee 18 passes for the
+registry and is extended when `audit` (step 2) and `rank` (step 5) exist. The hand-checked
+`questions.jsonl` of §15.2 comes with step 4. The repository, its gate (with the import-layer and
+simplicity checks) and its workflow exist.
 
 **Planned:** steps 2 to 9 of milestone 1, the whole of 0.1 (owner, D-029), in the order of
 [`changes/0001-initial-design.md`](changes/0001-initial-design.md).
