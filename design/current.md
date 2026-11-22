@@ -7,7 +7,8 @@ check; §17 says what is built and what is still planned. The smaller choices ar
 [`decisions.md`](decisions.md). Section numbers are stable: code comments and the skills refer to them
 ("design §9.1").
 
-**Status:** proposed; nothing is built.
+**Status:** proposed, and revised after the owner's first answers (2026-11-22: a local model from the
+first run, a model judge, Ollama); nothing is built.
 
 ## 1. What it does
 
@@ -16,21 +17,23 @@ their own documents, it **audits** how a chunker cuts them (no model needed), **
 embedding models, retrievers and rerankers by measuring them against questions whose gold answers are
 exact quotes from the documents, **explains** each failed question by naming the one stage that lost it
 and what would fix it, and lets a model act as a **doctor** that proposes, and may write, a chunker that
-is then measured like any other. Code decides every number and every blame; a model only writes
-questions and, in `doctor`, suggestions.
+is then measured like any other. It runs on **local models** through Ollama out of the box, or on any
+OpenAI-compatible endpoint the user configures. Code decides every number and every blame; a model
+writes questions, a **judge** model filters them, and in `doctor` a model makes suggestions.
 
 ### Goals
 
-- A first useful result in under a minute with no API key: `ragdoctor audit <folder>` (brief §1; D-006).
+- A first useful result in under a minute with no API key: `ragdoctor rank <folder>` on local models
+  through Ollama, after a one-time `ragdoctor setup` (brief §1; D-006, D-027).
 - Numbers measured on the user's documents, with their uncertainty, never general advice (brief §1, §5).
 - Every failed question has one named cause and a suggested fix (brief §1, §4).
 - A newcomer reads the whole codebase in an evening and adds a stage in one file (brief §1, §7, §9).
 
 ### Non-goals (0.1)
 
-Answer generation and its evaluation; model judges of any kind; vector databases (indexes are in memory);
+Answer generation and judging generated answers; vector databases (indexes are in memory);
 images, audio, video and scanned documents; a hosted service; telemetry; a web server; a full grid
-search; fine-tuning anything (brief §11).
+search; fine-tuning anything (brief §11, with model judges allowed by the owner's answer, D-012).
 
 ### Who it is for
 
@@ -58,6 +61,9 @@ a chunker, an embedding model, a retriever and a reranker, and wants evidence fr
 | **check** | one audit rule with a stable code, such as `cut.mid_sentence` (§5.1) |
 | **measured / estimated** | a token count from the embedder's own tokenizer, or from the fallback estimate (§4.3) |
 | **run** | one `rank` invocation: its plan, its estimate, its results file (§13.3) |
+| **local model** | a model served by Ollama on this machine (§11.1) |
+| **judge** | a chat model that grades a closed-book answer or a question's validity against the quote; never used for blame or metrics (§6.6) |
+| **quick run** | the first-minute `rank`: about 40 questions, the default embedders on the default chunker (§10.1) |
 
 ## 3. Architecture
 
@@ -104,11 +110,11 @@ Stages that need a model (an endpoint embedder, an endpoint reranker) receive a 
 | `core/search.py` | the greedy plan and its estimate | §10 |
 | `io/loaders.py` | reading documents | §4.1 |
 | `io/config.py` | `ragdoctor.toml` | §3.3 |
-| `io/client.py` | the one model client | §11 |
+| `io/client.py` | the one model client (Ollama and OpenAI-compatible dialects) | §11 |
 | `io/cache.py` | the embedding cache | §10.2 |
-| `io/questions.py` | generating, validating and storing questions | §6 |
+| `io/questions.py` | generating, filtering (code rules and the judge) and storing questions; the judge's self-test | §6 |
 | `io/report.py` | the results file, terminal tables, the HTML report | §13 |
-| `commands/audit.py`, `rank.py`, `explain.py`, `doctor.py` | one command each | §5, §8–§10, §9, §12 |
+| `commands/setup.py`, `audit.py`, `rank.py`, `explain.py`, `doctor.py` | one command each | §11.3, §5, §8–§10, §9, §12 |
 | `cli.py` | `ragdoctor …` | §13.1 |
 | `testing/` | `FakeEmbedder`, `ScriptedModel`, the bundled corpus | §15.2 |
 
@@ -146,9 +152,10 @@ Empty and whitespace-only strings are dropped and counted. Chunks are kept in th
 
 ### 4.3 Token counts
 
-Chunk sizes are counted in the **embedder's own tokens** (brief §5). An embedder states its tokenizer:
-`tiktoken:<encoding>` or `hf:<tokenizer id>` (both through the optional `tokens` extra, loaded from a
-local file or a one-time download the user starts), or a function of its own. When the tokenizer cannot be
+Chunk sizes are counted in the **embedder's own tokens** (brief §5). For an Ollama embedder the count is
+the one Ollama reports when it embeds the chunk (`prompt_eval_count`) and the input limit comes from
+`/api/show`, so nothing else is needed. Any other embedder states its tokenizer: `tiktoken:<encoding>` or
+`hf:<tokenizer id>` (both through the optional `tokens` extra), or a function of its own. When no count can be
 loaded, sizes use the fallback estimate (characters / 4) and every size and every "over the limit" flag
 from it is labelled **estimated** in every output; a measured count is labelled **measured** (D-008).
 
@@ -158,10 +165,12 @@ and punctuation by a regular expression, on the source text), so they are compar
 
 ## 5. Audit
 
-`ragdoctor audit <folder> [--chunker NAME[:k=v,…]]… [--embedder NAME] [--show DOC]`. No model, no
-network, no key. With no `--chunker`, every built-in native chunker is audited with its defaults; the
-input limit and tokenizer come from `--embedder` (a name in the built-in table of known models, or the
-configured one), or the check `size.over_limit` is skipped and the output says so.
+`ragdoctor audit <folder> [--chunker NAME[:k=v,…]]… [--embedder NAME] [--show DOC]`. No key and no
+chat model. With no `--chunker`, every built-in native chunker is audited with its defaults. Sizes and
+the input limit come from the embedder: by default the first default local embedder through Ollama
+(measured, §4.3), or `--embedder`. When no embedder is reachable the audit still runs, sizes are
+labelled estimated, and `size.over_limit` uses the limit from the built-in table of known models or is
+skipped with a note.
 
 ### 5.1 Checks
 
@@ -192,13 +201,14 @@ checks fires (for CI).
 
 ### 6.1 Generation
 
-`ragdoctor rank` (or `ragdoctor questions` alone) asks the configured chat model to write questions.
+`ragdoctor rank` (or `ragdoctor questions` alone) asks the question writer to write questions: the
+default local chat model (D-027), or the configured one.
 Passages are sampled from the documents (not from any chunker's output: brief §3), with a fixed seed,
 proportional to document length: windows of about 2,000 characters cut at paragraph boundaries. For
 each window the model returns JSON: a list of `{question, quote, style}` with `style` in `paraphrase`
 (different words from the source) or `keyword` (the terms a user would type into a search box). The
 prompt asks for a quote of one to three sentences that answers the question on its own. The target is
-100 questions by default (`--questions N`).
+100 questions by default, about 40 in a quick run (`--questions N`).
 
 ### 6.2 Validation and filters
 
@@ -206,12 +216,19 @@ Applied in order, each drop counted by reason and reported:
 
 1. **Not verbatim:** the quote is searched in the window's document, first exactly, then with
    whitespace runs treated as equal (D-010). Not found: dropped (brief §3). Found: the gold is the span.
-2. **Too short or too long:** quotes under 5 or over 120 reference tokens.
+2. **Code rules** (D-028): a quote of fewer than 6 words, with no sentence (a bare name, a single line of
+   code) or over 120 reference tokens; a `paraphrase` question of fewer than 3 words; a missing or unknown
+   `style`.
 3. **Duplicate:** a question whose quote overlaps an earlier question's quote by more than half, or whose
    text is a near-duplicate of an earlier question.
-4. **Answerable without the documents:** the model is asked the question with no documents; if its answer
-   contains at least half of the quote's content words (reference tokens minus a fixed stop-word list),
-   the question is dropped. Computed by code, not judged by a model (D-012).
+4. **Not valid** (judge, §6.6): the judge is asked whether the question is a real question a user could
+   ask and whether the quote answers it; "no" drops it.
+5. **Answerable without the documents** (judge, §6.6): the question writer answers with no documents and
+   is told to reply `UNKNOWN` when it does not know. `UNKNOWN` keeps the question without a judge call;
+   any other answer goes to the judge with the quote, and an answer graded correct drops the question
+   (D-012).
+
+Each kept and dropped question stores its verdicts with the judge's reasons, so the user can read why.
 
 The question set never refers to chunks; it depends only on the documents' text. If a document changes,
 its questions are revalidated against the new text and dropped when the quote is gone.
@@ -221,7 +238,7 @@ its questions are revalidated against the new text and dropped when the quote is
 `--questions-file my.jsonl`: one JSON object per line with `question` and `quote`, and optionally
 `document` (otherwise every document is searched; a quote found in more than one place is rejected as
 ambiguous unless `document` is given). They are validated by rule 1 only and tagged `style: user`; user
-questions are never dropped for being answerable without the documents. A question without a quote
+questions are never dropped by the judge (D-025). A question without a quote
 cannot be scored and is rejected with that reason (D-025).
 
 ### 6.4 Splits
@@ -237,6 +254,22 @@ questions. With fewer than 30 held-out questions the output warns that intervals
 "seed": …, "dropped": {reason: count}}`, then one question per line: `id`, `question`, `style`,
 `document`, `start`, `end`, `quote`, `split`. Reused by later runs while the corpus hash matches; a newer
 `format_version` is refused with a message.
+
+### 6.6 The judge
+
+A judge is a chat model (by default the question writer; `--judge MODEL` for another) asked one of two
+fixed, versioned prompts: **validity** (is this a real question, and does the quote answer it?) and
+**closed-book** (does this answer state the specific fact the quote gives? a refusal, `UNKNOWN`, a guess or
+a generic answer is not correct). It replies JSON `{verdict, reason}`; a reply that is not valid JSON is
+retried once, then the question is kept and the failure counted.
+
+Before its verdicts are used, a judge passes a **self-test** (D-026): about 40 labelled cases bundled with
+ragdoctor (correct, wrong, generic and refused answers; valid and invalid questions). Below 90% agreement
+the model is refused as judge, its errors are shown, and the run stops with a message naming better
+candidates. The result is cached per model and prompt version and printed in every run's output.
+
+Judges filter questions and, as the `llm` reranker (§7.3), may order candidates. They never decide blame
+(§9) or compute a metric (§8).
 
 ## 7. Stages
 
@@ -276,11 +309,13 @@ code and run in-process like any Python they write (D-018); code written by a mo
 | chunker | `recursive` (paragraphs, lines, sentences, words, down to a size) | — |
 | chunker | `sentence` (whole sentences packed to a size) | — |
 | chunker | `markdown` (sections by heading, heading kept, then `recursive` inside) | — |
+| embedder | `ollama` (any Ollama embedding model; measured token counts and limit) | Ollama |
 | embedder | `endpoint` (any OpenAI-compatible `/embeddings`) | an endpoint |
 | retriever | `dense` (cosine, exact, in memory) | an embedder |
 | retriever | `bm25` (pure Python) | — |
 | retriever | `hybrid` (reciprocal-rank fusion of `dense` and `bm25`) | an embedder |
 | reranker | `none` | — |
+| reranker | `llm` (a chat model orders the top 20 in one listwise call; Ollama has no rerank route) | a chat model (D-015) |
 | reranker | `endpoint` (a `/rerank` endpoint in the Jina/Cohere format: vLLM, llama.cpp, TEI, Jina, Cohere) | an endpoint (D-015) |
 
 ### 7.4 Adapters and extras
@@ -396,6 +431,13 @@ the first listed is kept and the tie is reported. Candidates come from `ragdocto
 default every available built-in. Every evaluated configuration's held-out numbers appear in that stage's
 leaderboard; the "best overall pipeline" is the last step's choice, reported on held-out questions.
 
+**The quick run** is what `rank` does when there is no `ragdoctor.toml` and no `--full`: about 40
+questions, step 1 only (the default local embedders on the default chunker, `dense`, no reranker), the
+leaderboard with intervals, the ceilings and the blame of every held-out miss, then one line saying what
+the full search would add and its estimate. It is the first-minute result (D-006); its time is measured by
+a real-model test on the bundled corpus (§16, guarantee 26). The full search is `rank --full`, or any run
+with a configuration.
+
 ### 10.2 The cache
 
 Embeddings are cached in `.ragdoctor/cache.sqlite` by `sha256(model identity + "\0" + text)`, where the
@@ -417,21 +459,39 @@ as complete. Without `--yes`, a run estimated over one minute or over $0 asks be
 
 ### 11.1 The one client
 
-`io/client.py` speaks the OpenAI-compatible HTTP API with the standard library (`urllib`): chat
-completions (with JSON output where the server supports it, validated either way), embeddings, and the
-`/rerank` route of §7.3. "Local models" means a local server speaking this API (Ollama, llama.cpp, vLLM,
-LM Studio) or the in-process models of the `local` extra; both go through the same `ModelClient`
-protocol in `types` (D-007). Retries: timeouts, 429 and 5xx only, three times with backoff; other
+`io/client.py` is one client over the standard library (`urllib`) behind the `ModelClient` protocol in
+`types`, with two dialects (D-007):
+
+- **`ollama`** (the default; `http://localhost:11434`): chat with JSON output and thinking turned off,
+  embeddings with their token counts, `/api/show` for input limits and sizes, `/api/ps` and `/api/tags`
+  for what is loaded and installed, and `/api/pull` only from `setup`, after the user agrees.
+- **`openai`**: any OpenAI-compatible endpoint (a hosted API, llama.cpp, vLLM, LM Studio): chat
+  completions, embeddings, and the `/rerank` route of §7.3.
+
+The in-process cross-encoders of the `local` extra implement the same protocol. Replies that should be
+JSON are validated, and `<think>` blocks are removed before parsing. Retries: timeouts, 429 and 5xx only, three times with backoff; other
 failures stop with `EndpointError` naming the endpoint, the status and what to check. Batches are sized
-to the endpoint's limits and the model's input limit.
+to the endpoint's limits and the model's input limit. Model loads are counted apart from calls in the
+timing output, since the first call to an Ollama model includes loading it.
 
 ### 11.2 Privacy
 
-Nothing leaves the machine unless the user configured an endpoint, and then only to that endpoint: the
+Ollama on `localhost` is on the machine; with no configuration it is the only address ragdoctor
+contacts. Nothing leaves the machine unless the user configured an endpoint, and then only to that
+endpoint: the
 document windows for question generation and for `doctor`, the questions (alone, for the
-answerable-without-documents check), chunk texts for embedding and reranking. `audit` never opens a
-network connection. Keys are read from the environment variable the configuration names. No telemetry,
+answerable-without-documents check), the judge's prompts, chunk texts for embedding and reranking.
+`audit` contacts nothing but the local Ollama, and only for token counts and limits. Keys are read from the environment variable the configuration names. No telemetry,
 no update check. Logs never contain document text or keys. `docs/privacy.md` lists every call.
+
+### 11.3 Setup
+
+`ragdoctor setup`, once per machine: checks that Ollama answers on `localhost` (or says how to install
+and start it), reads the GPU memory and RAM Ollama reports, recommends models that fit from a small table
+justified by measurement (D-027; on an 8 GB GPU: `gemma4` as question writer and judge,
+`nomic-embed-text`, `embeddinggemma` and `mxbai-embed-large` as the quick embedders), shows their download
+sizes, pulls the missing ones only after the user agrees, and runs the judge's self-test (§6.6). It writes
+nothing but the self-test result in the cache. Any Ollama model can be named instead.
 
 ## 12. Doctor
 
@@ -461,9 +521,10 @@ no update check. Logs never contain document text or keys. `docs/privacy.md` lis
 ### 13.1 Commands
 
 ```text
+ragdoctor setup [--yes]
 ragdoctor audit <folder> [--chunker SPEC]… [--embedder NAME] [--show DOC] [--json] [--fail-on CODE…]
 ragdoctor questions <folder> [--questions N] [--questions-file FILE]
-ragdoctor rank <folder> [--questions-file FILE] [--metric NAME] [--k N] [--budget-usd X] [--budget-minutes M] [--yes] [--html]
+ragdoctor rank <folder> [--full] [--questions-file FILE] [--judge MODEL] [--metric NAME] [--k N] [--budget-usd X] [--budget-minutes M] [--yes] [--html]
 ragdoctor explain [RUN] [--show QUESTION-ID]
 ragdoctor doctor <folder> [--approve SHA256]
 ragdoctor cache clear
@@ -514,7 +575,8 @@ the tests, each with cases on purpose (a table, a code block, a running header, 
 section, plain prose), and a hand-checked `questions.jsonl`. `FakeEmbedder`: deterministic vectors from
 hashed word n-grams with a tokenizer and a limit, so similar texts are close and results are stable.
 `ScriptedModel`: returns scripted replies per request in order and records what it was sent, for
-question generation, the closed-book check and doctor.
+question generation, the closed-book answer, the judge (including its self-test) and doctor. A fake
+Ollama server on a free port (integration tests) answers the `ollama` dialect's routes.
 
 ### 15.3 Examples
 
@@ -532,10 +594,11 @@ and reranking to its blame and fix, with real output from the bundled corpus.
 ## 16. Guarantees (acceptance cases)
 
 Each is a test `tests/e2e/test_ac<N>_<slug>.py` through the public API or CLI that fails if the feature
-is removed.
+is removed, except guarantee 26, which needs real models and is a marked test in `tests/real/`.
 
-1. **Audit needs nothing.** `ragdoctor audit` on the bundled corpus finishes with no network (sockets
-   blocked), no key and no model, and reports every check of §5.1 on the document planted for it.
+1. **Audit needs no key and no chat model.** `ragdoctor audit` on the bundled corpus reports every check
+   of §5.1 on the document planted for it; with sockets blocked (no Ollama) it still runs, with sizes
+   labelled estimated.
 2. **Checks are precise.** Each check fires on its planted case and not on its planted near miss (a
    sentence ending in an abbreviation, a heading repeated in the chunk, a table kept whole).
 3. **Offsets are found by code.** Overlapping chunks, repeated text and whitespace-changed chunks map to
@@ -546,8 +609,10 @@ is removed.
    counted by reason in the question file and the output.
 6. **Gold is independent of chunking.** The same question file scores every pipeline; changing the
    chunker changes no question, quote or split.
-7. **Closed-book questions are dropped.** A question the scripted model answers without the documents is
-   dropped by the code rule of §6.2; a user's question never is.
+7. **The judge filters, with its reasons.** A question the scripted answerer answers correctly without the
+   documents is dropped on the judge's verdict; an `UNKNOWN` answer keeps the question with no judge call;
+   an invalid question is dropped by the validity verdict; every verdict and reason is in the question
+   file; a user's question is never dropped by the judge.
 8. **User questions are accepted** with quote validation; an ambiguous or missing quote is rejected with
    its reason.
 9. **Search on dev, report on held-out.** Changing only held-out results never changes the chosen
@@ -571,8 +636,9 @@ is removed.
     only the configurations they list are evaluated.
 18. **A stage is one file.** A chunker in the user's `ragdoctor_stages/` appears in `audit` and `rank`
     with no other change; a duplicate name fails naming both files.
-19. **Nothing leaves without an endpoint.** With no endpoint configured no socket is opened in any
-    command; with one, only its host is contacted; no key appears in any file ragdoctor writes or logs.
+19. **Nothing leaves without an endpoint.** With no configuration, no address but Ollama on `localhost`
+    is contacted by any command; with an endpoint configured, only its host and the local Ollama are; no
+    key appears in any file ragdoctor writes or logs.
 20. **Generated code is asked, isolated, validated and measured.** Doctor's chunker does not run when the
     answer is no or the hash differs; a hanging chunker is stopped by the timeout; an invalid output is
     rejected; a valid one is ranked with the baselines and called better only with a significant
@@ -585,6 +651,15 @@ is removed.
     leaderboard, interval, tie and miss of the results file.
 24. **Examples and docs run.** Every example and every Python block in the docs runs; the walk-through of
     `docs/one-question.md` matches the bundled corpus's real output.
+25. **The judge proves itself first.** A scripted judge that grades refusals as correct fails the
+    self-test, is refused with its errors shown, and no question is filtered by it; one that passes is
+    used, and its score appears in the output.
+26. **The first minute** (a real-model test, marker `real_model`, not in the default suite). On the bundled
+    corpus with the default local models already pulled, `ragdoctor rank` with no configuration prints a
+    leaderboard with intervals and a cause for every held-out miss in under 60 s on the reference machine
+    (an 8 GB RTX 4060 laptop); the measured time is printed and recorded.
+27. **Setup asks before pulling.** `setup` never downloads a model without the user's yes (or `--yes`), and
+    shows each model's size first.
 
 ## 17. Implemented and planned
 
@@ -594,7 +669,8 @@ Updated as milestones land.
 §3.1) and its workflow exist.
 
 **Planned** (the milestones of [`changes/0001-initial-design.md`](changes/0001-initial-design.md)):
-M1 audit; M2 rank and explain; M3 the HTML report; M4 doctor.
+M1 audit and the first ranking on local models; M2 the full search and explain; M3 the HTML report; M4
+doctor.
 
 ## 18. Known limits (0.1)
 
@@ -602,4 +678,7 @@ Chunkers must return text found in the source (no added context or rewriting); t
 PDF, no images); one language's stop words and sentence rules (English) for the closed-book check and
 `cut.mid_sentence`; exact in-memory search (fine to about 200k chunks); intervals are wide with few
 held-out questions; the greedy search can miss a combination that only wins jointly; `retrieval` blame
-does not separate the embedder from the retriever unless the search measured an alternative.
+does not separate the embedder from the retriever unless the search measured an alternative; question
+quality and the judge's verdicts are only as good as the local model (the self-test guards the judge, not
+the writer); the first minute assumes the models are already pulled and a GPU like the owner's (8 GB);
+on CPU only it will be slower.

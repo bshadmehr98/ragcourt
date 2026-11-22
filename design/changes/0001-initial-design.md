@@ -3,7 +3,13 @@
 ## Status
 
 `proposed` (2026-11-22), from the owner's brief ([history/0001-owner-brief.md](../history/0001-owner-brief.md)).
-Waiting for the owner's acceptance; no product code is written until then. The designer's choices
+Waiting for the owner's acceptance; no product code is written until then.
+
+**Revised 2026-11-22** after the owner's first answers: the first result uses a local model (Ollama),
+not the model-free audit; a model judge filters questions (the brief's exclusion of judges was wrong);
+generated-code approval and user questions are accepted; the repository goes under `bshadmehr98` with a
+new name containing "rag". What local models can do on the owner's machine was measured first
+([history/0002-local-models.md](../history/0002-local-models.md)) and shaped the revision. The designer's choices
 inside the brief are in [decisions.md](../decisions.md); the ones marked "awaiting owner" are the questions
 below.
 
@@ -52,20 +58,23 @@ filters, user questions and a dev/held-out split (§6); four stage kinds, one fi
 decorator, with native stages and thin adapters as extras (§7); the pipeline, relevance, metrics and
 intervals with ties (§8); blame, ceilings and measured fixes (§9); greedy search, the cache, the estimate
 and the budget (§10); one model client and privacy (§11); doctor with approval, isolation, validation and
-measurement (§12); output (§13); errors (§14); tests, docs and examples (§15); 24 guarantees (§16).
+measurement (§12); output (§13); errors (§14); tests, docs and examples (§15); 27 guarantees (§16).
 
-Designer's choices within the brief: no core dependencies (D-003); `audit` is the first-minute result
-(D-006); local servers through the same client, an in-process extra for embedders and rerankers (D-007);
-measured or labelled token counts (D-008) and a fixed reference tokenization for token metrics (D-009);
-the split and the paired bootstrap (D-011); the closed-book check by word overlap (D-012); `retrieval` as
-one blame stage (D-014); rerankers through `/rerank` (D-015); approval by answer or hash (D-017).
+The owner's answers: the first minute is a quick `rank` on local models (D-006); Ollama is the local
+runtime (D-007); a model judge filters questions (D-012). Designer's choices: no core dependencies
+(D-003); one client with an `ollama` and an `openai` dialect (D-007); token counts measured through
+Ollama or a tokenizer, otherwise labelled (D-008); a fixed reference tokenization for token metrics
+(D-009); the split and the paired bootstrap (D-011); `retrieval` as one blame stage (D-014); `llm`,
+`endpoint` and `cross-encoder` rerankers (D-015); the judge's self-test (D-026); default models chosen by
+measurement, `gemma4` on an 8 GB GPU (D-027); code rules before the judge (D-028); the first ranking in
+milestone 1 (D-029).
 
 ### Milestones
 
 | Milestone | Delivers | Guarantees |
 |---|---|---|
-| M1: audit | `types`, `errors`, the stage registry and user folder, the four native chunkers, `core/offsets`, `core/audit` with the eight checks, `io/loaders`, `io/config`, token counting with the `tokens` extra and the model table, `commands/audit`, `cli` (`audit`), the bundled corpus, examples `quickstart`, `boundaries`, `own_chunker`, `docs/audit.md` and `docs/stages.md` | 1, 2, 3, 4, 18, 22 |
-| M2: rank and explain | `io/client` (chat, embeddings, `/rerank`), `io/cache`, `io/questions` (generation, filters, user questions, split, the question file), the embedders, retrievers and rerankers, the `local`, `chonkie` and `langchain` extras, `core/pipeline`, `metrics`, `stats`, `blame`, `search`, the estimate and budget, `commands/rank` and `explain`, `questions` and `cache clear`, the results file, `FakeEmbedder` and `ScriptedModel`, the remaining examples but two, `docs/questions.md`, `metrics.md`, `one-question.md`, `privacy.md`, the real-model tests | 5–17, 19, 21, 24 |
+| M1: audit and the first ranking | `types`, `errors`, the stage registry and user folder, the four native chunkers, `core/offsets`, `core/audit` with the eight checks, `io/loaders`, `io/config`, `io/client` (the `ollama` dialect), `setup`, the `ollama` embedder with measured token counts, `io/questions` (generation, code rules, the judge and its self-test, splits, the question file), `io/cache`, the `dense` retriever, `core/pipeline`, `metrics`, `stats`, `blame` (ceilings and causes), the quick run of `rank`, `cli` (`setup`, `audit`, `rank`), the bundled corpus, `FakeEmbedder`, `ScriptedModel` and a fake Ollama server, examples `quickstart`, `boundaries`, `own_chunker`, `questions`, `rank`, `docs/audit.md`, `stages.md`, `questions.md`, `privacy.md`, the first-minute real-model test | 1–13, 15, 18, 19, 21, 22, 25, 26, 27 |
+| M2: the full search and explain | the `openai` dialect, the `endpoint` embedder, `bm25` and `hybrid`, the `llm`, `endpoint` and `cross-encoder` rerankers, the `tokens`, `local`, `chonkie` and `langchain` extras, `core/search` (greedy, all four steps), the estimate and budget, measured fixes, `explain`, `questions` and `cache clear`, the results file in full, the remaining examples but two, `docs/metrics.md` and `one-question.md` | 14, 16, 17, 24 |
 | M3: the HTML report | `io/report` HTML from the results file, `rank --html`, `report`, the audit summary in it, example `report` | 23 |
 | M4: doctor | `commands/doctor`: sampling, description, recommendations, the generated chunker with approval, the subprocess runner, validation and measurement against the baselines; example `doctor` | 20 |
 
@@ -74,18 +83,20 @@ updated, the docs and the changelog in step, and a short demo for the owner on t
 
 ## Consequences
 
-- A developer gets an audit of their chunks in seconds with nothing configured, and, with a model, a
-  ranking whose every number is measured on their documents with its interval, and a cause and fix for
-  every miss.
+- A developer with Ollama gets, after a one-time `setup`, a first ranking of local embedders on their own
+  documents in about a minute, with intervals and a cause for every miss, and the audit of their chunks in
+  seconds; the full search and fixes follow with `rank --full`.
+- Question filtering rests on a local judge; the self-test makes a bad judge visible and refuses it, but
+  question quality still depends on the local model (measured on one corpus only so far).
 - Fair comparison of chunkers rests on span gold; the price is that chunkers which add or rewrite text
   cannot be evaluated in 0.1 (§18).
 - Blame is transparent and testable, and coarse: `retrieval` lumps the embedder and the retriever unless
   the search measured an alternative.
 - The core has no dependencies and plain-Python scoring; very large corpora (beyond about 200k chunks) are
   slow until an optional accelerator exists.
-- Question quality depends on the chat model; the filters and the drop counts make that visible, not
-  better. Small local models may drop many questions (unresearched, [0000-research.md](../history/0000-research.md) §5).
-- The name is crowded (D-001).
+- The first minute is an estimate (about 60 s on the owner's machine) until the end-to-end real-model test
+  measures it in milestone 1.
+- The name is still to be picked (D-001).
 
 ## Migration and compatibility
 
@@ -96,15 +107,16 @@ public Python API is `ragdoctor` with an explicit `__all__`.
 
 ## Open questions for the owner
 
-1. **The name** (D-001): keep `ragdoctor` despite `rag-doctor` on PyPI and two RAG-diagnosis
-   `ragdoctor` repositories on GitHub, or choose another (`retrievalscope` is clear) before publishing?
-2. **The first minute** (D-006): is `audit` with no model the result you meant, or must `rank` itself run
-   in under a minute without a key (which would mean a bundled tiny embedder and no generated questions)?
-3. **Local models** (D-007): are local OpenAI-compatible servers plus an optional in-process extra for
-   embedders and rerankers what you meant by "local models"? No in-process chat model in 0.1.
-4. **The closed-book filter** (D-012): word overlap by code is crude; acceptable, or should it wait until
-   model judges are in scope?
-5. **Generated code** (D-017): is approval by answer or exact hash, with an honest "not a sandbox", enough
-   for 0.1?
-6. **User questions** (D-025): must they carry a quote, and should they skip the closed-book filter?
-7. **Where it lives** (D-004): `bshadmehr98/ragdoctor`, `honeworks`, or private for now?
+Answered on 2026-11-22: the name will contain "rag" and be unused (pick pending), the first result uses a
+local model, Ollama, a model judge, generated-code approval, user questions, the repository under
+`bshadmehr98`. Still open:
+
+1. **The name** (D-001): pick one of the candidates in [decisions.md](../decisions.md#d-001-the-name)
+   (for example `ragculprit`, `ragsleuth`, `ragbisector`, `ragpinpoint`, `ragcaliper`).
+2. **Milestone 1** (D-029): it now includes the first ranking on local models (question writing, the
+   judge, the default embedders, intervals, blame), not only the audit. Agreed?
+3. **The judge's self-test** (D-026): refuse a judge below 90% agreement on bundled labelled cases?
+4. **Default local models** (D-027): `gemma4` as question writer and judge, `nomic-embed-text`,
+   `embeddinggemma` and `mxbai-embed-large` for the quick run, chosen from today's measurements?
+5. **Still from the first round:** the 50/50 split with a paired bootstrap for ties (D-011), and `retrieval`
+   as one blame stage (D-014).
