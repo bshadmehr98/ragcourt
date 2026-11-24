@@ -17,14 +17,20 @@ LEVELS = {
 
 def explain_text(results: dict[str, Any], mechanisms: dict[str, str], *, quiet: bool) -> str:
     """Each miss, then the counts, then the legend of every cause used."""
-    lines = [f"Run {results['run']}: {results['chosen']}", ""]
-    for blame in results["blames"]:
-        lines += _miss(blame)
+    lines = [f"Run {results['run']}: {results['chosen']}", "", *misses_text(results["blames"])]
     lines += causes_text(results)
     used = sorted({blame["mechanism"] for blame in results["blames"]})
     if not quiet and used:
         lines += ["", legend({**{name: mechanisms[name] for name in used}, **LEVELS})]
     return "\n".join(lines) + "\n"
+
+
+def misses_text(blames: list[dict[str, Any]]) -> list[str]:
+    """Each miss with its cause, evidence and fix, as ``explain`` prints it."""
+    lines: list[str] = []
+    for blame in blames:
+        lines += _miss(blame)
+    return lines
 
 
 def _miss(blame: dict[str, Any]) -> list[str]:

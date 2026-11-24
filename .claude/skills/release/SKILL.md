@@ -13,6 +13,9 @@ argument-hint: "<version>"
    SemVer; while on 0.x, a breaking change bumps the minor version.
 4. `CHANGELOG.md`: the unreleased section becomes `## [<version>] - <YYYY-MM-DD>`; add an empty
    unreleased section above it. Change records built in this release: `implemented in <version>`.
+   If the results format, the bundled corpus or a default model changed since the recording in
+   `src/ragcourt/demo/` was made (`recording.json` has its date and command), record it again with real
+   models, as design §13.1 says.
 5. `verify-before-done` (with `real-model-tests` run, or the reason they were not), then `open-pr`
    (claude[bot] reviews it). The maintainer merges.
 6. After the merge, on `main`: `git tag -a v<version> -m "ragcourt <version>"`. **Ask the maintainer

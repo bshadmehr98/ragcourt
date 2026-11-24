@@ -1,0 +1,7 @@
+{
+ "date": "2026-11-24",
+ "machine": "an Intel i9-14900HX laptop with an NVIDIA RTX 4060 (8 GB), Ollama 0.34.4",
+ "ragcourt": "0.1.0",
+ "command": "ragcourt rank CORPUS --questions 90 --k 1 --yes",
+ "note": "k = 1 (only the top chunk counts), so that 13 short documents show misses to explain"
+}

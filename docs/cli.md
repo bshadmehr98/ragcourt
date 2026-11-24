@@ -1,6 +1,7 @@
 # The command line
 
 ```text
+ragcourt demo
 ragcourt setup [--yes]
 ragcourt models [set ROLE MODEL[,MODEL…]] [test judge] [--yes]
 ragcourt prompts [show NAME]
@@ -23,6 +24,7 @@ Every command also takes `--workdir DIR`, `--config FILE`, `--stages DIR`, `--se
 
 | Command | Calls a model? | What it does |
 |---|---|---|
+| `demo` | no, and nothing else either | a live audit of the bundled documents, then a real run on them, recorded and labelled as recorded; writes `.ragcourt/demo/report.html` |
 | `setup` | Ollama, to list and pull models (after your yes), and the judge's self-test | once per machine |
 | `models` | only `models test judge` and `models set judge` | show or change the model of each role |
 | `prompts` | no | list every prompt a model is given, print one exactly |
@@ -59,6 +61,7 @@ by `;`: `--chunkers "recursive:size=256,overlap=32;markdown"`.
 | `judge/<hash>.json` | the judge's self-test, per model and prompt version |
 | `runs/<run-id>/` | `plan.json`, `progress.jsonl`, `configs/*.json`, `results.json`, `report.html` |
 | `doctor/<hash>.py` | code a model wrote, kept for you to read |
+| `demo/report.html` | the report of the recorded run `ragcourt demo` shows |
 
 In CI, `ragcourt audit docs/ --fail-on split.table cut.mid_sentence` fails the build (exit 3) when those
 checks fire.

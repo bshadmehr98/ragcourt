@@ -665,3 +665,21 @@ the designer's, open to the owner's review. Code comments refer to entries by nu
 - **Also:** the steps of the greedy search moved from `flows/rank.py` to `flows/search_steps.py`, because
   the last step made `rank.py` pass the 250-line limit; nothing in them changed.
 - **Status:** designer's choice.
+
+## D-061: The demo's recording, as made  (2026-11-24)
+
+- **Found** by recording it: a real `rank` on the 13 bundled documents with the default models
+  (`--questions 90`) kept 39 questions (27 held-out) in 4.4 minutes on the owner's laptop; the documents
+  hold no more passages. Every category is therefore too few to rank and **no board names a winner**,
+  where [changes/0003](changes/0003-demo-and-readme.md) asked for a recording in which one does. With the
+  default k = 5 the chosen pipeline also missed nothing, so there was no miss to explain.
+- **Choice:** the recording is made with `--k 1` (only the top chunk counts), which gives three misses,
+  two of them `confirmed`; `recording.json` and the demo's first recorded line say so. No winner is named,
+  and the README says that too: lowering the minimum of 30 held-out questions to show one would be the
+  very thing ragcourt exists to refuse. A demo with a winner needs a larger corpus than the bundled one
+  (the FastAPI run of 71 minutes is the candidate) and would be its own change: it ships another project's
+  text.
+- **Also:** the recording lives in `src/ragcourt/demo/`, not in `testing/` as the record said, because
+  commands may not import `testing` (§3.1); its `questions.jsonl` is not shipped, since nothing reads it.
+  `build_report` moved from `commands/audit.py` to `flows/audit.py`, as two commands now share it.
+- **Status:** designer's choice.

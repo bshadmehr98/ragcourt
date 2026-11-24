@@ -12,13 +12,25 @@ from importlib.metadata import version
 from pathlib import Path
 from typing import TextIO
 
-from ragcourt.commands import audit, cache, doctor, explain, models, prompts, questions, rank, report, setup
+from ragcourt.commands import (
+    audit,
+    cache,
+    demo,
+    doctor,
+    explain,
+    models,
+    prompts,
+    questions,
+    rank,
+    report,
+    setup,
+)
 from ragcourt.errors import BudgetExceeded, RagCourtError
 from ragcourt.io.lock import workdir_lock
 from ragcourt.io.project import WORKDIR, ProjectOptions
 from ragcourt.io.terminal import printable
 
-COMMANDS = [setup, models, prompts, audit, questions, rank, explain, report, doctor, cache]
+COMMANDS = [demo, setup, models, prompts, audit, questions, rank, explain, report, doctor, cache]
 BUDGET_EXIT = 4
 WRITERS = {"audit", "questions", "rank", "doctor", "cache"}  # commands that write the working folder
 

@@ -21,6 +21,16 @@ ragcourt setup
 4. Writes `ragcourt.toml`, with one line per model and a comment saying what each does.
 5. Tests the judge model on 40 known cases (chapter 9).
 
+## See it first
+
+```text
+ragcourt demo
+```
+
+In under a minute, with no model and no network: an audit of a small bundled set of documents, computed
+on the spot, then a real ranking of them recorded with local models (the output says when and on which
+machine), three of its misses explained, and the report as one HTML page.
+
 ## Try everything without models first
 
 ragcourt ships a small set of made-up documents (a fictional job queue called Larkspur) and fake models,

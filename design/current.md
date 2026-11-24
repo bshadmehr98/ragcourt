@@ -130,8 +130,9 @@ own file and the package's `__init__.py` holds the ordered list.
 | `io/terminal.py`, `io/narration.py`, `io/audit_output.py`, `io/question_output.py`, `io/rank_output.py`, `io/explain_output.py`, `io/result_data.py`, `io/html_report.py` | everything written for people, rendered from data | §13 |
 | `io/project.py`, `io/ask.py`, `io/machine.py`, `io/isolated_run.py` | a command's view of the project; asking before what cannot be undone; memory of the machine; running generated code apart | §3.3, §11.3, §12 |
 | `core/external.py`, `flows/external.py`, `core/blame/retrieval.py` | the user's own pipeline: its texts placed in the documents; asked, scored and blamed | §7.5 |
-| `flows/questions.py`, `flows/judge.py`, `flows/evaluate.py`, `flows/probes.py`, `flows/blames.py`, `flows/run_plan.py`, `flows/rank.py`, `flows/search_steps.py`, `flows/results.py`, `flows/doctor.py` | the parts of `questions`, `rank` and `doctor` | §6 to §12 |
+| `flows/audit.py`, `flows/questions.py`, `flows/judge.py`, `flows/evaluate.py`, `flows/probes.py`, `flows/blames.py`, `flows/run_plan.py`, `flows/rank.py`, `flows/search_steps.py`, `flows/results.py`, `flows/doctor.py` | the parts of `questions`, `rank` and `doctor` | §6 to §12 |
 | `commands/<command>.py` | one command per file | §13.1 |
+| `demo/results.json`, `demo/recording.json` | the recorded real run `ragcourt demo` replays, and when, where and how it was made | §13.1 |
 | `prompts/*.txt`, `prompts/judge_cases.jsonl` | every prompt a model is given, and the judge's labelled self-test cases | §6.6 |
 | `cli.py`, `__main__.py` | `ragcourt …`, `python -m ragcourt` | §13.1 |
 | `testing/` | the fake embedder, the scripted model and replies, fake Ollama and endpoint servers, `offline_project`, the bundled corpus | §15.2 |
@@ -772,6 +773,7 @@ reranker) and `doctor` (§12). Changing one is one command or one line (D-031):
 ### 13.1 Commands
 
 ```text
+ragcourt demo
 ragcourt setup [--yes]
 ragcourt models [set ROLE MODEL[,MODEL…]] [test judge] [--yes]
 ragcourt prompts [show NAME]
@@ -791,6 +793,15 @@ ragcourt cache clear
 Common: `--workdir`, `--config`, `--stages DIR`, `--seed`, `--json`, `-q`. Exit codes: 0 done, 1 error, 2
 usage, 3 a `--fail-on` check fired, 4 stopped by the budget, 130 interrupted (`--resume` continues).
 `docs/cli.md` describes each.
+
+`ragcourt demo` (change 0003) shows what ragcourt finds with no model and no network: the audit of the
+bundled corpus by two chunkers, computed now with estimated sizes (the local Ollama is not contacted
+either); then the boards, the summary and three misses of a real `rank` on that corpus, recorded once with
+the default local models and shipped in the package (`ragcourt/demo/results.json`, with `recording.json`
+saying the date, the machine, the command and why). The line naming the recording comes before any
+recorded number; every recorded number is printed by the functions `rank` and `explain` use. It writes one
+file, `.ragcourt/demo/report.html`. The recording is made again when the results format, the bundled
+corpus or a default model changes.
 
 ### 13.2 Terminal output
 
@@ -947,6 +958,13 @@ is removed, except guarantee 26, which needs real models and is a marked test in
     the quote-alone probe, `embedder.exact_words` from `embedder.meaning` by the keyword rank, and
     `chunker.over_limit` by the quote's token position.
 
+36. **The demo needs nothing.** With sockets blocked, `ragcourt demo` exits 0, contacts no address, prints
+    the live audit, then the recorded boards and misses under a line naming the recording's date, models
+    and machine, and writes a self-contained `report.html` and no other file.
+37. **The demo is real output.** The recording loads as the current `format_version`; what `demo` prints
+    for it is what `rank`'s boards and summary and `explain` print for the same file; the README's excerpt
+    is found in that output.
+
 Guarantees 34 and 35 are proposed in [changes/0002](changes/0002-established-packages.md).
 
 38. **A quick look never names a winner.** `rank --quick` prints in its plan that it cannot name one and
@@ -971,7 +989,10 @@ Guarantees 34 and 35 are proposed in [changes/0002](changes/0002-established-pac
 **Implemented** (milestone 1, all nine steps): everything in §1 to §16. Every guarantee of §16 has its test
 in `tests/e2e/` (guarantee 26 also in `tests/real/`, run against Ollama with `gemma4` and
 `nomic-embed-text`). Tried on real corpora ([history/0004](history/0004-real-data.md)); real runs on the
-bundled corpus take about two minutes with eight questions per category.
+bundled corpus take about two minutes with eight questions per category. Changes
+[0003](changes/0003-demo-and-readme.md) (`demo`), [0004](changes/0004-quick-look.md) (`rank --quick`),
+[0005](changes/0005-pdf.md) (PDF) and [0006](changes/0006-your-own-pipeline.md) (your own pipeline) are
+implemented, with guarantees 36 to 42.
 
 **Planned** (after 0.1): converters for public datasets with quote gold (history/0005); multi-quote
 questions.

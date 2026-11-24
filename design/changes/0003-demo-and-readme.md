@@ -2,7 +2,7 @@
 
 ## Status
 
-`accepted` (approved by the maintainer 2026-11-24; proposed the same day). The owner's answers: the README shows text, no image; `demo` prints the report's path and opens nothing.
+`implemented in 0.1` (accepted by the maintainer 2026-11-24, proposed the same day; what building it changed is D-061). The owner's answers: the README shows text, no image; `demo` prints the report's path and opens nothing.
 
 ## Context
 

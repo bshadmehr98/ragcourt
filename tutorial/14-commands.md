@@ -6,6 +6,7 @@
 | `ragcourt models` | each role, its model, where the choice came from, installed or not, the judge's test | no |
 | `ragcourt models set ROLE MODEL` | change a role's model in `ragcourt.toml` (comments kept); a new judge is tested at once | the judge's self-test |
 | `ragcourt models test judge` | run the judge's self-test again, case by case | the judge |
+| `ragcourt demo` | a live audit and a recorded real run of the bundled documents, in seconds | no, and no network |
 | `ragcourt prompts` / `prompts show NAME` | list every prompt with its hash / print one exactly | no |
 | `ragcourt audit FOLDER` | check how chunkers cut your documents (chapter 4) | the embedder, only to count tokens |
 | `ragcourt questions FOLDER` | write, resume or reuse the question set (chapter 8) | writer and judge |

@@ -8,6 +8,9 @@ design changed is in [`design/changes/`](design/changes/).
 
 ### Added
 
+- `ragcourt demo`: in under a minute, with no model and no network, a live audit of the bundled documents
+  and a real run on them recorded with local models, labelled as recorded; the README now opens with its
+  output ([design/changes/0003-demo-and-readme.md](design/changes/0003-demo-and-readme.md)).
 - `ragcourt rank --pipeline NAME`: a retrieval system of your own, wrapped in one `@pipeline` function, is
   scored on the same questions and its misses are blamed; `--no-search` runs only yours
   ([design/changes/0006-your-own-pipeline.md](design/changes/0006-your-own-pipeline.md)).

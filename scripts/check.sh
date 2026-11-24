@@ -34,6 +34,7 @@ corpus = sorted(p.name for p in corpus_path().iterdir())
 assert len(corpus) == 13, f"the bundled corpus is not in the wheel: {corpus}"
 print("import ok:", m.__name__, m.__version__, "and the bundled corpus")
 PY
+(cd "$TMP" && "$TMP/venv/bin/ragcourt" demo -q > /dev/null && test -f .ragcourt/demo/report.html)   # the recording is in the wheel
 if [ -f examples/quickstart.py ]; then   # the README quickstart, with only the wheel installed
   (cd "$TMP" && "$TMP/venv/bin/python" "$OLDPWD/examples/quickstart.py")
 fi
