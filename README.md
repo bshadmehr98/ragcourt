@@ -24,7 +24,7 @@ ragcourt explain            # why each missed question was missed, and what woul
 ragcourt report             # the same as one HTML file
 ```
 
-Also: change any model with `ragcourt models set`, add your own chunker in one file, let `ragcourt
+PDFs: `pip install 'ragcourt[pdf]'`. Also: change any model with `ragcourt models set`, add your own chunker in one file, let `ragcourt
 doctor` suggest one, bring your own questions, resume long runs, set time and money budgets.
 
 ## Learn it

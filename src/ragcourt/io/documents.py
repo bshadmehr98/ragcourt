@@ -1,6 +1,7 @@
 """Reading the user's documents (design §4.1, D-040).
 
-Text formats only: Markdown, plain text, reStructuredText and HTML. Files are read as UTF-8 (a byte-order
+Markdown, plain text, reStructuredText and HTML; PDF with the optional extra ``pdf`` (``io/pdf_text.py``).
+Text files are read as UTF-8 (a byte-order
 mark at the start is dropped); a file that is not valid UTF-8, or cannot be read, is skipped and reported,
 never guessed. Line endings become ``\\n`` and nothing else in the text changes, so offsets are offsets
 into what the user wrote (HTML is the exception: its readable text is extracted first). Hidden files and
@@ -15,11 +16,13 @@ from pathlib import Path
 
 from ragcourt.errors import ConfigError
 from ragcourt.io.html_text import html_to_text
+from ragcourt.io.pdf_text import pdf_to_text
 from ragcourt.types import Corpus, Document, Skipped
 
 HTML_SUFFIXES = {".html", ".htm"}
 MAX_HTML_BYTES = 5 * 2**20  # the standard parser can need 150 times a hostile file's size in memory
-DOCUMENT_SUFFIXES = {".md", ".markdown", ".txt", ".rst", *HTML_SUFFIXES}
+PDF_SUFFIX = ".pdf"  # read with the optional extra `pdf`; skipped with the reason without it
+DOCUMENT_SUFFIXES = {".md", ".markdown", ".txt", ".rst", PDF_SUFFIX, *HTML_SUFFIXES}
 
 
 def load_documents(path: Path) -> Corpus:
@@ -60,27 +63,28 @@ def _load_files(files: list[Path], root: Path, skipped: list[Skipped]) -> Corpus
     documents: list[Document] = []
     for path in files:
         document_id = path.relative_to(root).as_posix()
-        if path.suffix.lower() in HTML_SUFFIXES and path.stat().st_size > MAX_HTML_BYTES:
-            skipped.append(
-                Skipped(document_id, f"HTML over {MAX_HTML_BYTES // 2**20} MB; convert it to text")
-            )
-            continue
-        try:
-            raw = path.read_bytes().decode("utf-8-sig")
-        except UnicodeDecodeError as error:
-            skipped.append(Skipped(document_id, f"not valid UTF-8 (byte {error.start}); save it as UTF-8"))
-            continue
-        except OSError as error:
-            skipped.append(Skipped(document_id, f"cannot be read: {error.strerror or error}"))
-            continue
-        documents.append(Document(id=document_id, text=_text_of(path, raw)))
+        text, reason = _read(path)
+        if reason:
+            skipped.append(Skipped(document_id, reason))
+        else:
+            documents.append(Document(id=document_id, text=text))
     documents.sort(key=lambda document: document.id)
     skipped.sort(key=lambda entry: entry.path)
     return Corpus(documents=tuple(documents), skipped=tuple(skipped))
 
 
-def _text_of(path: Path, raw: str) -> str:
+def _read(path: Path) -> tuple[str, str]:
+    """A file's text and "", or "" and the reason it is skipped."""
+    suffix = path.suffix.lower()
+    if suffix == PDF_SUFFIX:
+        return pdf_to_text(path)
+    if suffix in HTML_SUFFIXES and path.stat().st_size > MAX_HTML_BYTES:
+        return "", f"HTML over {MAX_HTML_BYTES // 2**20} MB; convert it to text"
+    try:
+        raw = path.read_bytes().decode("utf-8-sig")
+    except UnicodeDecodeError as error:
+        return "", f"not valid UTF-8 (byte {error.start}); save it as UTF-8"
+    except OSError as error:
+        return "", f"cannot be read: {error.strerror or error}"
     text = raw.replace("\r\n", "\n").replace("\r", "\n")
-    if path.suffix.lower() in HTML_SUFFIXES:
-        return html_to_text(text)
-    return text
+    return (html_to_text(text) if suffix in HTML_SUFFIXES else text), ""

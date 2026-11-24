@@ -7,7 +7,7 @@
 | `Not installed in Ollama: …` | a run needs a model Ollama doesn't have (checked before any question is written) | `ollama pull NAME`, or `ragcourt models set ROLE MODEL` |
 | `… is not installed. Pull it now?` | `models set` names a model Ollama doesn't have | answer yes; with no, `ragcourt.toml` is left unchanged |
 | `Score 80% on 40 labelled cases (90% needed): FAILED.` | the judge model is not reliable enough | a larger judge: `ragcourt models set judge gemma4` |
-| `No documents to rank` / `No documents to audit` | the folder has no `.md`, `.txt`, `.rst` or `.html` files | check the path; convert PDFs to text; the skipped files are listed with why |
+| `No documents to rank` / `No documents to audit` | the folder has no `.md`, `.txt`, `.rst`, `.html` or `.pdf` files | check the path; for PDFs install `ragcourt[pdf]`; the skipped files are listed with why |
 | `skipped …: not valid UTF-8` | a file in another encoding | save it as UTF-8 |
 | `Another ragcourt (process N) is using …` | a second ragcourt in the same working folder | wait, or use another `--workdir`; delete the `lock` file if no other ragcourt runs |
 | `Note: on held-out questions … is separably better than this choice` | the dev questions were too few to see a difference the held-out ones see | prefer that pipeline, or write more questions (`--questions 150`) |

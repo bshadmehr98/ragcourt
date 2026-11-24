@@ -4,7 +4,16 @@ import subprocess
 import sys
 
 # Libraries that only optional extras may bring in; importing ragcourt must not load any of them.
-OPTIONAL = ("tiktoken", "tokenizers", "sentence_transformers", "torch", "chonkie", "langchain", "numpy")
+OPTIONAL = (
+    "tiktoken",
+    "tokenizers",
+    "pypdf",
+    "sentence_transformers",
+    "torch",
+    "chonkie",
+    "langchain",
+    "numpy",
+)
 
 
 def test_core_import_pulls_no_extras() -> None:

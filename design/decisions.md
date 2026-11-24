@@ -229,6 +229,7 @@ the designer's, open to the owner's review. Code comments refer to entries by nu
 
 ## D-022: No PDF in 0.1  (2026-11-22)
 
+- **Replaced 2026-11-24** by [changes/0005](changes/0005-pdf.md) and D-059: PDF is read with the extra `pdf`.
 - **Choice:** text formats only (Markdown, text, reStructuredText, HTML). PDF extraction changes the text
   (columns, hyphenation, headers), which would make "verbatim" depend on the extractor; a `pdf` extra can
   come with its own change record.
@@ -636,3 +637,14 @@ the designer's, open to the owner's review. Code comments refer to entries by nu
   for local models, and labelled estimates otherwise. The unused `use_cache` switch of
   `Project.embedder` is deleted. Either could return through a change record.
 - **Status:** owner's choice.
+
+## D-059: The extra `pdf` is `pypdf`  (2026-11-24)
+
+- **Measured** on 2026-11-24: `pypdf` 7.1.1 installs 1.9 MB with no dependency on Python 3.11 or newer
+  (`uv pip install --target`), is BSD-3-Clause, and had six releases in the four weeks before. `pymupdf`
+  extracts better but is AGPL; `pdfplumber` brings `pdfminer.six` and is slower.
+- **Choice:** the optional extra `pdf = ["pypdf>=5"]` ([changes/0005](changes/0005-pdf.md)); the core still
+  imports no extra. The owner chose no de-hyphenation: the text stays what the extractor gave. A PDF with a
+  password is skipped even when `pypdf` could open it with an empty one. `.docx` stays out until it has
+  its own record.
+- **Status:** owner's choice (2026-11-24); the measurements are the designer's.

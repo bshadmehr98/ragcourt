@@ -15,4 +15,5 @@ behaviour is in [`../design/current.md`](../design/current.md).
 | [`blame.md`](blame.md) | why a question was missed: the stages, the mechanisms, the probes, confirmed or indicated, fixes |
 | [`stages.md`](stages.md) | the built-in stages, the extras, and how to write your own stage in one file |
 | [`one-question.md`](one-question.md) | one question followed from its document to its blame |
+| [`pdf.md`](pdf.md) | reading PDF with the extra `pdf`: what the text looks like, what is skipped and why |
 | [`privacy.md`](privacy.md) | what is read, what is sent to which address, what is stored where |

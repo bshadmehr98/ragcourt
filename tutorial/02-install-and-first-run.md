@@ -52,6 +52,7 @@ ragcourt report              # the same results as one HTML page
 ```
 
 `my_docs/` is a folder of `.md`, `.txt`, `.rst` or `.html` files. Subfolders are read too; hidden files
-and folders are skipped. PDF is not supported yet: convert it to text first.
+and folders are skipped. PDFs are read after `pip install 'ragcourt[pdf]'`; what to expect of their text
+is in [the PDF page](../docs/pdf.md).
 
 Next: [chunking](03-chunking.md).

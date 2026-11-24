@@ -19,9 +19,10 @@ from ragcourt.core.sizes import summarize
 from ragcourt.core.structure import structure_of
 from ragcourt.errors import ConfigError
 from ragcourt.io.audit_output import audit_data, audit_text
-from ragcourt.io.documents import load_documents
+from ragcourt.io.documents import PDF_SUFFIX, load_documents
+from ragcourt.io.pdf_text import extractor
 from ragcourt.io.project import AddParser, Project, open_project, try_embedder
-from ragcourt.io.terminal import for_people
+from ragcourt.io.terminal import for_people, plural
 from ragcourt.stages.specs import check_params, parse_spec
 from ragcourt.text_units import estimate_tokens
 from ragcourt.types import Corpus, Embedder
@@ -75,7 +76,7 @@ def run(args: argparse.Namespace) -> int:
     if not corpus.documents:
         reasons = "".join(f"\n  skipped {entry.path}: {entry.reason}" for entry in corpus.skipped)
         raise ConfigError(
-            f"No documents to audit in {args.folder}: give .md, .txt, .rst or .html files.{reasons}"
+            f"No documents to audit in {args.folder}: give .md, .txt, .rst, .html or .pdf files.{reasons}"
         )
     name = args.embedder or project.config.role("embedders").models[0]
     embedder, reason = try_embedder(project, name)
@@ -103,6 +104,9 @@ def build_report(
     note = f"{name} did not answer ({reason}); sizes are estimated." if reason else ""
     if limit is None:
         note += " The input limit is unknown, so size.over_limit is skipped."
+    pdfs = sum(1 for name in documents if name.lower().endswith(PDF_SUFFIX))
+    if pdfs:
+        note += f" {plural(pdfs, 'document')} from PDF, as text extracted by {extractor()}."
     results: list[ChunkerAudit] = []
     measured = embedder is not None
     for text in specs:

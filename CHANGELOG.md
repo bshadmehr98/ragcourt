@@ -8,6 +8,8 @@ design changed is in [`design/changes/`](design/changes/).
 
 ### Added
 
+- PDF documents with the optional extra `pdf` (`pip install 'ragcourt[pdf]'`); a PDF that cannot be read
+  is skipped with its reason ([design/changes/0005-pdf.md](design/changes/0005-pdf.md)).
 - `ragcourt rank --quick`: a quick look with 20 questions per category that shows where the misses are
   and never names a winner; the full run reuses its questions
   ([design/changes/0004-quick-look.md](design/changes/0004-quick-look.md)).

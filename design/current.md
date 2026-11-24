@@ -146,7 +146,7 @@ never written in the file (D-016).
 
 ### 4.1 Loading documents
 
-`.md`, `.markdown`, `.txt`, `.rst` and `.html`/`.htm`. HTML is read with the standard library's
+`.md`, `.markdown`, `.txt`, `.rst` and `.html`/`.htm`, and `.pdf` with the extra `pdf` (below). HTML is read with the standard library's
 `html.parser` into Markdown-shaped text: headings as `#` lines, tables as `| a | b |` rows under a
 `| --- |` line, `<pre>` as fenced code, so the audit reads it like Markdown; end tags HTML lets authors
 leave out are closed where a browser would close them; when the page marks its main content (`<main>`
@@ -155,7 +155,16 @@ not become part of every document (D-040). Files are read as UTF-8, a leading by
 file that is not UTF-8 or cannot be read is reported and skipped, never guessed. Line endings are
 normalised to `\n`; nothing else in the text is changed, so offsets are offsets into what the user wrote
 (an external set of gold offsets, such as Chroma's, matched 790 of 790). Hidden files and folders and
-`.ragcourt/` are skipped; a link to a folder is reported, not followed. PDF is not in 0.1 (D-022).
+`.ragcourt/` are skipped; a link to a folder is reported, not followed.
+
+**PDF** (change 0005, D-059): with `pip install 'ragcourt[pdf]'` a PDF's document is the text `pypdf`
+extracts, page by page, the pages joined by a blank line, line endings normalised and nothing else changed
+(no words re-joined at line ends, no running header removed). Offsets, quotes and chunks refer to that
+text, as an HTML page's refer to its extracted text, so gold stays verbatim in what every chunker was
+given. `audit` says how many documents came from PDF and names the extractor and its version; `audit
+--show` prints the text. A PDF that cannot be read is skipped with its reason: no text (scanned),
+encrypted, damaged, over 50 MB or 5,000 pages; without the extra, each PDF is skipped with the install
+command. Nothing inside a PDF is run or opened.
 
 ### 4.2 Offsets: from strings to spans
 
@@ -420,6 +429,7 @@ Thin adapters, each one file, each behind an optional extra imported only inside
 | Extra | Brings | Stages |
 |---|---|---|
 | `tokens` | `tiktoken` | exact token counts for the `endpoint` embedder (§4.3) |
+| `pdf` | `pypdf` | reading `.pdf` documents (§4.1) |
 | `local` | `sentence-transformers` | embedder `st` and reranker `cross-encoder`, in-process (D-007) |
 | `chonkie` | `chonkie` | chunkers `chonkie.token`, `chonkie.sentence`, `chonkie.recursive`, `chonkie.semantic` |
 | `langchain` | `langchain-text-splitters` | chunkers `langchain.recursive`, `langchain.markdown` |
@@ -902,6 +912,11 @@ Guarantees 34 and 35 are proposed in [changes/0002](changes/0002-established-pac
 38. **A quick look never names a winner.** `rank --quick` prints in its plan that it cannot name one and
     why, before any model call; every board of the run is indicative with no winner; the smallest
     difference per category is printed; the summary names the full run, which reuses its questions.
+39. **PDF is read with the extra.** A text PDF in the folder is loaded as a document whose text holds its
+    sentences; `audit` runs on it and names the extractor; a question's quote is found verbatim in it.
+40. **A PDF that cannot be read is said, not guessed.** Without the extra, each PDF is listed as skipped
+    with the install command; a PDF with no text, an encrypted one and a damaged one are each skipped with
+    their reason, and the other documents are still loaded.
 
 ## 17. Implemented and planned
 
@@ -911,12 +926,14 @@ in `tests/e2e/` (guarantee 26 also in `tests/real/`, run against Ollama with `ge
 bundled corpus take about two minutes with eight questions per category.
 
 **Planned** (after 0.1): converters for public datasets with quote gold (history/0005); multi-quote
-questions; PDF.
+questions.
 
 ## 18. Known limits (0.1)
 
-Chunkers must return text found in the source (no added context or rewriting); text formats only (no
-PDF, no images); one language's stop words and sentence rules (English) for the closed-book check and
+Chunkers must return text found in the source (no added context or rewriting); text formats and PDFs with a text layer (no
+scanned pages, no images; PDF text is what the extractor gives: columns may be read out of order, words
+broken at line ends stay broken, and a header repeated on every page of one PDF is not caught by
+`boilerplate.repeated`, which counts documents); one language's stop words and sentence rules (English) for the closed-book check and
 `cut.mid_sentence`; exact in-memory search (fine to about 200k chunks); intervals are wide with few
 held-out questions; the greedy search can miss a combination that only wins jointly; blame that is only
 `indicated` rests on probes, not on a measured alternative; questions need one quote (no question that

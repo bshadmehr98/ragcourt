@@ -30,6 +30,7 @@ dependencies = []
 chonkie = ["chonkie>=1.0"]
 langchain = ["langchain-text-splitters>=0.3"]
 local = ["sentence-transformers>=3.0"]
+pdf = ["pypdf>=5"]
 tokens = ["tiktoken>=0.7"]
 
 [project.scripts]
@@ -47,6 +48,7 @@ dev = [
     "chonkie>=1.7.0",
     "langchain-text-splitters>=1.1.3",
     "tiktoken>=0.14.0",
+    "pypdf>=5",
 ]
 
 [project.urls]

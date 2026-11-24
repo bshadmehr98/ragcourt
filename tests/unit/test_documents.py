@@ -28,7 +28,7 @@ def test_text_formats_are_loaded_sorted_by_posix_id(tmp_path: Path) -> None:
 
 def test_other_files_and_hidden_paths_are_skipped_silently(tmp_path: Path) -> None:
     write(tmp_path / "doc.md", "kept")
-    write(tmp_path / "notes.pdf", b"%PDF")
+    write(tmp_path / "notes.docx", b"PK")
     write(tmp_path / "script.py", "x = 1")
     write(tmp_path / ".hidden.md", "no")
     write(tmp_path / ".ragcourt" / "cache.md", "no")
@@ -82,11 +82,11 @@ def test_an_unreadable_file_is_skipped_with_its_reason(tmp_path: Path) -> None:
 
 
 def test_one_file_of_another_kind_is_refused(tmp_path: Path) -> None:
-    write(tmp_path / "paper.pdf", b"%PDF-1.7")
+    write(tmp_path / "paper.docx", b"PK")
     with pytest.raises(
         ConfigError, match=r"not a document ragcourt reads; it reads \.htm, \.html, \.markdown"
     ):
-        load_documents(tmp_path / "paper.pdf")
+        load_documents(tmp_path / "paper.docx")
 
 
 def test_links_to_files_are_read_and_links_to_folders_reported(tmp_path: Path) -> None:

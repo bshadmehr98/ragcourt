@@ -48,7 +48,7 @@ Say = Callable[[str], None]
 def run_rank(project: Project, corpus: Corpus, options: RankOptions, say: Say) -> Path | None:
     """The whole run; returns the run's folder, or None when the user did not start it."""
     if not corpus.documents:
-        raise ConfigError("No documents to rank: give a folder of .md, .txt, .rst or .html files.")
+        raise ConfigError("No documents to rank: give a folder of .md, .txt, .rst, .html or .pdf files.")
     started = time.monotonic()
     candidates = candidates_of(project, options)
     check_run(project, options, candidates)
