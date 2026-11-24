@@ -17,6 +17,9 @@ from typing import Any
 MAX_PDF_BYTES = 50 * 2**20
 MAX_PAGES = 5000
 NEEDS_EXTRA = "install 'ragcourt[pdf]' to read PDF"
+# A damaged or hostile file can fail anywhere inside the parser (fuzzing found AttributeError from its
+# cross-reference reader); each failure is one skipped file, never a traceback.
+PARSER_ERRORS = (ValueError, KeyError, TypeError, IndexError, AttributeError, RecursionError, OSError)
 
 
 def extractor() -> str:
@@ -34,13 +37,12 @@ def pdf_to_text(path: Path) -> tuple[str, str]:
         from pypdf.errors import PyPdfError  # noqa: PLC0415
     except ImportError:
         return "", NEEDS_EXTRA
-    if path.stat().st_size > MAX_PDF_BYTES:
-        return "", f"PDF over {MAX_PDF_BYTES // 2**20} MB; split it or convert it to text"
     logging.getLogger("pypdf").setLevel(logging.ERROR)  # its warnings about a damaged file are our reason
     try:
+        if path.stat().st_size > MAX_PDF_BYTES:
+            return "", f"PDF over {MAX_PDF_BYTES // 2**20} MB; split it or convert it to text"
         pages, reason = _pages(pypdf.PdfReader(path))
-    # A damaged or hostile file can fail anywhere inside the parser; each failure is one skipped file.
-    except (PyPdfError, ValueError, KeyError, TypeError, IndexError, OSError) as error:
+    except (PyPdfError, *PARSER_ERRORS) as error:
         return "", f"damaged or not a PDF ({type(error).__name__}); convert it to text"
     text = "\n\n".join(page.strip() for page in pages if page.strip())
     if not reason and not text:

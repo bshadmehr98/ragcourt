@@ -31,7 +31,10 @@ ranks before and after the reranker, near-duplicates from the audit, and a distr
 
 **Levels.** `confirmed`: a pipeline measured in this run that differs only in the blamed stage finds the
 question; the fix names it. `indicated`: the probes point to the cause but no such pipeline was measured;
-the fix says "not measured" and how to measure it. The share of confirmed blames is printed.
+the fix says "not measured" and how to measure it. The share of confirmed blames is printed. For
+[your own pipeline](stages.md#your-own-pipeline-measure-the-system-you-already-have) `confirmed` means
+less: a pipeline ragcourt measured in the same run finds the question, which shows it can be found on your
+documents, not which stage of your system lost it.
 
 **Ceilings** show what each stage costs: the share of questions with an intact chunk (chunker), retrieved
 (retrieval), and in the top k (hit@k). They cannot increase; each gap is the share lost to that stage.

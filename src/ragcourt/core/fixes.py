@@ -106,13 +106,23 @@ def _no_embedder_finds(question: str, measured: list[Evaluation]) -> bool:
     return all(result is None or result.metrics["hit_at_k"] == 0.0 for result in results)
 
 
-def external_fix(mechanism: str, question: str, measured: list[Evaluation]) -> tuple[str, str]:
-    """The level and fix of a miss of the user's own pipeline (change 0006): ``confirmed`` when a pipeline
-    ragcourt measured in the same run finds the question, and the fix names it."""
-    own = [evaluation for evaluation in measured if evaluation.spec.pipeline is None]
-    finders = [evaluation.spec.label for evaluation in own if _hits(evaluation, question)]
+def external_fix(
+    mechanism: str, question: str, measured: list[Evaluation], chosen: PipelineSpec | None
+) -> tuple[str, str]:
+    """The level and fix of a miss of the user's own pipeline (change 0006). ``confirmed`` here means that
+    a pipeline ragcourt measured in the same run finds the question (the search's choice is named first):
+    it shows the question can be found on these documents, not which stage of the user's system lost it,
+    and the fix says so."""
+    distinct = {evaluation.spec: evaluation for evaluation in measured}  # a pipeline is in several steps
+    own = [evaluation for evaluation in distinct.values() if evaluation.spec.pipeline is None]
+    finders = [evaluation.spec for evaluation in own if _hits(evaluation, question)]
     if finders:
-        return "confirmed", f"{FIXES[mechanism]}: {finders[-1]} reaches the top k (measured in this run)"
+        named = chosen if chosen in finders else finders[0]
+        return (
+            "confirmed",
+            f"{FIXES[mechanism]}: {named.label} reaches the top k (measured in this run; it differs from "
+            "your pipeline in more than this stage)",
+        )
     if own:
         return "indicated", f"{FIXES[mechanism]}; none of the {len(own)} pipelines measured here finds it"
     return (

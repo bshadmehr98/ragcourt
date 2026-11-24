@@ -5,6 +5,8 @@ from pathlib import Path
 
 import pytest
 
+pytest.importorskip("pypdf")
+
 from ragcourt import load_documents
 from ragcourt.io.pdf_text import NEEDS_EXTRA, extractor, pdf_to_text
 from tests.pdf_files import encrypted, pdf_bytes
@@ -45,8 +47,27 @@ def test_a_pdf_over_the_size_or_page_limit_is_skipped(
     path.write_bytes(pdf_bytes(PAGES))
     monkeypatch.setattr("ragcourt.io.pdf_text.MAX_PAGES", 1)
     assert pdf_to_text(path) == ("", "PDF over 1 pages; split it or convert it to text")
-    monkeypatch.setattr("ragcourt.io.pdf_text.MAX_PDF_BYTES", 10)
-    assert pdf_to_text(path)[1].startswith("PDF over 0 MB")
+    monkeypatch.setattr("ragcourt.io.pdf_text.MAX_PDF_BYTES", 2**20)
+    path.write_bytes(pdf_bytes(PAGES) + b"%" * 2**20)
+    assert pdf_to_text(path) == ("", "PDF over 1 MB; split it or convert it to text")
+
+
+@pytest.mark.parametrize(
+    "error", [AttributeError("'NameObject' object has no attribute 'items'"), RecursionError()]
+)
+def test_whatever_the_parser_raises_on_a_damaged_file_is_a_skip(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, error: Exception
+) -> None:
+    path = tmp_path / "torn.pdf"
+    path.write_bytes(pdf_bytes(PAGES))
+
+    def broken(_path: Path) -> None:
+        raise error
+
+    monkeypatch.setattr("pypdf.PdfReader", broken)
+    text, reason = pdf_to_text(path)
+    assert text == "" and reason == f"damaged or not a PDF ({type(error).__name__}); convert it to text"
+    assert pdf_to_text(tmp_path / "gone.pdf")[1].startswith("damaged or not a PDF (FileNotFoundError)")
 
 
 def test_without_the_extra_a_pdf_is_skipped_with_the_install_command(

@@ -19,7 +19,7 @@ from ragcourt.io.documents import load_documents
 from ragcourt.io.project import AddParser, open_project, try_embedder
 from ragcourt.io.terminal import for_people
 from ragcourt.types import Corpus
-from ragcourt.types.audit import AuditReport
+from ragcourt.types.audit import AuditReport, CountedBy
 
 NAME = "audit"
 HELP = "check how chunkers cut your documents (no chat model; sizes from the embedder, else estimated)"
@@ -64,7 +64,7 @@ def run(args: argparse.Namespace) -> int:
     name = args.embedder or project.config.role("embedders").models[0]
     embedder, reason = try_embedder(project, name)
     specs = args.chunker or [*NATIVE_CHUNKERS, *project.user_stage_names("chunker")]
-    report = build_report(project.config.audit, corpus, specs, (embedder, name, reason))
+    report = build_report(project.config.audit, corpus, specs, CountedBy(embedder, name, reason))
     _print(report, args, corpus)
     return FAIL_EXIT if fired_codes(report) & set(args.fail_on) else 0
 

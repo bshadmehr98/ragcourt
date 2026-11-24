@@ -8,7 +8,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from ragcourt.io.narration import ROLE_JOBS
+from ragcourt.io.plan_output import quick_note
 from ragcourt.io.terminal import legend, plural, section, table
 
 LEGEND = {
@@ -23,96 +23,6 @@ LEGEND = {
     "recall_at_budget": "share of the quote's tokens in the first 400 reference tokens retrieved",
     "ceilings": "chunker: an intact chunk exists; retrieval: it was retrieved; hit@k: it made the top k",
 }
-
-
-def plan_text(plan: dict[str, Any], guess: Any) -> str:
-    """The plan: each role, its model and where it came from, the steps and candidates, the estimate."""
-    roles = [
-        [role["role"], ", ".join(role["models"]), _source(role["source"]), *ROLE_JOBS[role["role"]]]
-        for role in plan["roles"]
-    ]
-    steps = [["1. questions", _question_step(plan["questions"], guess.question_calls)], *_search_steps(plan)]
-    if plan.get("pipeline"):
-        steps.append([f"{len(steps) + 1}. your pipeline", _pipeline_step(plan["pipeline"], plan["settings"])])
-    header = f"{plural(plan['documents'], 'document')}; metric {plan['metric']}; k = {plan['settings']['k']}."
-    lines = [
-        section("Plan"),
-        header,
-        "",
-        table(["role", "model", "chosen by", "does", "is shown"], roles),
-        "",
-    ]
-    lines.append(table(["step", "what"], steps))
-    lines.append(
-        f"\nAbout {plural(max(1, round(guess.minutes)), 'minute')}, estimated from measured speeds "
-        "(less with a warm cache)."
-    )
-    if plan["candidates"]["embedders"]:
-        calls = f"{guess.embed_texts} texts to embed and {guess.rerank_calls} reranking calls"
-        lines.append(f"Up to {calls}. Local models cost nothing.")
-    if plan.get("pipeline"):
-        lines += ["", pipeline_note(plan["pipeline"])]
-    if plan.get("quick"):
-        lines += ["", quick_note(plan["quick"])]
-    return "\n".join(lines)
-
-
-def quick_note(quick: dict[str, Any]) -> str:
-    """What a quick look can and cannot tell, and the way on to the full run."""
-    return (
-        f"A quick look: {quick['per_category']} questions per category. It shows where the misses are and "
-        "which stages clearly fail.\nIt cannot name a winner: with so few held-out questions only large "
-        "differences can be seen (each board says how large).\nThe full run reuses these questions, about "
-        f"{quick['full_run_minutes']:.0f} minutes more (estimated): the same command without --quick."
-    )
-
-
-def _search_steps(plan: dict[str, Any]) -> list[list[str]]:
-    candidates = plan["candidates"]
-    if not candidates["embedders"]:  # --no-search: only your own pipeline is questioned
-        return []
-    return [
-        [
-            "2. embedders",
-            f"{', '.join(candidates['embedders'])}; {candidates['chunkers'][0]}, dense, no reranker",
-        ],
-        ["3. chunkers", f"{', '.join(candidates['chunkers'])}; the best embedder"],
-        ["4. retrievers", f"{', '.join(candidates['retrievers'])}; the best chunker and embedder"],
-        ["5. rerankers", f"none, {', '.join(candidates['rerankers'])}; the best so far"],
-    ]
-
-
-def _pipeline_step(pipeline: dict[str, Any], settings: dict[str, Any]) -> str:
-    return (
-        f"{pipeline['name']} ({pipeline['file']}): asked every question, depth {settings['depth']}; "
-        "not in the estimate"
-    )
-
-
-def pipeline_note(pipeline: dict[str, Any]) -> str:
-    """What happens to the user's own pipeline, said in the plan before it is called."""
-    chunks = (
-        "Its chunks are listed (pipeline_chunks), so a chunker's cut can be told from a retrieval miss."
-        if pipeline["chunks_known"]
-        else "Its chunks are not listed (no pipeline_chunks), so a miss cannot be traced to its chunker."
-    )
-    return (
-        f"Your pipeline {pipeline['name']} is called once per question with the question's text; what it "
-        f"contacts is your code's business, not ragcourt's.\n{chunks}\nIt is one fixed system: nothing in "
-        "it is chosen or tuned; its held-out numbers are shown and its misses are blamed."
-    )
-
-
-def _question_step(questions: dict[str, Any], calls: int) -> str:
-    if questions["reused"]:
-        return f"reuse the {questions['total']} questions already written"
-    if not questions["to_write"]:
-        return f"use your {questions['total']} questions; none to write"
-    return f"write up to {questions['to_write']} questions of {questions['total']}, about {calls} model calls"
-
-
-def _source(source: str) -> str:
-    return {"default": "built-in default", "flag": "command-line flag"}.get(source, source)
 
 
 def _cell(value: dict[str, float]) -> str:
@@ -210,6 +120,39 @@ def causes_text(results: dict[str, Any]) -> list[str]:
         return [section("Misses"), "No held-out question was missed."]
     rows = [[mechanism, category, count] for (mechanism, category), count in sorted(counts.items())]
     return [section("Why questions were missed"), table(["cause", "category", "misses"], rows)]
+
+
+def chosen_note(label: str, tied: int) -> str:
+    """The chosen entry, and the rule that chose it among ties (a held-out disagreement is said under
+    the board)."""
+    if not tied:
+        return label
+    rule = "kept the cheaper, then the higher on dev, then the smaller"
+    return f"{label} (tied on dev with {tied} more; {rule})"
+
+
+def placed_note(pipeline: dict[str, Any]) -> str:
+    """Under the board of the user's own pipeline: how many of its texts could be placed and scored."""
+    lost = pipeline["not_found"] + pipeline["several"]
+    lines = [
+        f"{pipeline['texts'] - lost} of {pipeline['texts']} chunk texts of {pipeline['name']} were found "
+        "in your documents."
+    ]
+    if pipeline["not_found"]:
+        lines.append(
+            f"{pipeline['not_found']} are not text of your documents (rewritten, or a title or summary "
+            "added): they hold no quote, and their words count against precision and the token budget."
+        )
+    if pipeline["several"]:
+        lines.append(
+            f"{pipeline['several']} are found in more than one place: their place is unknown, so they are "
+            "counted the same way."
+        )
+    if not pipeline["chunks_known"]:
+        lines.append(
+            "Its chunks are not listed, so nDCG is measured against a chunk that holds the whole quote."
+        )
+    return "\n".join(lines)
 
 
 def failure_note(label: str, count: int) -> str:

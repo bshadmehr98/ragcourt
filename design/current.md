@@ -127,7 +127,7 @@ own file and the package's `__init__.py` holds the ordered list.
 | `io/documents.py`, `io/html_text.py`, `io/pdf_text.py`, `io/config.py`, `io/toml_edit.py`, `io/config_template.py` | reading documents and HTML; `ragcourt.toml`, editing a role, the commented template | §4.1, §3.3, §11.4 |
 | `io/http.py`, `io/client.py`, `io/ollama.py`, `io/openai_compat.py`, `io/replies.py`, `io/embedders.py` | JSON over HTTP with retries; the one client and its two dialects; building embedders by name | §11.1 |
 | `io/cache.py`, `io/question_file.py`, `io/judge_record.py`, `io/run_files.py`, `io/prompts.py` | the plain files: embeddings, questions, the judge's self-test, runs, prompts | §6.5, §6.6, §10, §13.3 |
-| `io/terminal.py`, `io/narration.py`, `io/audit_output.py`, `io/question_output.py`, `io/rank_output.py`, `io/explain_output.py`, `io/result_data.py`, `io/html_report.py` | everything written for people, rendered from data | §13 |
+| `io/terminal.py`, `io/narration.py`, `io/audit_output.py`, `io/question_output.py`, `io/plan_output.py`, `io/rank_output.py`, `io/explain_output.py`, `io/result_data.py`, `io/html_report.py` | everything written for people, rendered from data | §13 |
 | `io/project.py`, `io/ask.py`, `io/machine.py`, `io/isolated_run.py` | a command's view of the project; asking before what cannot be undone; memory of the machine; running generated code apart | §3.3, §11.3, §12 |
 | `core/external.py`, `flows/external.py`, `core/blame/retrieval.py` | the user's own pipeline: its texts placed in the documents; asked, scored and blamed | §7.5 |
 | `flows/audit.py`, `flows/questions.py`, `flows/judge.py`, `flows/evaluate.py`, `flows/probes.py`, `flows/blames.py`, `flows/run_plan.py`, `flows/rank.py`, `flows/search_steps.py`, `flows/results.py`, `flows/doctor.py` | the parts of `questions`, `rank` and `doctor` | §6 to §12 |
@@ -371,7 +371,8 @@ owner's machine for the 434 questions the FastAPI docs gave, `measured`, D-057).
 **A quick look** (`rank --quick`, change 0004): 20 questions per category. Every category is then too few
 to rank, so every board is indicative and names no winner; blame, ceilings and the report work as in any
 run. The plan says this before any model is called, and the summary names the full run, which reuses the
-questions (D-047).
+questions (D-047). So that the statement is true, `--quick` is refused when `questions.min_held_out` is
+low enough for 20 questions to rank, and when the folder already has a question set large enough to rank.
 
 Every leaderboard also prints, per category, the **smallest difference it can tell apart** at that size
 (from the paired bootstrap of §8.4: half the width of the interval of the difference between the top
@@ -456,12 +457,16 @@ def mine_chunks() -> list[str]: ...
 `rank DOCS --pipeline mine` runs the search and then a last step, `pipeline`: the function is called once
 per question with the question's text and depth 50, and its held-out numbers are put on a board beside the
 search's chosen pipeline, with the tie rule of §8.4. `--no-search` skips the four steps, so no embedding
-model is needed. One pipeline per run. It is one fixed system: nothing is chosen on dev.
+model is needed (and `--embedders`, `--chunkers`, `--retrievers` and `--rerankers` are refused with it). One pipeline per run. It is one fixed system: nothing is chosen on dev.
 
-- **Spans:** each distinct returned text is searched in every document (§4.2). Found in one place: that is
-  its span. Not found (rewritten, or a title or summary added), or found in more than one place (its place
-  is unknown): it cannot be scored; it keeps its rank, holds no quote and covers no tokens, and both counts
-  are printed under the board and kept in the results. When no text at all is found, the run stops.
+- **Spans:** each distinct returned text is searched in every document: exactly, and only when it is
+  nowhere exactly, with runs of whitespace treated as equal (§4.2). Found in one place: that is its span.
+  Not found (rewritten, or a title or summary added), or found in more than one place (its place is
+  unknown): it keeps its rank and holds no quote, and its own words are counted, so it takes its share of
+  token precision, IoU and the token budget instead of being free. Both counts are printed under the board
+  and kept in the results. When no text at all is found, the run stops.
+- **nDCG** (§8.3) needs the best chunks of the chunking. When the chunks are not listed, its ideal is a
+  chunk that holds the whole quote, and the note under the board says so.
 - **The run is about the pipeline:** `chosen` in the results, the ceilings, the blames, `explain` and the
   report are the user's pipeline's; `search_chosen` names the search's choice. The audit summary of the
   chosen chunker is left out.
@@ -470,7 +475,10 @@ model is needed. One pipeline per run. It is one fixed system: nothing is chosen
   `retrieval.not_found` (a chunk holds the quote, or the chunks are not listed, and the pipeline does not
   return it), with BM25's rank over the listed chunks as its probe; then the `ranking` mechanisms. The
   `embedder` and `retriever` stages are never blamed: ragcourt cannot see inside. A blame is `confirmed`
-  when a pipeline ragcourt measured in the same run hits the question (the fix names it), else `indicated`.
+  when a pipeline ragcourt measured in the same run hits the question, else `indicated`. That is weaker
+  than `confirmed` in §9.3: it shows the question can be found on these documents, not which stage of the
+  user's system lost it. The fix names the pipeline (the search's choice first) and says that it differs
+  from the user's in more than the blamed stage.
 - **The plan** names the pipeline and its file, says it is called once per question with the question's
   text, that what it contacts is the user's business, and whether its chunks are listed. Its time is not in
   the estimate. On `--resume` it is asked again.

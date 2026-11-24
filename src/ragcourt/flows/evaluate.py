@@ -171,8 +171,8 @@ class Evaluator:
             chunk_tokens_p95=percentile(sizes, 0.95),
             tokens_measured=counts is not None,
             tokens_per_query=statistics.fmean(per_query) if per_query else 0.0,
-            latency_ms_p50=round(_at(latencies, 0.5), 2),
-            latency_ms_p95=round(_at(latencies, 0.95), 2),
+            latency_ms_p50=round(latency_at(latencies, 0.5), 2),
+            latency_ms_p95=round(latency_at(latencies, 0.95), 2),
             index_ms=timing.index_ms,
             cost_usd=self._price(spec.embedder, sum(sizes) if vectors else 0),
         )
@@ -195,7 +195,8 @@ def _no_vectors(text: str) -> Vector:
     return []
 
 
-def _at(ordered: list[float], share: float) -> float:
+def latency_at(ordered: list[float], share: float) -> float:
+    """The value at ``share`` (0..1) of sorted latencies; 0 for none."""
     return ordered[min(len(ordered) - 1, int(share * len(ordered)))] if ordered else 0.0
 
 

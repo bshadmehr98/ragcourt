@@ -62,13 +62,7 @@ class Prober:
 
     def duplicates(self) -> frozenset[int]:
         """Chunks of the chosen chunking that nearly repeat an earlier one (audit ``duplicate.near``)."""
-        chunks = self.chunks()
-        documents = {document.id: document for document in self.evaluator.corpus.documents}
-        settings = self.evaluator.project.config.audit
-        context = AuditContext(
-            documents, {}, [0] * len(chunks), sizes_measured=False, limit=None, settings=settings
-        )
-        return frozenset(finding.chunk.index for finding in duplicate_near.find(chunks, context))
+        return near_duplicates(self.chunks(), self.evaluator)
 
     def _sizes(self) -> list[int]:
         if self.chosen.embedder is None:
@@ -134,6 +128,16 @@ class Prober:
             reciprocal = result.metrics["mrr"] if result else 0.0
             ranks[evaluation.spec.embedder or "-"] = round(1 / reciprocal) if reciprocal else None
         return ranks
+
+
+def near_duplicates(chunks: list[Chunk], evaluator: Evaluator) -> frozenset[int]:
+    """The chunks that nearly repeat an earlier one, by the project's audit settings."""
+    documents = {document.id: document for document in evaluator.corpus.documents}
+    settings = evaluator.project.config.audit
+    context = AuditContext(
+        documents, {}, [0] * len(chunks), sizes_measured=False, limit=None, settings=settings
+    )
+    return frozenset(finding.chunk.index for finding in duplicate_near.find(chunks, context))
 
 
 def _hit(chunks: list[Chunk], result: QuestionResult, question: Question) -> int | None:

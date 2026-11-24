@@ -51,7 +51,7 @@ PLANTED = {
     "retriever.keyword_only": {"retriever": "bm25", "dense_rank": 2},
     "retriever.fusion": {"retriever": "hybrid", "bm25_rank": 4},
     "retriever.crowded": {"retriever": "bm25", "duplicates": frozenset({0, 2})},
-    "retrieval.not_found": {"retriever": "pipeline"},
+    "retrieval.not_found": {"external": True},
     "ranking.reranker_demoted": {"retrieved": (1, 0), "final": (0, 1), "reranker": "llm"},
     "ranking.distracted": {"retrieved": (0, 1), "final": (0, 1), "twin_chunks": frozenset({0})},
     "ranking.duplicates": {
@@ -74,7 +74,7 @@ NEAR_MISSES = {
     "retriever.keyword_only": {"retriever": "bm25"},
     "retriever.fusion": {"retriever": "hybrid"},
     "retriever.crowded": {"retriever": "bm25", "duplicates": frozenset({0})},
-    "retrieval.not_found": {"retriever": "pipeline", "retrieved": (0, 1), "final": (0, 1)},
+    "retrieval.not_found": {"external": True, "retrieved": (0, 1), "final": (0, 1)},
     "ranking.reranker_demoted": {"retrieved": (0, 1), "final": (0, 1), "reranker": "llm"},
     "ranking.distracted": {"retrieved": (0, 1), "final": (0, 1)},
     "ranking.duplicates": {"retrieved": (0, 1), "final": (0, 1), "k": 1},
@@ -170,3 +170,37 @@ def test_an_alternative_with_one_more_stage_changed_is_evidence_but_never_confir
     plain = evaluation(PipelineSpec("c2", "e1", "bm25", "none"), 1.0)
     level, fix = fix_for("ranking.not_rescued", "q1", chosen, [plain])  # 'with reranker none' would mislead
     assert level == "indicated" and "reranker none" not in fix
+
+
+def test_ceilings_count_a_retrieval_miss_of_your_own_pipeline() -> None:
+    members = [Question(f"q{n}", "Q", "keyword", "d", 0, 1, "q", "held-out") for n in range(10)]
+    found = ceilings(members, [blame("q0", "chunker"), blame("q1", "retrieval"), blame("q3", "ranking")])
+    overall = found["overall"]
+    assert (overall.chunker, overall.retrieval, overall.hit_at_k) == (0.9, 0.8, 0.7)
+
+
+CUT = chunks((0, 120), (120, 237))  # the quote is cut across the two
+
+
+def test_your_own_pipeline_is_never_blamed_for_an_embedder_or_a_retriever() -> None:
+    lost = facts(external=True, bm25_rank=3, twin_chunks=frozenset({0}), duplicates=frozenset({0, 2}))
+    holding = mechanisms_holding(lost)
+    assert [name for name, _ in holding] == ["retrieval.not_found"]
+    assert "not among the 2 returned; keyword search over your chunks ranks it 3" in holding[0][1]
+    assert cause(facts(external=True))[1] == "a chunk holds the quote, and it is not among the 2 returned"
+
+
+def test_a_cut_quote_is_the_chunker_s_only_when_your_chunks_are_listed() -> None:
+    assert cause(facts(external=True, chunks=CUT))[0] == "chunker.split"
+    names = [name for name, _ in mechanisms_holding(facts(external=True, chunks=CUT))]
+    assert "retrieval.not_found" not in names  # no chunk holds the quote: not a retrieval miss
+    mechanism, evidence, _ = cause(facts(external=True, chunks=CUT, chunks_known=False))
+    assert mechanism == "retrieval.not_found"
+    assert evidence.startswith("none of the 2 chunks returned holds the quote; register pipeline_chunks")
+
+
+def test_your_pipeline_s_low_rank_and_last_resort_are_said_in_its_words() -> None:
+    mechanism, evidence, _ = cause(facts(external=True, retrieved=(0, 1), final=(0, 1)))
+    assert (mechanism, evidence) == ("ranking.not_rescued", "your pipeline returns it at rank 2, below k = 1")
+    covered = [Chunk("d.md", 0, 0, 237, "")]  # one chunk covers it all, so no cut and nothing dropped
+    assert cause(facts(external=True, chunks=covered, retrieved=(), final=()))[0] == "retrieval.not_found"

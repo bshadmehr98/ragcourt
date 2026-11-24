@@ -22,7 +22,7 @@ Reranker = Callable[..., list[float]]
 
 
 # A pipeline: a retrieval system of the user's own, (query, depth) -> its chunk texts, best first (0006).
-Pipeline = Callable[[str, int], list[str]]
+Pipeline = Callable[..., list[str]]
 
 
 @dataclass(frozen=True)

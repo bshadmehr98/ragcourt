@@ -5,6 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 
 from ragcourt.types.documents import Chunk, Document
+from ragcourt.types.stages import Embedder
 
 
 @dataclass(frozen=True)
@@ -36,6 +37,16 @@ class AuditContext:
     sizes_measured: bool
     limit: int | None
     settings: AuditSettings = field(default_factory=AuditSettings)
+
+
+@dataclass(frozen=True)
+class CountedBy:
+    """Whose tokens sizes are counted in: the embedder (None when it does not answer), its name, and why
+    it did not answer."""
+
+    embedder: Embedder | None
+    name: str
+    reason: str = ""
 
 
 @dataclass(frozen=True)

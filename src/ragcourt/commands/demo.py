@@ -24,15 +24,17 @@ from ragcourt.io.documents import load_documents
 from ragcourt.io.explain_output import misses_text
 from ragcourt.io.html_report import write_report
 from ragcourt.io.project import WORKDIR, AddParser
-from ragcourt.io.rank_output import board_text, summary_text
+from ragcourt.io.rank_output import board_text, chosen_note, summary_text
 from ragcourt.io.terminal import for_people, plural, section
-from ragcourt.types.audit import AuditSettings
+from ragcourt.types.audit import AuditSettings, CountedBy
 
 NAME = "demo"
 HELP = "see what ragcourt finds in under a minute: no model, no network (a recorded real run)"
 PACKAGE = Path(__file__).resolve().parent.parent
 RECORDING = PACKAGE / "demo"  # results.json of a real run on the bundled corpus, and recording.json
-CORPUS = PACKAGE / "testing" / "corpus"
+CORPUS = (
+    PACKAGE / "testing" / "corpus"
+)  # what ragcourt.testing.corpus_path() gives; commands may not import testing
 CHUNKERS = ["recursive", "fixed:size=128,overlap=0"]
 MISSES_SHOWN = 3
 
@@ -59,7 +61,7 @@ def run(args: argparse.Namespace) -> int:
     """The live audit, then the recorded run printed as ``rank`` and ``explain`` print it."""
     stages.load_builtins()
     corpus = load_documents(CORPUS)
-    counted_by = (None, "nomic-embed-text", "not asked: the demo contacts no model")
+    counted_by = CountedBy(None, "nomic-embed-text", "not asked: the demo contacts no model")
     report = build_report(AuditSettings(), corpus, CHUNKERS, counted_by)
     print(section(f"1. Audit, computed now on the {len(corpus.documents)} bundled documents"))
     print(audit_text(report, CODES, CHECKS, quiet=True), end="")
@@ -68,7 +70,7 @@ def run(args: argparse.Namespace) -> int:
     print(section("2. A ranking of the same documents, recorded with real local models"))
     print(recorded_line(results, recording))
     for board, step in zip(results["boards"], results["steps"], strict=True):
-        print(board_text(board, str(step["chosen"])))
+        print(board_text(board, chosen_note(str(step["chosen"]), len(step["tied_on_dev"]))))
     print(summary_text(results, quiet=args.quiet), end="")
     blames = results["blames"]
     print(section(f"3. {min(MISSES_SHOWN, len(blames))} of its {len(blames)} misses, explained"))

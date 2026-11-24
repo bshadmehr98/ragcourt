@@ -19,7 +19,7 @@ from ragcourt.io.terminal import plural
 from ragcourt.stages.specs import check_params, parse_spec
 from ragcourt.text_units import estimate_tokens
 from ragcourt.types import Corpus, Embedder
-from ragcourt.types.audit import AuditContext, AuditReport, AuditSettings, ChunkerAudit
+from ragcourt.types.audit import AuditContext, AuditReport, AuditSettings, ChunkerAudit, CountedBy
 
 # Input limits in force of common models, for when the embedder does not answer (design §5, D-041).
 KNOWN_LIMITS = {
@@ -34,11 +34,10 @@ KNOWN_LIMITS = {
 
 
 def build_report(
-    settings: AuditSettings, corpus: Corpus, specs: list[str], counted_by: tuple[Embedder | None, str, str]
+    settings: AuditSettings, corpus: Corpus, specs: list[str], counted_by: CountedBy
 ) -> AuditReport:
-    """Chunk, size and check every chunker; ``counted_by`` is the embedder (or None), its name, and why
-    it did not answer."""
-    embedder, name, reason = counted_by
+    """Chunk, size and check every chunker."""
+    embedder, name, reason = counted_by.embedder, counted_by.name, counted_by.reason
     documents = {document.id: document for document in corpus.documents}
     structures = {document.id: structure_of(document.text) for document in corpus.documents}
     limit = embedder.max_tokens if embedder else KNOWN_LIMITS.get(name.split(":", maxsplit=1)[0])

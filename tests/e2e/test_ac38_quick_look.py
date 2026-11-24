@@ -5,7 +5,11 @@ from pathlib import Path
 
 import pytest
 
+from ragcourt import ConfigError
+from ragcourt.flows.run_plan import check_quick_set
+from ragcourt.io.project import ProjectOptions, open_project
 from ragcourt.testing import FakeOllamaState, ScriptedReplies
+from ragcourt.types.questions import Question
 from tests.conftest import Run, results_of
 
 # The default minimum of 30 held-out questions per category holds: 20 questions can never reach it.
@@ -49,6 +53,8 @@ def test_ac38_a_quick_look_never_names_a_winner(
     assert code == 0, err
     results = results_of(project)
     assert results["plan"]["quick"]["per_category"] == 20
+    minutes = results["plan"]["quick"]["full_run_minutes"]
+    assert minutes > 0 and f"about {minutes:.0f} minutes more (estimated)" in out
     assert results["boards"]
     for board in results["boards"]:
         assert board["indicative"] and board["winner"] is None
@@ -82,3 +88,24 @@ def test_quick_and_questions_together_are_a_usage_error(
     with pytest.raises(SystemExit) as stopped:
         run("rank", corpus, "--quick", "--questions", "5")
     assert stopped.value.code == 2
+
+
+def test_a_quick_look_is_refused_when_it_could_name_a_winner(
+    quick_project: tuple[Path, FakeOllamaState], corpus: Path, run: Run
+) -> None:
+    project, state = quick_project
+    toml = project / "ragcourt.toml"
+    toml.write_text(toml.read_text() + "[questions]\nmin_held_out = 5\n")
+    code, out, err = run("rank", corpus, "--quick", "--yes")
+    assert code == 1 and "it would name winners" in err and "min_held_out is 5" in err
+    assert "Plan" not in out and state.requests == []
+
+
+def test_a_quick_look_is_refused_on_a_question_set_large_enough_to_rank(tmp_path: Path) -> None:
+    def held(count: int) -> list[Question]:
+        return [Question(f"q{n}", "Q", "keyword", "d", 0, 1, "q", "held-out") for n in range(count)]
+
+    project = open_project(ProjectOptions(tmp_path))
+    check_quick_set(project, held(29))  # under the minimum of 30: every board stays indicative
+    with pytest.raises(ConfigError, match=r"large enough to rank \(30 questions\).*without --quick"):
+        check_quick_set(project, held(30))

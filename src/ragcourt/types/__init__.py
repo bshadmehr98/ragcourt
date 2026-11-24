@@ -2,7 +2,16 @@
 
 from ragcourt.types.documents import Chunk, Corpus, Document, Skipped
 from ragcourt.types.models import ChatRequest, ModelClient, ModelInfo
-from ragcourt.types.stages import Chunker, Embedded, Embedder, Reranker, Retriever, Search, Vector
+from ragcourt.types.stages import (
+    Chunker,
+    Embedded,
+    Embedder,
+    Pipeline,
+    Reranker,
+    Retriever,
+    Search,
+    Vector,
+)
 
 __all__ = [
     "ChatRequest",
@@ -14,6 +23,7 @@ __all__ = [
     "Embedder",
     "ModelClient",
     "ModelInfo",
+    "Pipeline",
     "Reranker",
     "Retriever",
     "Search",

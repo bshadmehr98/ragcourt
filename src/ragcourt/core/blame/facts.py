@@ -35,7 +35,8 @@ class Facts:
     other_embedders: dict[str, int | None] = field(default_factory=dict[str, int | None])
     duplicates: frozenset[int] = frozenset()
     twin_chunks: frozenset[int] = frozenset()
-    chunks_known: bool = True  # False for a pipeline of the user's own that did not list its chunks
+    external: bool = False  # a pipeline of the user's own: ragcourt sees its ranks, not its stages (0006)
+    chunks_known: bool = True  # False for such a pipeline when it did not list its chunks
 
     @property
     def hit(self) -> int | None:

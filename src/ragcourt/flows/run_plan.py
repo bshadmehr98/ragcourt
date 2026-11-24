@@ -23,6 +23,7 @@ from ragcourt.io.project import Project
 from ragcourt.io.question_file import corpus_hash
 from ragcourt.stages.specs import parse_spec
 from ragcourt.types import Corpus
+from ragcourt.types.questions import Question
 
 QUICK_PER_CATEGORY = 20  # a quick look: too few to name a winner, enough to see the misses (0004)
 
@@ -82,7 +83,8 @@ def make_plan(
     """The plan (everything that decides the results, so a resumed run must match it) and the estimate."""
     reused, to_write, total = question_plan(project, corpus, options.questions)
     llm = sum(1 for name in candidates.rerankers if name.split(":", maxsplit=1)[0] == "llm")
-    guess = estimate(Workload(to_write, total, candidates.embedders, counts, llm))
+    work = Workload(to_write, total, candidates.embedders, counts, llm)
+    guess = estimate(work)
     flag = ",".join(options.embedders) if options.embedders else None
     roles = [project.role("writer", options.questions.writer), project.role("judge", options.questions.judge)]
     if not options.no_search:
@@ -110,23 +112,29 @@ def make_plan(
             "file": pipeline_file(options.pipeline),
             "chunks_known": chunks_known(options.pipeline),
         }
+    if options.no_search:
+        plan["no_search"] = True
     if options.quick:
-        plan["quick"] = {
-            "per_category": QUICK_PER_CATEGORY,
-            "full_run_minutes": _minutes_after_quick(project, corpus, options, (candidates, counts, llm)),
-        }
+        _, _, full = question_plan(project, corpus, replace(options.questions, per_category=None))
+        still = max(full - QUICK_PER_CATEGORY * len(project.config.questions.categories), 0)
+        after = estimate(replace(work, questions_to_write=still, question_total=full))
+        plan["quick"] = {"per_category": QUICK_PER_CATEGORY, "full_run_minutes": round(after.minutes, 1)}
     return plan, guess
 
 
-def _minutes_after_quick(
-    project: Project, corpus: Corpus, options: RankOptions, work: tuple[Candidates, dict[str, int], int]
-) -> float:
-    """What the full run would still take after this quick look, whose questions it reuses (estimated)."""
-    candidates, counts, llm = work
-    full = replace(options.questions, per_category=None)
-    _, _, total = question_plan(project, corpus, full)
-    still = max(total - QUICK_PER_CATEGORY * len(project.config.questions.categories), 0)
-    return round(estimate(Workload(still, total, candidates.embedders, counts, llm)).minutes, 1)
+def check_quick_set(project: Project, questions: list[Question]) -> None:
+    """A quick look says it names no winner; refuse it when the question set could name one (a larger
+    set written by an earlier full run is reused whole)."""
+    counts: dict[str, int] = {}
+    for question in questions:
+        if question.split == "held-out":
+            counts[question.category] = counts.get(question.category, 0) + 1
+    minimum = project.config.questions.min_held_out
+    if any(count >= minimum for count in counts.values()):
+        raise ConfigError(
+            f"These documents already have a question set large enough to rank ({len(questions)} "
+            "questions): a quick look adds nothing. Run the same command without --quick."
+        )
 
 
 def ready_to_go(project: Project, *, yes: bool, minutes: float, cost: float | None) -> bool:
@@ -193,6 +201,19 @@ def check_run(project: Project, options: RankOptions, candidates: Candidates) ->
         pipeline_file(options.pipeline)  # an unknown name is said before the plan
     elif options.no_search:
         raise ConfigError("--no-search leaves nothing to run: name your pipeline with --pipeline NAME.")
+    named = [options.embedders, options.chunkers, options.retrievers, options.rerankers]
+    if options.no_search and any(named):
+        raise ConfigError(
+            "--no-search skips ragcourt's own stages, so --embedders, --chunkers, --retrievers and "
+            "--rerankers have nothing to do: leave them out, or leave out --no-search."
+        )
+    held_out = QUICK_PER_CATEGORY - QUICK_PER_CATEGORY // 3
+    if options.quick and project.config.questions.min_held_out <= held_out:
+        raise ConfigError(
+            f"--quick writes {QUICK_PER_CATEGORY} questions per category ({held_out} held-out), and "
+            f"questions.min_held_out is {project.config.questions.min_held_out}: it would name winners on "
+            "them. Use --questions N for that, or leave min_held_out at its default."
+        )
 
 
 def check_models(project: Project, options: RankOptions, candidates: Candidates, to_write: int) -> None:

@@ -21,15 +21,16 @@ STAGES: list[tuple[str, list[tuple[str, Callable[[Facts], str | None]]]]] = [
     ("retrieval", retrieval.MECHANISMS),
     ("ranking", ranking.MECHANISMS),
 ]
-EXTERNAL = "pipeline"  # the retriever of a pipeline ragcourt did not build (change 0006)
 
 
 def stages_for(facts: Facts) -> list[str]:
     """The stages whose checks apply: ragcourt's own pipelines have an embedder and a retriever to blame;
     a pipeline of the user's own has only ``retrieval``, and a chunker only when its chunks are known."""
-    if facts.retriever != EXTERNAL:
+    if not facts.external:
         return ["chunker", "embedder", "retriever", "ranking"]
-    return [*(["chunker"] if facts.chunks_known else []), "retrieval", "ranking"]
+    if facts.chunks_known:
+        return ["chunker", "retrieval", "ranking"]
+    return ["retrieval", "ranking"]
 
 
 def _names() -> list[str]:
@@ -64,7 +65,9 @@ def mechanisms_holding(facts: Facts) -> list[tuple[str, str]]:
     """Every mechanism that holds, in order, with its evidence."""
     holding: list[tuple[str, str]] = []
     applying = stages_for(facts)
-    for _, mechanisms in [entry for entry in STAGES if entry[0] in applying]:
+    for stage, mechanisms in STAGES:
+        if stage not in applying:
+            continue
         for name, check in mechanisms:
             evidence = check(facts)
             if evidence is not None:
@@ -85,6 +88,6 @@ def _last_resort(facts: Facts) -> tuple[str, str]:
     retrieved = facts.rank(facts.retrieved, facts.hit) if facts.hit is not None else None
     if retrieved is not None:
         return "ranking.not_rescued", f"retrieved at rank {retrieved}, below k = {facts.k}"
-    if facts.retriever == EXTERNAL:
+    if facts.external:
         return "retrieval.not_found", "no chunk that could be placed in your documents holds the quote"
     return "embedder.meaning", "no stage of this run retrieves the chunk that holds the quote"

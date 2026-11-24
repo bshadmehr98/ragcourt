@@ -97,7 +97,8 @@ ragcourt explain                                # why each question your system 
   held-out questions, with the same metrics and intervals as any pipeline. The run is about your system:
   `explain` and the report show **its** misses.
 - A text that is **not text of your documents** (your system rewrote it, or added a title or a summary), or
-  that is found in more than one place, cannot be scored: it keeps its rank, holds no quote, and is counted
+  that is found in more than one place, cannot be scored as an answer: it keeps its rank and holds no quote,
+  while its words still count against token precision and the token budget; how many there are is said
   under the board. If no text at all is found, the run stops and says so.
 - Blame is coarser than for ragcourt's own pipelines, because ragcourt cannot look inside your system:
   `retrieval.not_found` (a chunk holds the quote and your system does not return it in the top 50) instead
@@ -105,6 +106,7 @@ ragcourt explain                                # why each question your system 
   `@pipeline_chunks`, a quote that no chunk holds whole is the `chunker`'s; without it, such a miss is
   `retrieval.not_found` with a note.
 - A miss is `confirmed` when a pipeline ragcourt measured in the same run finds the question, and the fix
-  names it.
+  names it. That shows the question can be found, not which stage of your system lost it.
+- Without `@pipeline_chunks`, nDCG is measured against a chunk that holds the whole quote.
 - Your function runs in-process like any stage of yours. The question's text goes wherever your code sends
   it; the plan says so before it is called. Nothing in your system is chosen or tuned.

@@ -7,7 +7,6 @@ and every finished question, embedding and pipeline is kept, so ``--resume`` con
 from __future__ import annotations
 
 import time
-from collections.abc import Callable
 from dataclasses import replace
 from pathlib import Path
 
@@ -17,7 +16,7 @@ from ragcourt.core.search import STEPS, Candidates
 from ragcourt.errors import ConfigError
 from ragcourt.flows.blames import blame_misses
 from ragcourt.flows.evaluate import Evaluator
-from ragcourt.flows.external import pipeline_step
+from ragcourt.flows.external import external_data
 from ragcourt.flows.questions import ensure_questions
 from ragcourt.flows.results import results_data
 from ragcourt.flows.run_plan import (
@@ -27,20 +26,19 @@ from ragcourt.flows.run_plan import (
     check_budget,
     check_cost,
     check_models,
+    check_quick_set,
     check_run,
     estimated_cost,
     make_plan,
     ready_to_go,
     settings_of,
 )
-from ragcourt.flows.search_steps import Questions, SearchState, draws, guard, step_search
+from ragcourt.flows.search_steps import Questions, Say, SearchState, draws, guard, pipeline_step, step_search
 from ragcourt.io import run_files
+from ragcourt.io.plan_output import plan_text
 from ragcourt.io.project import Project
-from ragcourt.io.rank_output import plan_text
 from ragcourt.types import Corpus
 from ragcourt.types.questions import Question
-
-Say = Callable[[str], None]
 
 
 def run_rank(project: Project, corpus: Corpus, options: RankOptions, say: Say) -> Path | None:
@@ -71,6 +69,8 @@ def run_rank(project: Project, corpus: Corpus, options: RankOptions, say: Say) -
     run_files.log_progress(folder, {"step": "questions", "event": "start"})
     questions = ensure_questions(project, corpus, options.questions, say)
     _check_questions(questions)
+    if options.quick:
+        check_quick_set(project, questions)
     evaluator = _evaluator(project, corpus, options, questions, folder, evaluator)
     options = replace(options, budget_minutes=minutes)  # the configured budget holds in every step
     return _search(evaluator, candidates, (plan, guess), options, (say, started))
@@ -137,17 +137,22 @@ def _search(
     dev = [question for question in evaluator.questions if question.split == "dev"]
     held = [question for question in evaluator.questions if question.split == "held-out"]
     count = config.search.resamples
-    split = Questions(dev, held, draws(dev, config.seed, count), draws(held, config.seed, count))
+    metric = str(plan["metric"])
+    split = Questions(metric, dev, held, draws(dev, config.seed, count), draws(held, config.seed, count))
     state = SearchState()
-    for step in () if options.no_search else STEPS:
+    steps = () if options.no_search else STEPS
+    for step in steps:
         guard(evaluator.folder, options, (step, guess.step_minutes.get(step, 0.0), started), (plan, state))
-        step_search(step, evaluator, candidates, (str(plan["metric"]), split), state, say)
+        step_search(step, evaluator, candidates, split, state, say)
     extra: dict[str, object] = {}
     if options.pipeline:
         # The run is then about the user's pipeline: its misses are blamed, the search is the comparison.
-        subject, blames, extra = pipeline_step(
-            evaluator, options.pipeline, state, (str(plan["metric"]), split), say
-        )
+        external, blames = pipeline_step(evaluator, options.pipeline, split, state, say)
+        subject = external.evaluation.spec
+        extra = {
+            "pipeline": external_data(external),
+            "search_chosen": state.best.label if state.best else None,
+        }
     elif state.best is None:
         raise ConfigError("No pipeline was evaluated; check the candidates in [search].")
     else:

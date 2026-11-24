@@ -683,3 +683,32 @@ the designer's, open to the owner's review. Code comments refer to entries by nu
   commands may not import `testing` (§3.1); its `questions.jsonl` is not shipped, since nothing reads it.
   `build_report` moved from `commands/audit.py` to `flows/audit.py`, as two commands now share it.
 - **Status:** designer's choice.
+
+## D-062: What the review of changes 0003 to 0006 changed  (2026-11-24)
+
+- **Found** by the three reviewer agents on the finished branch; each point was reproduced or read in the
+  code before it was changed.
+- **Choice:**
+  1. **A quick look that could name a winner is refused.** The plan said "it cannot name a winner" as
+     fixed text, while `questions.min_held_out` decides it; with a low minimum, or after a full run whose
+     larger question set is reused, the same run printed a winner. `--quick` now stops with one message in
+     both cases.
+  2. **Whatever the PDF parser raises is a skip.** Fuzzing found an `AttributeError` from `pypdf` that
+     reached the user as a traceback and stopped every command on the folder.
+  3. **A text of your pipeline that has no place is no longer free.** It covered no tokens, so token
+     precision, IoU and the budget recall were biased in the pipeline's favour beside ragcourt's own; its
+     own words are now counted. This replaces "covers no tokens" in change 0006 and point 1 of D-060.
+  4. **nDCG without listed chunks** took its ideal from what the pipeline happened to return (a third of
+     the quote scored 1.0); the ideal is now a chunk that holds the whole quote, and the board says so.
+  5. **`confirmed` for your own pipeline** names the search's choice first, counts each measured pipeline
+     once, and says in the fix and the docs that it is weaker than for ragcourt's own pipelines.
+  6. **The demo prints the tie note** `rank` printed for each step; it was dropped.
+  7. A text is placed by its exact occurrences first; BM25's rank in the evidence is the best holder's;
+     the near-duplicate probe uses the project's audit settings; `--no-search` refuses the stage flags.
+  8. For simplicity: blame of your pipeline moved beside `blame_misses`, the pipeline step beside the
+     search's steps, the plan's text to `io/plan_output.py`; `Facts.external` replaces a sentinel
+     retriever name; one tuple of registry kinds.
+- **Left as it is:** the bundled corpus stays under `testing/` though `demo` reads it (moving it is a
+  layout change of its own); a run's `cost_usd` is what ragcourt spent, and says nothing of what the
+  user's own system costs; the pipeline step is outside the time budget, as the plan says.
+- **Status:** designer's choice.

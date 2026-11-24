@@ -2,11 +2,16 @@
 
 from __future__ import annotations
 
+from ragcourt import stages
 from ragcourt.core.blame import cause
+from ragcourt.core.blame.facts import Facts
 from ragcourt.core.boundaries import mark_boundaries
-from ragcourt.core.fixes import fix_for
+from ragcourt.core.fixes import external_fix, fix_for
+from ragcourt.core.relevance import is_hit
 from ragcourt.flows.evaluate import Evaluator
-from ragcourt.flows.probes import Prober
+from ragcourt.flows.external import External
+from ragcourt.flows.probes import Prober, near_duplicates
+from ragcourt.text_units import estimate_tokens
 from ragcourt.types import Chunk
 from ragcourt.types.questions import Question
 from ragcourt.types.results import Blame, Evaluation, PipelineSpec
@@ -28,26 +33,76 @@ def blame_misses(
         if result.metrics["hit_at_k"] == 1.0:
             continue
         facts = prober.facts(question, result, duplicates)
-        mechanism, evidence, also = cause(facts)
-        level, fix = fix_for(mechanism, question.id, chosen, measured)
+        level_and_fix = fix_for(cause(facts)[0], question.id, chosen, measured)
         context = surroundings(evaluator.text_of(question.document), prober.chunks(), question)
-        stage = mechanism.split(".", maxsplit=1)[0]
-        blames.append(
-            Blame(
-                question.id,
-                question.question,
-                question.category,
-                question.document,
-                question.quote,
-                context,
-                stage,
-                mechanism,
-                evidence,
-                also,
-                level,
-                fix,
-            )
+        blames.append(_blame_of(facts, context, level_and_fix))
+    return blames
+
+
+def _blame_of(facts: Facts, context: str, level_and_fix: tuple[str, str]) -> Blame:
+    """The blame of one miss: its one cause by the order of design §9.1, with the level and fix given."""
+    question = facts.question
+    mechanism, evidence, also = cause(facts)
+    level, fix = level_and_fix
+    stage = mechanism.split(".", maxsplit=1)[0]
+    return Blame(
+        question.id,
+        question.question,
+        question.category,
+        question.document,
+        question.quote,
+        context,
+        stage,
+        mechanism,
+        evidence,
+        also,
+        level,
+        fix,
+    )
+
+
+def blame_external(
+    evaluator: Evaluator,
+    external: External,
+    measured: list[Evaluation],
+    chosen: PipelineSpec | None,
+    held_out: list[Question],
+) -> list[Blame]:
+    """One blame per held-out question the user's own pipeline missed, from spans and ranks (§7.5);
+    ``chosen`` is the search's choice, named first as the pipeline that finds a question."""
+    chunks = external.placed.chunks
+    texts = [chunk.text for chunk in chunks]
+    keyword = stages.find("retriever", "bm25").function(texts, None, None) if external.chunks_known else None
+    duplicates = near_duplicates(chunks, evaluator)
+    sizes = [estimate_tokens(text) for text in texts]
+    settings = evaluator.settings
+    blames: list[Blame] = []
+    for question in held_out:
+        result = external.evaluation.results[question.id]
+        if result.metrics["hit_at_k"] == 1.0:
+            continue
+        holders = {chunk.index for chunk in chunks if is_hit(chunk, question)}
+        found = [index for index, _ in keyword(question.question, settings.depth)] if keyword else []
+        ranks = [rank for rank, index in enumerate(found, start=1) if index in holders]
+        facts = Facts(
+            question,
+            chunks,
+            result.retrieved,
+            result.final,
+            settings.k,
+            "pipeline",
+            "none",
+            sizes,
+            estimate_tokens(question.quote),
+            bm25_rank=ranks[0] if ranks else None,
+            duplicates=duplicates,
+            chunks_known=external.chunks_known,
+            external=True,
         )
+        here = [chunk for chunk in chunks if chunk.document == question.document]
+        context = surroundings(evaluator.text_of(question.document), here, question)
+        level_and_fix = external_fix(cause(facts)[0], question.id, measured, chosen)
+        blames.append(_blame_of(facts, context, level_and_fix))
     return blames
 
 
