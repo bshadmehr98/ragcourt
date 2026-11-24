@@ -51,6 +51,7 @@ PLANTED = {
     "retriever.keyword_only": {"retriever": "bm25", "dense_rank": 2},
     "retriever.fusion": {"retriever": "hybrid", "bm25_rank": 4},
     "retriever.crowded": {"retriever": "bm25", "duplicates": frozenset({0, 2})},
+    "retrieval.not_found": {"retriever": "pipeline"},
     "ranking.reranker_demoted": {"retrieved": (1, 0), "final": (0, 1), "reranker": "llm"},
     "ranking.distracted": {"retrieved": (0, 1), "final": (0, 1), "twin_chunks": frozenset({0})},
     "ranking.duplicates": {
@@ -73,6 +74,7 @@ NEAR_MISSES = {
     "retriever.keyword_only": {"retriever": "bm25"},
     "retriever.fusion": {"retriever": "hybrid"},
     "retriever.crowded": {"retriever": "bm25", "duplicates": frozenset({0})},
+    "retrieval.not_found": {"retriever": "pipeline", "retrieved": (0, 1), "final": (0, 1)},
     "ranking.reranker_demoted": {"retrieved": (0, 1), "final": (0, 1), "reranker": "llm"},
     "ranking.distracted": {"retrieved": (0, 1), "final": (0, 1)},
     "ranking.duplicates": {"retrieved": (0, 1), "final": (0, 1), "k": 1},

@@ -47,6 +47,8 @@ def not_rescued(facts: Facts) -> str | None:
     if after is None:
         return None
     before = facts.rank(facts.retrieved, facts.hit)
+    if facts.retriever == "pipeline":
+        return f"your pipeline returns it at rank {after}, below k = {facts.k}"
     if facts.reranker == "none":
         return f"retrieved at rank {after}, below k = {facts.k}; no reranker"
     return f"rank {before} before the reranker, {after} after it"

@@ -9,6 +9,7 @@ runs every one.
 |---|---|
 | [`quickstart.py`](quickstart.py) | audit a folder: no model, no network, sizes estimated |
 | [`own_chunker.py`](own_chunker.py) | your own chunker in one file, next to the built-ins |
+| [`own_pipeline.py`](own_pipeline.py) | your own retrieval system in one function: scored on the same questions, its misses blamed |
 | [`boundaries.py`](boundaries.py) | a document with its chunk boundaries marked |
 | [`questions.py`](questions.py) | questions with gold quotes, filtered by the judge, each drop with its reason |
 | [`rank.py`](rank.py) | the greedy search: leaderboards with intervals, ties said, misses blamed |

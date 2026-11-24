@@ -66,6 +66,31 @@ def title_boost(
     return search
 ```
 
+## The system you already have
+
+If you already run a retrieval system, wrap it in one function instead of rebuilding it: a question in,
+your chunk texts out, best first.
+
+```text
+# ragcourt_stages/mine.py
+from ragcourt.stages import pipeline
+
+@pipeline("mine")
+def mine(query: str, depth: int) -> list[str]:
+    return [hit.text for hit in my_index.search(query, limit=depth)]
+```
+
+```text
+ragcourt rank my_docs/ --pipeline mine --no-search    # only your system: no embedding model needed
+ragcourt rank my_docs/ --pipeline mine                # and compare it with the best ragcourt finds
+```
+
+ragcourt scores it on the same questions and explains its misses. It cannot look inside your system, so
+a chunk it does not return is `retrieval.not_found`, not an embedder or a retriever cause; list your
+chunks with `@pipeline_chunks` and a quote cut in two is traced to your chunker. Chunks that are not text
+of your documents (a title or summary added) cannot be scored and are counted. The details are in
+[the stages page](../docs/stages.md).
+
 ## Rules
 
 - A name is letters, digits, `_`, `.` and `-`. Two stages of one kind with the same name is an error naming

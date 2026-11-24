@@ -17,6 +17,7 @@ arithmetic on spans, ranks and a few extra measurements; no model is asked.
 | retriever | `keyword_only` | BM25 misses it; dense search finds it |
 | | `fusion` | one half of the hybrid search finds it; the fused list does not |
 | | `crowded` | near-duplicates fill the retrieved list |
+| retrieval | `not_found` | only for [your own pipeline](stages.md#your-own-pipeline-measure-the-system-you-already-have): a chunk holds the quote and your system does not return it |
 | ranking | `reranker_demoted` | the reranker pushed it out of the top k |
 | | `distracted` | the misleading passage ranks above it |
 | | `duplicates` | near-duplicates take the top k |

@@ -648,3 +648,20 @@ the designer's, open to the owner's review. Code comments refer to entries by nu
   password is skipped even when `pypdf` could open it with an empty one. `.docx` stays out until it has
   its own record.
 - **Status:** owner's choice (2026-11-24); the measurements are the designer's.
+
+## D-060: Your own pipeline, as built  (2026-11-24)
+
+- **Found** while building [changes/0006](changes/0006-your-own-pipeline.md). Four points differ from, or
+  were left open by, the record:
+  1. **A text found in more than one place is not scored.** The record said it would count as a hit "only
+     if every place it could be holds the quote". That is never true for two different places, so the rule
+     is said as what it does: its place is unknown, it scores nothing, and it is counted apart from texts
+     that are not found. A corpus that holds the same document twice makes every chunk such a text.
+  2. **One pipeline per run.** The run's blames, ceilings, `explain` and report are then plainly about
+     that pipeline; two would need a second set of each.
+  3. **On `--resume` the pipeline is asked again.** Its evaluation is saved like any other, but its chunk
+     table lives only in the run, and blame needs it.
+  4. **`pipeline_chunks` is its own decorator**, not an attribute of `pipeline` (no magic).
+- **Also:** the steps of the greedy search moved from `flows/rank.py` to `flows/search_steps.py`, because
+  the last step made `rank.py` pass the 250-line limit; nothing in them changed.
+- **Status:** designer's choice.

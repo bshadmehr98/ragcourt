@@ -24,7 +24,8 @@ ragcourt explain            # why each missed question was missed, and what woul
 ragcourt report             # the same as one HTML file
 ```
 
-PDFs: `pip install 'ragcourt[pdf]'`. Also: change any model with `ragcourt models set`, add your own chunker in one file, let `ragcourt
+Already have a retrieval system? Wrap it in one function and `ragcourt rank docs/ --pipeline mine` scores
+it on the same questions and explains its misses. PDFs: `pip install 'ragcourt[pdf]'`. Also: change any model with `ragcourt models set`, add your own chunker in one file, let `ragcourt
 doctor` suggest one, bring your own questions, resume long runs, set time and money budgets.
 
 ## Learn it

@@ -1,7 +1,8 @@
 """Ceilings: how much each stage costs the chosen pipeline (design §9.2).
 
 The chunker ceiling is the share of questions with no ``chunker`` cause; the retrieval ceiling also removes
-``embedder`` and ``retriever`` causes; then Hit@k. They cannot increase, and each gap is the share lost to
+``embedder`` and ``retriever`` causes (``retrieval`` for a pipeline of the user's own); then Hit@k. They
+cannot increase, and each gap is the share lost to
 that stage.
 """
 
@@ -38,7 +39,7 @@ def _levels(members: list[Question], stage_of: dict[str, str]) -> Ceilings:
         return Ceilings(0, 0.0, 0.0, 0.0)
     lost = [stage_of.get(question.id) for question in members]
     chunker = lost.count("chunker")
-    retrieval = lost.count("embedder") + lost.count("retriever")
+    retrieval = lost.count("embedder") + lost.count("retriever") + lost.count("retrieval")
     ranking = lost.count("ranking")
     return Ceilings(
         total,

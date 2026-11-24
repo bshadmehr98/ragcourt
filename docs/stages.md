@@ -59,3 +59,52 @@ Parameters are keyword arguments with defaults, so they can be set by name (`by_
 a name is letters, digits, `_`, `.` and `-`. Two stages of the same kind with the same name are an error
 that names both places (file and line). Your stages are your own code and run in-process like any Python
 you write, on every command run from that folder (so don't run ragcourt inside a folder you downloaded); code a model wrote is handled differently (design §12).
+
+## Your own pipeline: measure the system you already have
+
+The four kinds above are stages ragcourt runs. If you already have a retrieval system (a vector database, a
+framework's retriever, an index you built months ago), you do not rebuild it from them: you give ragcourt
+one function that asks it.
+
+```python
+from ragcourt.stages import find, pipeline, pipeline_chunks
+
+MY_INDEX = ["Jobs are retried three times.", "A dead job is kept for 14 days."]  # stands for your database
+
+
+@pipeline("mine")
+def mine(query: str, depth: int) -> list[str]:
+    """Your system's chunk texts for one question, best first."""
+    words = set(query.lower().split())
+    return sorted(MY_INDEX, key=lambda chunk: -len(words & set(chunk.lower().split())))[:depth]
+
+
+@pipeline_chunks("mine")  # optional: every chunk your system holds
+def mine_chunks() -> list[str]:
+    return MY_INDEX
+
+
+assert find("pipeline", "mine").function("how long is a dead job kept", 1) == [MY_INDEX[1]]
+```
+
+```text
+ragcourt rank DOCS --pipeline mine              # the search, then yours beside the best it found
+ragcourt rank DOCS --pipeline mine --no-search  # only yours: no embedding model is needed
+ragcourt explain                                # why each question your system missed was missed
+```
+
+- ragcourt finds where each returned text lies in your documents, then scores your system on the same
+  held-out questions, with the same metrics and intervals as any pipeline. The run is about your system:
+  `explain` and the report show **its** misses.
+- A text that is **not text of your documents** (your system rewrote it, or added a title or a summary), or
+  that is found in more than one place, cannot be scored: it keeps its rank, holds no quote, and is counted
+  under the board. If no text at all is found, the run stops and says so.
+- Blame is coarser than for ragcourt's own pipelines, because ragcourt cannot look inside your system:
+  `retrieval.not_found` (a chunk holds the quote and your system does not return it in the top 50) instead
+  of an embedder or retriever mechanism, and the `ranking` mechanisms when it is returned below k. With
+  `@pipeline_chunks`, a quote that no chunk holds whole is the `chunker`'s; without it, such a miss is
+  `retrieval.not_found` with a note.
+- A miss is `confirmed` when a pipeline ragcourt measured in the same run finds the question, and the fix
+  names it.
+- Your function runs in-process like any stage of yours. The question's text goes wherever your code sends
+  it; the plan says so before it is called. Nothing in your system is chosen or tuned.

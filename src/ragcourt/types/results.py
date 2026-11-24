@@ -23,10 +23,18 @@ class PipelineSpec:
     embedder: str | None
     retriever: str
     reranker: str = "none"
+    pipeline: str | None = None  # a system of the user's own, questioned as a whole (change 0006)
+
+    @classmethod
+    def external(cls, name: str) -> PipelineSpec:
+        """The spec of the user's own pipeline ``name``: no stage of it is known."""
+        return cls("-", None, "pipeline", "none", name)
 
     @property
     def label(self) -> str:
-        """``chunker | embedder | retriever | reranker``."""
+        """``chunker | embedder | retriever | reranker``, or ``your pipeline <name>``."""
+        if self.pipeline is not None:
+            return f"your pipeline {self.pipeline}"
         lexical = self.retriever.split(":", maxsplit=1)[0] == "bm25"  # BM25 uses no embedder
         embedder = "-" if lexical or self.embedder is None else self.embedder
         return " | ".join([self.chunker, embedder, self.retriever, self.reranker])

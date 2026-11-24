@@ -2,7 +2,7 @@
 
 ## Status
 
-`accepted` (approved by the maintainer 2026-11-24; proposed the same day). The owner's answers: a flag on `rank` with `--no-search`; chunks that are not text of the source are counted as unscorable; depth is always 50.
+`implemented in 0.1` (accepted by the maintainer 2026-11-24, proposed the same day; what building it changed is D-060). The owner's answers: a flag on `rank` with `--no-search`; chunks that are not text of the source are counted as unscorable; depth is always 50.
 
 ## Context
 

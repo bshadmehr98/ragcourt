@@ -44,7 +44,7 @@ def report_html(results: dict[str, Any], mechanisms: dict[str, str]) -> str:
     quick = " (quick look: no winner is named)" if results["plan"].get("quick") else ""
     parts = [
         f"<h1>ragcourt run {_e(results['run'])}{quick}</h1>",
-        f"<p>Chosen pipeline: <b>{_e(results['chosen'])}</b></p>",
+        f"<p>{'Your' if results.get('pipeline') else 'Chosen'} pipeline: <b>{_e(results['chosen'])}</b></p>",
     ]
     parts += [_board(board) for board in results["boards"]]
     parts.append(_ceilings(results["ceilings"]))
@@ -78,7 +78,9 @@ def _board(board: dict[str, Any]) -> str:
         tie = "<span class='tie'>= </span>" if row["tied_with_top"] else ""
         cells = f"<td>{tie}{_e(row['label'])}</td><td>{_interval(row['overall'])}</td>"
         rows.append(f"<tr>{cells}<td>{_bar(row['overall'])}</td></tr>")
-    if board.get("indicative"):
+    if board["stage"] == "pipeline" and len(board["rows"]) == 1:
+        verdict = "Your pipeline alone: nothing to compare it with in this run."
+    elif board.get("indicative"):
         verdict = "Every category has too few held-out questions to rank: indicative only, no winner."
     elif board["winner"]:
         verdict = f"Winner: {_e(board['winner'])}"

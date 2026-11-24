@@ -8,6 +8,9 @@ design changed is in [`design/changes/`](design/changes/).
 
 ### Added
 
+- `ragcourt rank --pipeline NAME`: a retrieval system of your own, wrapped in one `@pipeline` function, is
+  scored on the same questions and its misses are blamed; `--no-search` runs only yours
+  ([design/changes/0006-your-own-pipeline.md](design/changes/0006-your-own-pipeline.md)).
 - PDF documents with the optional extra `pdf` (`pip install 'ragcourt[pdf]'`); a PDF that cannot be read
   is skipped with its reason ([design/changes/0005-pdf.md](design/changes/0005-pdf.md)).
 - `ragcourt rank --quick`: a quick look with 20 questions per category that shows where the misses are

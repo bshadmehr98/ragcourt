@@ -21,6 +21,10 @@ Retriever = Callable[..., Search]
 Reranker = Callable[..., list[float]]
 
 
+# A pipeline: a retrieval system of the user's own, (query, depth) -> its chunk texts, best first (0006).
+Pipeline = Callable[[str, int], list[str]]
+
+
 @dataclass(frozen=True)
 class Embedded:
     """Vectors for a batch of texts, and each text's length in the model's tokens when it was counted.

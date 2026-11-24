@@ -56,7 +56,7 @@ def results_data(
         if blames
         else None,
         "held_out_ranks": {key: _ranks(chosen_evaluation, key) for key in held_ids},
-        "audit": _audit(evaluator, chosen),
+        "audit": None if chosen.pipeline else _audit(evaluator, chosen),
         "time_minutes": round(minutes, 2),
         "cost_usd": None if None in costs else round(sum(cost or 0.0 for cost in costs), 6),
     }

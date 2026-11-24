@@ -62,6 +62,14 @@ def register(add_parser: AddParser, common: argparse.ArgumentParser) -> None:
         "--budget-minutes", type=float, metavar="M", help="stop before a step that would pass M minutes"
     )
     parser.add_argument("--budget-usd", type=float, metavar="X", help="refuse a run that would cost over $X")
+    parser.add_argument(
+        "--pipeline", metavar="NAME", help="also question your own pipeline (@pipeline) and blame its misses"
+    )
+    parser.add_argument(
+        "--no-search",
+        action="store_true",
+        help="with --pipeline: skip ragcourt's own stages, question only yours",
+    )
     parser.add_argument("--yes", action="store_true", help="start without asking")
     parser.add_argument("--html", action="store_true", help="also write a self-contained report.html")
     parser.set_defaults(run=run)
@@ -86,6 +94,8 @@ def run(args: argparse.Namespace) -> int:
         yes=args.yes,
         resume=args.resume,
         quick=args.quick,
+        pipeline=args.pipeline,
+        no_search=args.no_search,
     )
     folder = run_rank(project, corpus, options, print)
     if folder is None:

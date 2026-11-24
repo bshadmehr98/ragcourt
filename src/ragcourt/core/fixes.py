@@ -33,6 +33,7 @@ FIXES = {
     "retriever.keyword_only": "dense or hybrid retrieval",
     "retriever.fusion": "other fusion weights, or the half of the hybrid that finds it",
     "retriever.crowded": "removing the near-duplicates (the audit lists them)",
+    "retrieval.not_found": "look at how your pipeline embeds and searches",
     "ranking.reranker_demoted": "no reranker, or another one",
     "ranking.distracted": "a reranker",
     "ranking.duplicates": "removing the near-duplicates (the audit lists them)",
@@ -103,3 +104,19 @@ def _no_embedder_finds(question: str, measured: list[Evaluation]) -> bool:
         evaluation.results.get(question) for evaluation in measured if evaluation.spec.retriever == "dense"
     ]
     return all(result is None or result.metrics["hit_at_k"] == 0.0 for result in results)
+
+
+def external_fix(mechanism: str, question: str, measured: list[Evaluation]) -> tuple[str, str]:
+    """The level and fix of a miss of the user's own pipeline (change 0006): ``confirmed`` when a pipeline
+    ragcourt measured in the same run finds the question, and the fix names it."""
+    own = [evaluation for evaluation in measured if evaluation.spec.pipeline is None]
+    finders = [evaluation.spec.label for evaluation in own if _hits(evaluation, question)]
+    if finders:
+        return "confirmed", f"{FIXES[mechanism]}: {finders[-1]} reaches the top k (measured in this run)"
+    if own:
+        return "indicated", f"{FIXES[mechanism]}; none of the {len(own)} pipelines measured here finds it"
+    return (
+        "indicated",
+        f"{FIXES[mechanism]} (not measured: the same command without --no-search compares "
+        "with ragcourt's pipelines)",
+    )

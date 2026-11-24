@@ -9,7 +9,8 @@ ragcourt questions FOLDER [--questions N] [--questions-file FILE] [--writer MODE
 ragcourt questions show [--dropped] [--reason TEXT]
 ragcourt rank FOLDER [--resume] [--quick | --questions N] [--questions-file FILE] [--writer MODEL] [--judge MODEL]
                      [--metric NAME] [--k N] [--embedders LIST] [--chunkers SPECS] [--retrievers LIST]
-                     [--rerankers LIST] [--budget-minutes M] [--budget-usd X] [--yes] [--html]
+                     [--rerankers LIST] [--pipeline NAME [--no-search]] [--budget-minutes M]
+                     [--budget-usd X] [--yes] [--html]
 ragcourt explain [RUN] [--show QUESTION-ID]
 ragcourt report [RUN]
 ragcourt doctor FOLDER [--approve SHA256] [--no-code] [--timeout S] [--questions N] [--embedder NAME]
@@ -35,6 +36,10 @@ Every command also takes `--workdir DIR`, `--config FILE`, `--stages DIR`, `--se
 `rank --quick` is a quick look: 20 questions per category instead of 90, minutes instead of an hour. It
 shows where the misses are and names no winner, because so few questions cannot tell pipelines apart; the
 full run (the same command without `--quick`) reuses its questions.
+
+`rank --pipeline NAME` also questions a retrieval system of your own (a `@pipeline` function in
+`ragcourt_stages/`, see [stages](stages.md)) and blames **its** misses; with `--no-search` only yours is
+run.
 
 Lists: `--embedders nomic-embed-text,bge-m3`; chunker specs carry their own commas, so they are separated
 by `;`: `--chunkers "recursive:size=256,overlap=32;markdown"`.

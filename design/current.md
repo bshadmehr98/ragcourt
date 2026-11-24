@@ -53,6 +53,7 @@ a chunker, an embedding model, a retriever and a reranker, and wants evidence fr
 | **span** | a `[start, end)` pair of character offsets into one document's text |
 | **chunk** | a string a chunker returned, with the span the pipeline found for it (§4.2) |
 | **stage** | one implementation of one of four **kinds**: chunker, embedder, retriever, reranker (§7) |
+| **your pipeline** | a retrieval system ragcourt did not build, registered as one function from a question to ranked chunk texts; ragcourt only questions it (§7.5) |
 | **pipeline** | one chunker, one embedder (or none, for a lexical retriever), one retriever and one reranker (or none) |
 | **question** | a question with its **gold quote**: a span of one document that answers it (§6) |
 | **split** | `dev` (used to choose) or `held-out` (used to report) (§6.4) |
@@ -123,12 +124,13 @@ own file and the package's `__init__.py` holds the ordered list.
 | `core/pipeline.py`, `core/relevance.py`, `core/metrics.py`, `core/stats.py`, `core/leaderboard.py` | one pipeline over the questions; hits and tokens; every metric; intervals and ties; leaderboards | §8 |
 | `core/blame/<stage>.py`, `core/blame/facts.py`, `core/fixes.py`, `core/ceilings.py` | the mechanisms of one stage, in order; what blame looks at; fixes and levels; ceilings | §9 |
 | `core/search.py`, `core/plan.py`, `core/recommend.py`, `core/doctor.py` | the greedy steps and the choice on dev; the estimate; the models that fit a machine; doctor's pure parts | §10, §11.3, §12 |
-| `io/documents.py`, `io/html_text.py`, `io/config.py`, `io/toml_edit.py`, `io/config_template.py` | reading documents and HTML; `ragcourt.toml`, editing a role, the commented template | §4.1, §3.3, §11.4 |
+| `io/documents.py`, `io/html_text.py`, `io/pdf_text.py`, `io/config.py`, `io/toml_edit.py`, `io/config_template.py` | reading documents and HTML; `ragcourt.toml`, editing a role, the commented template | §4.1, §3.3, §11.4 |
 | `io/http.py`, `io/client.py`, `io/ollama.py`, `io/openai_compat.py`, `io/replies.py`, `io/embedders.py` | JSON over HTTP with retries; the one client and its two dialects; building embedders by name | §11.1 |
 | `io/cache.py`, `io/question_file.py`, `io/judge_record.py`, `io/run_files.py`, `io/prompts.py` | the plain files: embeddings, questions, the judge's self-test, runs, prompts | §6.5, §6.6, §10, §13.3 |
 | `io/terminal.py`, `io/narration.py`, `io/audit_output.py`, `io/question_output.py`, `io/rank_output.py`, `io/explain_output.py`, `io/result_data.py`, `io/html_report.py` | everything written for people, rendered from data | §13 |
 | `io/project.py`, `io/ask.py`, `io/machine.py`, `io/isolated_run.py` | a command's view of the project; asking before what cannot be undone; memory of the machine; running generated code apart | §3.3, §11.3, §12 |
-| `flows/questions.py`, `flows/judge.py`, `flows/evaluate.py`, `flows/probes.py`, `flows/blames.py`, `flows/run_plan.py`, `flows/rank.py`, `flows/results.py`, `flows/doctor.py` | the parts of `questions`, `rank` and `doctor` | §6 to §12 |
+| `core/external.py`, `flows/external.py`, `core/blame/retrieval.py` | the user's own pipeline: its texts placed in the documents; asked, scored and blamed | §7.5 |
+| `flows/questions.py`, `flows/judge.py`, `flows/evaluate.py`, `flows/probes.py`, `flows/blames.py`, `flows/run_plan.py`, `flows/rank.py`, `flows/search_steps.py`, `flows/results.py`, `flows/doctor.py` | the parts of `questions`, `rank` and `doctor` | §6 to §12 |
 | `commands/<command>.py` | one command per file | §13.1 |
 | `prompts/*.txt`, `prompts/judge_cases.jsonl` | every prompt a model is given, and the judge's labelled self-test cases | §6.6 |
 | `cli.py`, `__main__.py` | `ragcourt …`, `python -m ragcourt` | §13.1 |
@@ -436,6 +438,42 @@ Thin adapters, each one file, each behind an optional extra imported only inside
 
 A missing extra gives `ExtraMissing` naming `pip install 'ragcourt[<extra>]'`.
 
+### 7.5 Your own pipeline (change 0006)
+
+A fifth kind, `pipeline`, is a retrieval system ragcourt did not build:
+
+```python
+from ragcourt.stages import pipeline, pipeline_chunks
+
+@pipeline("mine")
+def mine(query: str, depth: int) -> list[str]: ...   # your chunk texts, best first
+
+@pipeline_chunks("mine")                              # optional: every chunk your system holds
+def mine_chunks() -> list[str]: ...
+```
+
+`rank DOCS --pipeline mine` runs the search and then a last step, `pipeline`: the function is called once
+per question with the question's text and depth 50, and its held-out numbers are put on a board beside the
+search's chosen pipeline, with the tie rule of §8.4. `--no-search` skips the four steps, so no embedding
+model is needed. One pipeline per run. It is one fixed system: nothing is chosen on dev.
+
+- **Spans:** each distinct returned text is searched in every document (§4.2). Found in one place: that is
+  its span. Not found (rewritten, or a title or summary added), or found in more than one place (its place
+  is unknown): it cannot be scored; it keeps its rank, holds no quote and covers no tokens, and both counts
+  are printed under the board and kept in the results. When no text at all is found, the run stops.
+- **The run is about the pipeline:** `chosen` in the results, the ceilings, the blames, `explain` and the
+  report are the user's pipeline's; `search_chosen` names the search's choice. The audit summary of the
+  chosen chunker is left out.
+- **Blame** (§9.1) uses only what spans and ranks show: the `chunker` mechanisms `too_small`, `split` and
+  `dropped` when the chunks are listed; the stage `retrieval` with the one mechanism
+  `retrieval.not_found` (a chunk holds the quote, or the chunks are not listed, and the pipeline does not
+  return it), with BM25's rank over the listed chunks as its probe; then the `ranking` mechanisms. The
+  `embedder` and `retriever` stages are never blamed: ragcourt cannot see inside. A blame is `confirmed`
+  when a pipeline ragcourt measured in the same run hits the question (the fix names it), else `indicated`.
+- **The plan** names the pipeline and its file, says it is called once per question with the question's
+  text, that what it contacts is the user's business, and whether its chunks are listed. Its time is not in
+  the estimate. On `--resume` it is asked again.
+
 ## 8. The pipeline and metrics
 
 ### 8.1 Running one pipeline
@@ -742,6 +780,7 @@ ragcourt questions <folder> [--questions N] [--questions-file FILE] [--writer MO
 ragcourt questions show [--dropped] [--reason TEXT]
 ragcourt rank <folder> [--resume] [--quick | --questions N] [--questions-file FILE] [--writer MODEL] [--judge MODEL]
               [--metric NAME] [--k N] [--embedders LIST] [--chunkers SPECS] [--retrievers LIST] [--rerankers LIST]
+              [--pipeline NAME [--no-search]]
               [--budget-minutes M] [--budget-usd X] [--yes] [--html]
 ragcourt explain [RUN] [--show QUESTION-ID]
 ragcourt report [RUN]
@@ -807,7 +846,8 @@ Ollama server on a free port (integration tests) answers the `ollama` dialect's 
 ### 15.3 Examples
 
 One file per concept, in reading order, run by `tests/e2e/`: `quickstart.py` (audit a folder),
-`boundaries.py` (see the cuts), `own_chunker.py` (a stage in one file), `questions.py` (gold quotes,
+`boundaries.py` (see the cuts), `own_chunker.py` (a stage in one file), `own_pipeline.py` (the system you
+already have, scored and blamed), `questions.py` (gold quotes,
 drops, splits), `rank.py` (a leaderboard with intervals and ties), `budget_recall.py` (why size cannot
 win), `blame.py` (one miss per cause), `cache_and_budget.py`, `judge.py` (what the judge is asked and shown, its self-test, its verdicts),
 `models.py` (changing a role), `report.py`, `doctor.py`.
@@ -917,6 +957,14 @@ Guarantees 34 and 35 are proposed in [changes/0002](changes/0002-established-pac
 40. **A PDF that cannot be read is said, not guessed.** Without the extra, each PDF is listed as skipped
     with the install command; a PDF with no text, an encrypted one and a damaged one are each skipped with
     their reason, and the other documents are still loaded.
+41. **Your pipeline is scored like any other.** A `@pipeline` in `ragcourt_stages/` that wraps a known
+    built-in pipeline gets, with `--pipeline`, the same held-out metrics as that pipeline; with
+    `--no-search` no embedding model is called; returned texts not found in the documents are counted
+    under the board and score nothing; the plan names the pipeline before anything is called.
+42. **Its misses are blamed as far as code can see.** Each held-out miss of the user's pipeline has one
+    cause: a `chunker` mechanism only when its chunks are listed, else `retrieval.not_found` or a
+    `ranking` mechanism; without its chunks a retrieval miss says to list them; a blame is `confirmed` only
+    when a pipeline measured in the same run hits the question.
 
 ## 17. Implemented and planned
 
@@ -930,7 +978,10 @@ questions.
 
 ## 18. Known limits (0.1)
 
-Chunkers must return text found in the source (no added context or rewriting); text formats and PDFs with a text layer (no
+Chunkers must return text found in the source (no added context or rewriting), and a chunk of your own
+pipeline that is not text of the source, or is found in more than one place, cannot be scored; blame for
+your own pipeline stops at `retrieval.not_found` (ragcourt cannot see its embedder or its search), and one
+pipeline is questioned per run; text formats and PDFs with a text layer (no
 scanned pages, no images; PDF text is what the extractor gives: columns may be read out of order, words
 broken at line ends stay broken, and a header repeated on every page of one PDF is not caught by
 `boilerplate.repeated`, which counts documents); one language's stop words and sentence rules (English) for the closed-book check and

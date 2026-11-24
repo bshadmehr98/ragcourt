@@ -3,12 +3,13 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, replace
+from pathlib import Path
 
 from ragcourt import stages
 from ragcourt.core.pipeline import Settings
 from ragcourt.core.plan import Estimate, Workload, estimate
 from ragcourt.core.search import Candidates
-from ragcourt.errors import BudgetExceeded
+from ragcourt.errors import BudgetExceeded, ConfigError
 from ragcourt.flows.checks import (
     check_budget_values,
     check_categories,
@@ -42,11 +43,25 @@ class RankOptions:
     yes: bool = False
     resume: bool = False
     quick: bool = False
+    pipeline: str | None = None  # a pipeline of the user's own to question (change 0006)
+    no_search: bool = False
+
+
+def pipeline_file(name: str) -> str:
+    """The file a pipeline is defined in (an unknown name is an error that lists the names)."""
+    return Path(stages.find("pipeline", name).file).name
+
+
+def chunks_known(name: str) -> bool:
+    """True when the pipeline also registered the function that lists its chunks."""
+    return name in stages.names("pipeline_chunks")
 
 
 def candidates_of(project: Project, options: RankOptions) -> Candidates:
     """The stages the search may try: flags first, then ``ragcourt.toml``, then the defaults."""
     search = project.config.search
+    if options.no_search:
+        return Candidates((), (), (), ())
     return Candidates(
         options.embedders or project.role("embedders").models,
         options.chunkers or search.chunkers,
@@ -70,7 +85,8 @@ def make_plan(
     guess = estimate(Workload(to_write, total, candidates.embedders, counts, llm))
     flag = ",".join(options.embedders) if options.embedders else None
     roles = [project.role("writer", options.questions.writer), project.role("judge", options.questions.judge)]
-    roles += [project.role("embedders", flag), project.role("reranker")]
+    if not options.no_search:
+        roles += [project.role("embedders", flag), project.role("reranker")]
     lists = {
         "embedders": list(candidates.embedders),
         "chunkers": list(candidates.chunkers),
@@ -88,6 +104,12 @@ def make_plan(
         "settings": vars(settings_of(project, options)),
         "seed": project.config.seed,
     }
+    if options.pipeline:
+        plan["pipeline"] = {
+            "name": options.pipeline,
+            "file": pipeline_file(options.pipeline),
+            "chunks_known": chunks_known(options.pipeline),
+        }
     if options.quick:
         plan["quick"] = {
             "per_category": QUICK_PER_CATEGORY,
@@ -167,6 +189,10 @@ def check_run(project: Project, options: RankOptions, candidates: Candidates) ->
     )
     check_stages(candidates)
     check_budget_values(*budgets(project, options))
+    if options.pipeline:
+        pipeline_file(options.pipeline)  # an unknown name is said before the plan
+    elif options.no_search:
+        raise ConfigError("--no-search leaves nothing to run: name your pipeline with --pipeline NAME.")
 
 
 def check_models(project: Project, options: RankOptions, candidates: Candidates, to_write: int) -> None:

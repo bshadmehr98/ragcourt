@@ -12,6 +12,7 @@ import pytest
 from ragcourt.core.leaderboard import Scoring, board
 from ragcourt.core.stats import resamples
 from ragcourt.flows import rank as rank_flow
+from ragcourt.flows import search_steps
 from ragcourt.flows.probes import Prober
 from ragcourt.io.rank_output import board_text
 from ragcourt.io.result_data import board_data
@@ -62,13 +63,16 @@ def test_ac16_a_step_over_the_budget_stops_with_finished_steps_kept(
 ) -> None:
     project, _ = rank_project
     ticks = iter(range(0, 10_000, 600))  # every look at the rank flow's clock is ten minutes later
-    monkeypatch.setattr(rank_flow, "time", SimpleNamespace(monotonic=lambda: float(next(ticks))))
+    clock = SimpleNamespace(monotonic=lambda: float(next(ticks)))
+    monkeypatch.setattr(rank_flow, "time", clock)
+    monkeypatch.setattr(search_steps, "time", clock)  # the guard before each step reads the same clock
     code, out, err = run("rank", corpus, "--yes", "--budget-minutes", "25")
     assert code == 4 and "over the budget" in err and "Finished steps:" in err
     assert "Leaderboard" in out
     folder = next((project / ".ragcourt" / "runs").glob("*"))
     assert (folder / "partial.json").is_file() and not (folder / "results.json").exists()
     monkeypatch.setattr(rank_flow, "time", time)
+    monkeypatch.setattr(search_steps, "time", time)
     assert run("rank", corpus, "--yes", "--resume")[0] == 0
     assert (folder / "results.json").is_file()
 

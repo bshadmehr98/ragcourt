@@ -31,17 +31,9 @@ def plan_text(plan: dict[str, Any], guess: Any) -> str:
         [role["role"], ", ".join(role["models"]), _source(role["source"]), *ROLE_JOBS[role["role"]]]
         for role in plan["roles"]
     ]
-    candidates = plan["candidates"]
-    steps = [
-        ["1. questions", _question_step(plan["questions"], guess.question_calls)],
-        [
-            "2. embedders",
-            f"{', '.join(candidates['embedders'])}; {candidates['chunkers'][0]}, dense, no reranker",
-        ],
-        ["3. chunkers", f"{', '.join(candidates['chunkers'])}; the best embedder"],
-        ["4. retrievers", f"{', '.join(candidates['retrievers'])}; the best chunker and embedder"],
-        ["5. rerankers", f"none, {', '.join(candidates['rerankers'])}; the best so far"],
-    ]
+    steps = [["1. questions", _question_step(plan["questions"], guess.question_calls)], *_search_steps(plan)]
+    if plan.get("pipeline"):
+        steps.append([f"{len(steps) + 1}. your pipeline", _pipeline_step(plan["pipeline"], plan["settings"])])
     header = f"{plural(plan['documents'], 'document')}; metric {plan['metric']}; k = {plan['settings']['k']}."
     lines = [
         section("Plan"),
@@ -55,8 +47,11 @@ def plan_text(plan: dict[str, Any], guess: Any) -> str:
         f"\nAbout {plural(max(1, round(guess.minutes)), 'minute')}, estimated from measured speeds "
         "(less with a warm cache)."
     )
-    calls = f"{guess.embed_texts} texts to embed and {guess.rerank_calls} reranking calls"
-    lines.append(f"Up to {calls}. Local models cost nothing.")
+    if plan["candidates"]["embedders"]:
+        calls = f"{guess.embed_texts} texts to embed and {guess.rerank_calls} reranking calls"
+        lines.append(f"Up to {calls}. Local models cost nothing.")
+    if plan.get("pipeline"):
+        lines += ["", pipeline_note(plan["pipeline"])]
     if plan.get("quick"):
         lines += ["", quick_note(plan["quick"])]
     return "\n".join(lines)
@@ -69,6 +64,42 @@ def quick_note(quick: dict[str, Any]) -> str:
         "which stages clearly fail.\nIt cannot name a winner: with so few held-out questions only large "
         "differences can be seen (each board says how large).\nThe full run reuses these questions, about "
         f"{quick['full_run_minutes']:.0f} minutes more (estimated): the same command without --quick."
+    )
+
+
+def _search_steps(plan: dict[str, Any]) -> list[list[str]]:
+    candidates = plan["candidates"]
+    if not candidates["embedders"]:  # --no-search: only your own pipeline is questioned
+        return []
+    return [
+        [
+            "2. embedders",
+            f"{', '.join(candidates['embedders'])}; {candidates['chunkers'][0]}, dense, no reranker",
+        ],
+        ["3. chunkers", f"{', '.join(candidates['chunkers'])}; the best embedder"],
+        ["4. retrievers", f"{', '.join(candidates['retrievers'])}; the best chunker and embedder"],
+        ["5. rerankers", f"none, {', '.join(candidates['rerankers'])}; the best so far"],
+    ]
+
+
+def _pipeline_step(pipeline: dict[str, Any], settings: dict[str, Any]) -> str:
+    return (
+        f"{pipeline['name']} ({pipeline['file']}): asked every question, depth {settings['depth']}; "
+        "not in the estimate"
+    )
+
+
+def pipeline_note(pipeline: dict[str, Any]) -> str:
+    """What happens to the user's own pipeline, said in the plan before it is called."""
+    chunks = (
+        "Its chunks are listed (pipeline_chunks), so a chunker's cut can be told from a retrieval miss."
+        if pipeline["chunks_known"]
+        else "Its chunks are not listed (no pipeline_chunks), so a miss cannot be traced to its chunker."
+    )
+    return (
+        f"Your pipeline {pipeline['name']} is called once per question with the question's text; what it "
+        f"contacts is your code's business, not ragcourt's.\n{chunks}\nIt is one fixed system: nothing in "
+        "it is chosen or tuned; its held-out numbers are shown and its misses are blamed."
     )
 
 
@@ -137,6 +168,10 @@ def _verdict(board: dict[str, Any]) -> str:
         return (
             "Every category has too few held-out questions to rank: these numbers are indicative; no winner."
         )
+    if board["stage"] == "pipeline" and len(board["rows"]) == 1:
+        return (
+            "Your pipeline alone: without --no-search it is compared with the best pipeline ragcourt finds."
+        )
     if board["winner"]:
         return f"Winner: {board['winner']}."
     tied = ", ".join(row["label"] for row in board["rows"] if row["tied_with_top"])
@@ -146,7 +181,8 @@ def _verdict(board: dict[str, Any]) -> str:
 def summary_text(results: dict[str, Any], *, quiet: bool) -> str:
     """The end of a run: the chosen pipeline, its ceilings, the causes of its misses, and the legend."""
     rows = [_ceiling_row(name, value) for name, value in results["ceilings"].items()]
-    lines = [section("Chosen pipeline"), results["chosen"], section("Ceilings (held-out)")]
+    title = "Your pipeline" if results.get("pipeline") else "Chosen pipeline"
+    lines = [section(title), results["chosen"], section("Ceilings (held-out)")]
     lines += [table(["group", "questions", "chunker", "retrieval", "hit@k"], rows), *causes_text(results)]
     share = results.get("confirmed_share")
     if share is not None:

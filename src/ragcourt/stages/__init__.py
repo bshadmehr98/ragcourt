@@ -1,6 +1,7 @@
 """The stage registry: four decorators and lookup by kind and name (design §7.2).
 
-A stage is one function registered under a kind and a name::
+A stage is one function registered under a kind and a name (a ``pipeline`` is a whole retrieval system of
+the user's own, which ragcourt only questions, change 0006)::
 
     from ragcourt.stages import chunker
 
@@ -22,7 +23,9 @@ from typing import Any, TypeVar
 from ragcourt.errors import ConfigError
 from ragcourt.stages.loader import load_builtins, load_folder
 
-KINDS = ("chunker", "embedder", "retriever", "reranker")
+KINDS = ("chunker", "embedder", "retriever", "reranker", "pipeline")
+# What the registry holds: the kinds, and for a pipeline the optional function that lists its chunks.
+REGISTERED = (*KINDS, "pipeline_chunks")
 # Names appear in specs such as ``recursive:size=512``, so ``:``, ``,``, ``=`` and spaces are not allowed.
 NAME = re.compile(r"[A-Za-z0-9][A-Za-z0-9_.\-]*")
 StageFunction = TypeVar("StageFunction", bound=Callable[..., Any])
@@ -39,7 +42,7 @@ class Stage:
     line: int
 
 
-_REGISTRY: dict[str, dict[str, Stage]] = {kind: {} for kind in KINDS}
+_REGISTRY: dict[str, dict[str, Stage]] = {kind: {} for kind in REGISTERED}
 
 
 def register(kind: str, name: str, function: Callable[..., Any]) -> Stage:
@@ -64,7 +67,7 @@ def register(kind: str, name: str, function: Callable[..., Any]) -> Stage:
 
 
 def _check_kind(kind: str) -> None:
-    if kind not in KINDS:
+    if kind not in REGISTERED:
         raise ConfigError(f"Unknown stage kind {kind!r}; the kinds are {', '.join(KINDS)}.")
 
 
@@ -96,6 +99,16 @@ def reranker(name: str) -> Callable[[StageFunction], StageFunction]:
     return _decorator("reranker", name)
 
 
+def pipeline(name: str) -> Callable[[StageFunction], StageFunction]:
+    """Register a retrieval system of your own: ``(query, depth) -> list[str]``, chunk texts best first."""
+    return _decorator("pipeline", name)
+
+
+def pipeline_chunks(name: str) -> Callable[[StageFunction], StageFunction]:
+    """Register ``() -> list[str]``: every chunk the pipeline ``name`` holds, so a cut can be seen."""
+    return _decorator("pipeline_chunks", name)
+
+
 def names(kind: str) -> list[str]:
     """The registered names of one kind, sorted."""
     _check_kind(kind)
@@ -124,6 +137,8 @@ __all__ = [
     "load_builtins",
     "load_folder",
     "names",
+    "pipeline",
+    "pipeline_chunks",
     "register",
     "reranker",
     "retriever",

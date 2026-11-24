@@ -43,7 +43,7 @@ src/ragcourt/
   stages/                      the registry, specs, loader, splitting; chunkers/ embedders/ retrievers/ rerankers/: one file per stage (layer 1)
   core/                        pure functions: offsets, audit/, categories/, questions, metrics, stats, blame/, search (layer 2)
   io/                          files, the model client and dialects, the cache, prompts, everything written for people (layer 2)
-  flows/                       parts several commands share: questions, judge, evaluate, rank, doctor (layer 3)
+  flows/                       parts several commands share: questions, judge, evaluate, rank, external (your own pipeline), doctor (layer 3)
   commands/                    one file per command (layer 4)
   cli.py  __main__.py          the command line (layer 5)
   prompts/                     every prompt and the judge's labelled cases, as files

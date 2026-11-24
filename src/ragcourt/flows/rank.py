@@ -8,17 +8,16 @@ from __future__ import annotations
 
 import time
 from collections.abc import Callable
-from dataclasses import dataclass, field, replace
+from dataclasses import replace
 from pathlib import Path
 
-from ragcourt.core.leaderboard import Scoring, board, by_category, weak_spots
 from ragcourt.core.plan import Estimate
 from ragcourt.core.relevance import token_map
-from ragcourt.core.search import STEPS, Candidates, Choice, choose, step_specs
-from ragcourt.core.stats import Resamples, resamples
-from ragcourt.errors import BudgetExceeded, ConfigError
+from ragcourt.core.search import STEPS, Candidates
+from ragcourt.errors import ConfigError
 from ragcourt.flows.blames import blame_misses
 from ragcourt.flows.evaluate import Evaluator
+from ragcourt.flows.external import pipeline_step
 from ragcourt.flows.questions import ensure_questions
 from ragcourt.flows.results import results_data
 from ragcourt.flows.run_plan import (
@@ -34,13 +33,12 @@ from ragcourt.flows.run_plan import (
     ready_to_go,
     settings_of,
 )
+from ragcourt.flows.search_steps import Questions, SearchState, draws, guard, step_search
 from ragcourt.io import run_files
 from ragcourt.io.project import Project
-from ragcourt.io.rank_output import board_text, failure_note, plan_text, weak_spot_note
-from ragcourt.io.result_data import board_data
+from ragcourt.io.rank_output import plan_text
 from ragcourt.types import Corpus
 from ragcourt.types.questions import Question
-from ragcourt.types.results import Board, Evaluation, PipelineSpec
 
 Say = Callable[[str], None]
 
@@ -126,26 +124,6 @@ def _evaluator(
     return built
 
 
-@dataclass
-class SearchState:
-    """What the search has done so far."""
-
-    steps: list[dict[str, object]] = field(default_factory=list[dict[str, object]])
-    boards: list[Board] = field(default_factory=list[Board])
-    measured: list[Evaluation] = field(default_factory=list[Evaluation])
-    best: PipelineSpec | None = None
-
-
-@dataclass(frozen=True)
-class Questions:
-    """The two splits and their resamples."""
-
-    dev: list[Question]
-    held_out: list[Question]
-    dev_draws: dict[str, Resamples]
-    held_draws: dict[str, Resamples]
-
-
 def _search(
     evaluator: Evaluator,
     candidates: Candidates,
@@ -159,90 +137,24 @@ def _search(
     dev = [question for question in evaluator.questions if question.split == "dev"]
     held = [question for question in evaluator.questions if question.split == "held-out"]
     count = config.search.resamples
-    split = Questions(dev, held, _draws(dev, config.seed, count), _draws(held, config.seed, count))
+    split = Questions(dev, held, draws(dev, config.seed, count), draws(held, config.seed, count))
     state = SearchState()
-    for step in STEPS:
-        _guard(evaluator.folder, options, (step, guess.step_minutes.get(step, 0.0), started), (plan, state))
-        _step(step, evaluator, candidates, (str(plan["metric"]), split), state, say)
-    if state.best is None:
+    for step in () if options.no_search else STEPS:
+        guard(evaluator.folder, options, (step, guess.step_minutes.get(step, 0.0), started), (plan, state))
+        step_search(step, evaluator, candidates, (str(plan["metric"]), split), state, say)
+    extra: dict[str, object] = {}
+    if options.pipeline:
+        # The run is then about the user's pipeline: its misses are blamed, the search is the comparison.
+        subject, blames, extra = pipeline_step(
+            evaluator, options.pipeline, state, (str(plan["metric"]), split), say
+        )
+    elif state.best is None:
         raise ConfigError("No pipeline was evaluated; check the candidates in [search].")
-    blames = blame_misses(evaluator, state.best, state.measured, split.held_out)
+    else:
+        subject, blames = state.best, blame_misses(evaluator, state.best, state.measured, split.held_out)
     minutes = (time.monotonic() - started) / 60
     searched = (state.steps, state.boards, state.measured)
-    run_files.write_results(
-        evaluator.folder, results_data(evaluator, planned, searched, state.best, blames, minutes)
-    )
+    results = results_data(evaluator, planned, searched, subject, blames, minutes)
+    run_files.write_results(evaluator.folder, {**results, **extra})
     run_files.log_progress(evaluator.folder, {"step": "done", "event": "end"})
     return evaluator.folder
-
-
-def _guard(
-    folder: Path,
-    options: RankOptions,
-    timing: tuple[str, float, float],
-    context: tuple[dict[str, object], SearchState],
-) -> None:
-    """Stop before a step that would go over the time budget, keeping what is finished (§10.3)."""
-    step, step_minutes, started = timing
-    plan, state = context
-    spent = (time.monotonic() - started) / 60
-    try:
-        check_budget(options.budget_minutes, spent + step_minutes, f"the {step} step")
-    except BudgetExceeded as error:
-        done = ", ".join(str(item["step"]) for item in state.steps) or "none"
-        run_files.write_partial(folder, {"plan": plan, "steps": state.steps, "stopped_before": step})
-        raise BudgetExceeded(f"{error} Finished steps: {done}; kept in {folder}.") from error
-
-
-def _step(
-    step: str,
-    evaluator: Evaluator,
-    candidates: Candidates,
-    scoring: tuple[str, Questions],
-    state: SearchState,
-    say: Say,
-) -> None:
-    metric, split = scoring
-    config = evaluator.project.config
-    run_files.log_progress(evaluator.folder, {"step": step, "event": "start"})
-    say(f"\nStep {len(state.steps) + 1} of 4: {step}s …")
-    evaluations = [evaluator.evaluate(spec) for spec in step_specs(step, state.best, candidates)]
-    state.measured += evaluations
-    choice = choose(evaluations, split.dev, metric, split.dev_draws)
-    state.best = choice.best
-    leaderboard_scoring = Scoring(split.held_out, metric, config.questions.min_held_out, split.held_draws)
-    leaderboard = board(step, evaluations, leaderboard_scoring)
-    state.boards.append(leaderboard)
-    say(board_text(board_data(leaderboard), _chosen_note(choice)))
-    for evaluation in [item for item in evaluations if item.costs.rerank_failures]:
-        say(failure_note(evaluation.spec.label, evaluation.costs.rerank_failures))
-    chosen = next(item for item in evaluations if item.spec == choice.best)
-    for spot in weak_spots(evaluations, chosen, leaderboard_scoring):
-        say(weak_spot_note(spot.category, spot.chosen_mean, spot.better, spot.better_mean))
-    labels = [evaluation.spec.label for evaluation in evaluations]
-    state.steps.append(
-        {
-            "step": step,
-            "evaluated": labels,
-            "chosen": choice.best.label,
-            "tied_on_dev": [s.label for s in choice.tied],
-        }
-    )
-    run_files.log_progress(evaluator.folder, {"step": step, "event": "end", "chosen": choice.best.label})
-
-
-def _chosen_note(choice: Choice) -> str:
-    """The chosen entry, and the rule that chose it among ties (a held-out disagreement is said under
-    the board)."""
-    note = choice.best.label
-    if choice.tied:
-        rule = "kept the cheaper, then the higher on dev, then the smaller"
-        note += f" (tied on dev with {len(choice.tied)} more; {rule})"
-    return note
-
-
-def _draws(questions: list[Question], seed: int, count: int) -> dict[str, Resamples]:
-    return {
-        name: resamples(len(members), count, f"{seed}:{name}")
-        for name, members in by_category(questions).items()
-    }
