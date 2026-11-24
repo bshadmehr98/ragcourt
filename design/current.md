@@ -181,8 +181,8 @@ the input silently at the smallest of the context length, the request's `num_ctx
 (`bge-m3` advertises 8,192 tokens and used 2,048 by default; `all-minilm` 512 and 256). The `ollama`
 embedder sets both options to the context length, and measures the limit in force once per model with an
 over-long probe text, whose count is the limit; that measured limit is what `size.over_limit` and
-`chunker.over_limit` use. Any other embedder states its tokenizer: `tiktoken:<encoding>` or
-`hf:<tokenizer id>` (both through the optional `tokens` extra), or a function of its own. When no count can be
+`chunker.over_limit` use. The `endpoint` embedder counts with `tiktoken:<encoding>` when told to (the
+optional `tokens` extra); an embedder of your own may return its own counts. When no count can be
 loaded, sizes use the fallback estimate (characters / 4) and every size and every "over the limit" flag
 from it is labelled **estimated** in every output; a measured count is labelled **measured** (D-008).
 
@@ -201,7 +201,7 @@ skipped with a note.
 
 ### 5.1 Checks
 
-Each check is a function in a table in `core/audit.py`, with a stable code (brief §2; D-024 for the
+Each check is one file in `core/audit/`, listed in its `__init__.py`, with a stable code (brief §2; D-024 for the
 thresholds, all overridable in `ragcourt.toml`):
 
 | Code | Flags a chunk that… |
@@ -414,7 +414,7 @@ Thin adapters, each one file, each behind an optional extra imported only inside
 
 | Extra | Brings | Stages |
 |---|---|---|
-| `tokens` | `tiktoken`, `tokenizers` | exact token counts (§4.3) |
+| `tokens` | `tiktoken` | exact token counts for the `endpoint` embedder (§4.3) |
 | `local` | `sentence-transformers` | embedder `st` and reranker `cross-encoder`, in-process (D-007) |
 | `chonkie` | `chonkie` | chunkers `chonkie.token`, `chonkie.sentence`, `chonkie.recursive`, `chonkie.semantic` |
 | `langchain` | `langchain-text-splitters` | chunkers `langchain.recursive`, `langchain.markdown` |
@@ -606,8 +606,8 @@ digest). Each folder holds `model.json` (identity, dimension, cache version), `k
 `sha256(text)` per line) and `vectors.f32` (the vectors, float32, in the same order), both only ever
 appended to. Loading reads the two files into a dictionary; a torn last write (a key without its vector)
 is trimmed. A cached embedding is never sent again; a second identical run makes no embedding calls. A
-layout change bumps the cache version and starts new folders. `--no-cache` and `ragcourt cache clear`
-exist (D-016).
+layout change bumps the cache version and starts new folders. `ragcourt cache clear`
+deletes the cache (D-016).
 
 ### 10.3 The plan, the estimate and the budget
 

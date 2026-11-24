@@ -91,7 +91,7 @@ the designer's, open to the owner's review. Code comments refer to entries by nu
 - **Choice:** for an Ollama embedder, sizes come from the token counts Ollama reports when embedding
   (`prompt_eval_count`) and the limit from `/api/show` (both measured in
   [history/0002-local-models.md](history/0002-local-models.md) §3). For other embedders, from their
-  tokenizer (`tiktoken:<encoding>` or `hf:<id>`, the `tokens` extra). Otherwise characters / 4,
+  tokenizer (`tiktoken:<encoding>`, the `tokens` extra; `hf:<id>` was planned and dropped, D-058). Otherwise characters / 4,
   labelled `estimated` everywhere it appears.
 - **Status:** designer's choice.
 
@@ -622,3 +622,15 @@ the designer's, open to the owner's review. Code comments refer to entries by nu
   lock is not detected automatically (the message says which file to delete); Windows and macOS run in CI
   but were not tried by hand.
 - **Status:** designer's choice.
+
+## D-058: The design says only what is built: no `--no-cache`, no `hf:` tokenizers  (2026-11-24)
+
+- **Found** by reading the design against the code: §10.2 named a `--no-cache` flag no command has, and
+  §4.3 and §7.4 named `hf:<tokenizer id>` counting and the `tokenizers` package, which were never built
+  (D-008 planned them).
+- **Choice:** both promises are removed (owner, 2026-11-24). `ragcourt cache clear` covers the first.
+  Loading a Hugging Face tokenizer by id downloads it from huggingface.co, which is against "nothing
+  leaves the machine"; token counts stay `tiktoken:<encoding>` for the `endpoint` embedder, Ollama's own
+  for local models, and labelled estimates otherwise. The unused `use_cache` switch of
+  `Project.embedder` is deleted. Either could return through a change record.
+- **Status:** owner's choice.

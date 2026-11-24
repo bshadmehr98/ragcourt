@@ -21,7 +21,7 @@ classifiers = [
     "Topic :: Text Processing :: Indexing",
     "Typing :: Typed",
 ]
-# The core is the standard library alone (design/decisions.md D-003). Optional extras (tokenizers, local
+# The core is the standard library alone (design/decisions.md D-003). Optional extras (token counts, local
 # models, adapters for chunking libraries) arrive with the milestones that use them (design §7.4).
 dependencies = []
 

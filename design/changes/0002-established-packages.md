@@ -79,7 +79,7 @@ best-known user, the openai SDK, has moved to a fork (`httpx2`). requests had a 
 
 It adds no function and no fewer lines; it is speed for size. Most users already have it: chonkie (our own
 extra), Chroma, FAISS, sentence-transformers and LlamaIndex all require numpy, so the added size is usually
-zero. The design's claim that plain Python is "fine to about 200k chunks" (§17, tutorial chapter 6) does
+zero. The design's claim that plain Python is "fine to about 200k chunks" (§18, tutorial chapter 6) does
 not hold by this measurement: 200k chunks would take about 4 seconds per question and several GB of memory
 as Python lists. With numpy, the claim is corrected from a new measurement; without it, it is lowered to
 what the measurement supports.
