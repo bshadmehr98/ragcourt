@@ -13,7 +13,7 @@ from pathlib import Path
 from ragcourt.core.blame import MEANINGS
 from ragcourt.flows.questions import QuestionOptions
 from ragcourt.flows.rank import run_rank
-from ragcourt.flows.run_plan import RankOptions
+from ragcourt.flows.run_plan import QUICK_PER_CATEGORY, RankOptions
 from ragcourt.io import run_files
 from ragcourt.io.documents import load_documents
 from ragcourt.io.html_report import write_report
@@ -40,7 +40,13 @@ def register(add_parser: AddParser, common: argparse.ArgumentParser) -> None:
     parser.add_argument(
         "--resume", action="store_true", help="continue the last unfinished run with the same plan"
     )
-    parser.add_argument("--questions", type=int, metavar="N", help="questions per category (default 90)")
+    size = parser.add_mutually_exclusive_group()
+    size.add_argument("--questions", type=int, metavar="N", help="questions per category (default 90)")
+    size.add_argument(
+        "--quick",
+        action="store_true",
+        help=f"a quick look: {QUICK_PER_CATEGORY} questions per category; shows the misses, names no winner",
+    )
     parser.add_argument(
         "--questions-file", type=Path, metavar="FILE", help="your own questions with quotes (JSONL)"
     )
@@ -65,7 +71,8 @@ def run(args: argparse.Namespace) -> int:
     """Plan, run and report."""
     project = open_project(args.options)
     corpus = load_documents(args.folder)
-    questions = QuestionOptions(args.questions, args.judge, args.writer, args.questions_file)
+    per_category = QUICK_PER_CATEGORY if args.quick else args.questions
+    questions = QuestionOptions(per_category, args.judge, args.writer, args.questions_file)
     options = RankOptions(
         questions,
         args.metric,
@@ -78,6 +85,7 @@ def run(args: argparse.Namespace) -> int:
         args.budget_usd,
         yes=args.yes,
         resume=args.resume,
+        quick=args.quick,
     )
     folder = run_rank(project, corpus, options, print)
     if folder is None:

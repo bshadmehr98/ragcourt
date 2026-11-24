@@ -356,6 +356,11 @@ reported as **too few to rank** with its count, never folded into the average. Q
 per corpus and reused; the plan (§10.3) shows the time this takes before it starts (44 minutes on the
 owner's machine for the 434 questions the FastAPI docs gave, `measured`, D-057).
 
+**A quick look** (`rank --quick`, change 0004): 20 questions per category. Every category is then too few
+to rank, so every board is indicative and names no winner; blame, ceilings and the report work as in any
+run. The plan says this before any model is called, and the summary names the full run, which reuses the
+questions (D-047).
+
 Every leaderboard also prints, per category, the **smallest difference it can tell apart** at that size
 (from the paired bootstrap of §8.4: half the width of the interval of the difference between the top
 two), so "no significant difference" comes with "differences under N points cannot be seen with 60
@@ -618,7 +623,8 @@ tokens to embed after the cache, the number of chat and judge calls, and an esti
 time from a calibration call (one small batch per endpoint, timed) or from the last run's timing; cost from
 the configured prices, or `unknown`. `--budget-usd` and `--budget-minutes` stop the run before a step
 that would exceed them: the steps done are reported, the step not run is named, and nothing is presented
-as complete. Without `--yes`, the first run in a project, and any run estimated over one minute or over
+as complete. A quick look (§6.8) says in the plan what it cannot tell and what the full run would still take.
+Without `--yes`, the first run in a project, and any run estimated over one minute or over
 $0, asks before starting; the plan is printed either way.
 
 ### 10.4 Progress and resume
@@ -724,7 +730,7 @@ ragcourt prompts [show NAME]
 ragcourt audit <folder> [--chunker SPEC]… [--embedder NAME] [--show DOC] [--json] [--fail-on CODE…]
 ragcourt questions <folder> [--questions N] [--questions-file FILE] [--writer MODEL] [--judge MODEL]
 ragcourt questions show [--dropped] [--reason TEXT]
-ragcourt rank <folder> [--resume] [--questions N] [--questions-file FILE] [--writer MODEL] [--judge MODEL]
+ragcourt rank <folder> [--resume] [--quick | --questions N] [--questions-file FILE] [--writer MODEL] [--judge MODEL]
               [--metric NAME] [--k N] [--embedders LIST] [--chunkers SPECS] [--retrievers LIST] [--rerankers LIST]
               [--budget-minutes M] [--budget-usd X] [--yes] [--html]
 ragcourt explain [RUN] [--show QUESTION-ID]
@@ -890,6 +896,12 @@ is removed, except guarantee 26, which needs real models and is a marked test in
 33. **Blame uses its probes.** On the planted cases, `chunker.diluted` is told from `embedder.meaning` by
     the quote-alone probe, `embedder.exact_words` from `embedder.meaning` by the keyword rank, and
     `chunker.over_limit` by the quote's token position.
+
+Guarantees 34 and 35 are proposed in [changes/0002](changes/0002-established-packages.md).
+
+38. **A quick look never names a winner.** `rank --quick` prints in its plan that it cannot name one and
+    why, before any model call; every board of the run is indicative with no winner; the smallest
+    difference per category is printed; the summary names the full run, which reuses its questions.
 
 ## 17. Implemented and planned
 

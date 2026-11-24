@@ -41,8 +41,9 @@ def write_report(folder: Path, results: dict[str, Any], mechanisms: dict[str, st
 
 def report_html(results: dict[str, Any], mechanisms: dict[str, str]) -> str:
     """The whole report."""
+    quick = " (quick look: no winner is named)" if results["plan"].get("quick") else ""
     parts = [
-        f"<h1>ragcourt run {_e(results['run'])}</h1>",
+        f"<h1>ragcourt run {_e(results['run'])}{quick}</h1>",
         f"<p>Chosen pipeline: <b>{_e(results['chosen'])}</b></p>",
     ]
     parts += [_board(board) for board in results["boards"]]

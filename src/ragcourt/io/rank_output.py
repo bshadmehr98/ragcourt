@@ -57,7 +57,19 @@ def plan_text(plan: dict[str, Any], guess: Any) -> str:
     )
     calls = f"{guess.embed_texts} texts to embed and {guess.rerank_calls} reranking calls"
     lines.append(f"Up to {calls}. Local models cost nothing.")
+    if plan.get("quick"):
+        lines += ["", quick_note(plan["quick"])]
     return "\n".join(lines)
+
+
+def quick_note(quick: dict[str, Any]) -> str:
+    """What a quick look can and cannot tell, and the way on to the full run."""
+    return (
+        f"A quick look: {quick['per_category']} questions per category. It shows where the misses are and "
+        "which stages clearly fail.\nIt cannot name a winner: with so few held-out questions only large "
+        "differences can be seen (each board says how large).\nThe full run reuses these questions, about "
+        f"{quick['full_run_minutes']:.0f} minutes more (estimated): the same command without --quick."
+    )
 
 
 def _question_step(questions: dict[str, Any], calls: int) -> str:
@@ -140,6 +152,8 @@ def summary_text(results: dict[str, Any], *, quiet: bool) -> str:
     if share is not None:
         lines.append(f"\n{share:.0%} of blames are confirmed by a measured alternative; the rest by probes.")
     lines.append("Every miss, with its evidence and fix: `ragcourt explain`.")
+    if results["plan"].get("quick"):
+        lines += ["", quick_note(results["plan"]["quick"])]
     if not quiet:
         lines += ["", legend(LEGEND)]
     return "\n".join(lines) + "\n"

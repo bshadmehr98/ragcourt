@@ -7,7 +7,7 @@ ragcourt prompts [show NAME]
 ragcourt audit FOLDER [--chunker SPEC]… [--embedder NAME] [--show DOC] [--fail-on CODE…]
 ragcourt questions FOLDER [--questions N] [--questions-file FILE] [--writer MODEL] [--judge MODEL]
 ragcourt questions show [--dropped] [--reason TEXT]
-ragcourt rank FOLDER [--resume] [--questions N] [--questions-file FILE] [--writer MODEL] [--judge MODEL]
+ragcourt rank FOLDER [--resume] [--quick | --questions N] [--questions-file FILE] [--writer MODEL] [--judge MODEL]
                      [--metric NAME] [--k N] [--embedders LIST] [--chunkers SPECS] [--retrievers LIST]
                      [--rerankers LIST] [--budget-minutes M] [--budget-usd X] [--yes] [--html]
 ragcourt explain [RUN] [--show QUESTION-ID]
@@ -31,6 +31,10 @@ Every command also takes `--workdir DIR`, `--config FILE`, `--stages DIR`, `--se
 | `explain`, `report` | no | read a finished run's `results.json` |
 | `doctor` | the doctor role, then the embedders | recommend, maybe write, and measure chunkers |
 | `cache clear` | no | delete the cached embeddings |
+
+`rank --quick` is a quick look: 20 questions per category instead of 90, minutes instead of an hour. It
+shows where the misses are and names no winner, because so few questions cannot tell pipelines apart; the
+full run (the same command without `--quick`) reuses its questions.
 
 Lists: `--embedders nomic-embed-text,bge-m3`; chunker specs carry their own commas, so they are separated
 by `;`: `--chunkers "recursive:size=256,overlap=32;markdown"`.

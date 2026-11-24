@@ -74,6 +74,7 @@ ragcourt rank my_docs/ --embedders nomic-embed-text,bge-m3
 ragcourt rank my_docs/ --chunkers "markdown;sentence:size=200;recursive:size=1024,overlap=128"
 ragcourt rank my_docs/ --retrievers dense,hybrid --rerankers llm
 ragcourt rank my_docs/ --metric hit_at_k --k 3
+ragcourt rank my_docs/ --quick                  # a quick look: 20 per kind, minutes, no winner named
 ragcourt rank my_docs/ --questions 150          # more questions per kind: narrower intervals
 ```
 

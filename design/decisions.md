@@ -365,6 +365,8 @@ the designer's, open to the owner's review. Code comments refer to entries by nu
 - **First proposal:** a labelled "first look" of 8 questions per category.
 - **Owner (2026-11-22):** writing 540 questions taking time is fine; drop the one-minute answer. The
   designer agreed: a ranking on a handful of questions per category is noise that people would act on.
+- **Reopened 2026-11-24** by the owner ([changes/0004](changes/0004-quick-look.md)): `rank --quick` exists,
+  and by the too-few rule it never names a winner.
 - **Result:** no quick mode, no first-minute test; one `rank`, with the plan and time shown first, visible
   progress and resume (D-035). Guarantee 26 now tests progress and resume.
 - **Status:** owner's answer.

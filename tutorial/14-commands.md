@@ -25,6 +25,7 @@
 | `--embedders LIST`, `--chunkers SPECS`, `--retrievers LIST`, `--rerankers LIST` | what to compare (chunker specs separated by `;`) |
 | `--metric NAME`, `--k N` | the metric to rank by (chapter 10), how many chunks count |
 | `--questions N` | questions per kind (default 90) |
+| `--quick` | a quick look: 20 questions per kind; shows the misses, names no winner; the full run reuses them |
 | `--questions-file FILE` | add your own questions (below) |
 | `--writer MODEL`, `--judge MODEL` | a different model for this run only |
 | `--budget-minutes M`, `--budget-usd X` | stop before going over (chapter 18) |

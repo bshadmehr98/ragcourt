@@ -8,6 +8,9 @@ design changed is in [`design/changes/`](design/changes/).
 
 ### Added
 
+- `ragcourt rank --quick`: a quick look with 20 questions per category that shows where the misses are
+  and never names a winner; the full run reuses its questions
+  ([design/changes/0004-quick-look.md](design/changes/0004-quick-look.md)).
 - The repository in the shape of the owner's other projects: the contributor rules, the Claude Code
   workflow (skills, hooks, reviewer agents), the GitHub workflows, `scripts/check.sh` with the
   import-layer check, and the package skeleton with its base error.

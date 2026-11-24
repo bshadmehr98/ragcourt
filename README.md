@@ -18,7 +18,8 @@ You need Python 3.11+ and [Ollama](https://ollama.com).
 pip install ragcourt
 ragcourt setup              # once: picks local models that fit your machine, downloads them if you agree
 ragcourt audit docs/        # seconds, no chat model: how each chunker cuts your text
-ragcourt rank docs/         # shows its plan first, then ranks every stage with intervals
+ragcourt rank docs/ --quick # minutes: where your documents are missed and why; names no winner
+ragcourt rank docs/         # about an hour: ranks every stage with intervals (reuses the quick look's questions)
 ragcourt explain            # why each missed question was missed, and what would fix it
 ragcourt report             # the same as one HTML file
 ```

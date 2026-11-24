@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 
 from ragcourt import stages
 from ragcourt.core.pipeline import Settings
@@ -23,6 +23,8 @@ from ragcourt.io.question_file import corpus_hash
 from ragcourt.stages.specs import parse_spec
 from ragcourt.types import Corpus
 
+QUICK_PER_CATEGORY = 20  # a quick look: too few to name a winner, enough to see the misses (0004)
+
 
 @dataclass(frozen=True)
 class RankOptions:
@@ -39,6 +41,7 @@ class RankOptions:
     budget_usd: float | None = None
     yes: bool = False
     resume: bool = False
+    quick: bool = False
 
 
 def candidates_of(project: Project, options: RankOptions) -> Candidates:
@@ -85,7 +88,23 @@ def make_plan(
         "settings": vars(settings_of(project, options)),
         "seed": project.config.seed,
     }
+    if options.quick:
+        plan["quick"] = {
+            "per_category": QUICK_PER_CATEGORY,
+            "full_run_minutes": _minutes_after_quick(project, corpus, options, (candidates, counts, llm)),
+        }
     return plan, guess
+
+
+def _minutes_after_quick(
+    project: Project, corpus: Corpus, options: RankOptions, work: tuple[Candidates, dict[str, int], int]
+) -> float:
+    """What the full run would still take after this quick look, whose questions it reuses (estimated)."""
+    candidates, counts, llm = work
+    full = replace(options.questions, per_category=None)
+    _, _, total = question_plan(project, corpus, full)
+    still = max(total - QUICK_PER_CATEGORY * len(project.config.questions.categories), 0)
+    return round(estimate(Workload(still, total, candidates.embedders, counts, llm)).minutes, 1)
 
 
 def ready_to_go(project: Project, *, yes: bool, minutes: float, cost: float | None) -> bool:
