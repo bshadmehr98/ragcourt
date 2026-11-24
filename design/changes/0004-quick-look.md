@@ -2,7 +2,7 @@
 
 ## Status
 
-`proposed` (2026-11-24). Reopens D-034, the owner's own answer of 2026-11-22 ("no quick mode"), at the
+`accepted` (approved by the maintainer 2026-11-24; proposed the same day). The owner's answers: 20 questions per category; all four steps are kept. Reopens D-034, the owner's own answer of 2026-11-22 ("no quick mode"), at the
 owner's request of 2026-11-24.
 
 ## Context

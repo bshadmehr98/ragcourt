@@ -2,7 +2,7 @@
 
 ## Status
 
-`proposed` (2026-11-24).
+`accepted` (approved by the maintainer 2026-11-24; proposed the same day). The owner's answers: a flag on `rank` with `--no-search`; chunks that are not text of the source are counted as unscorable; depth is always 50.
 
 ## Context
 

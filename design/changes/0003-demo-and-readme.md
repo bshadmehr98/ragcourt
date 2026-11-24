@@ -2,7 +2,7 @@
 
 ## Status
 
-`proposed` (2026-11-24).
+`accepted` (approved by the maintainer 2026-11-24; proposed the same day). The owner's answers: the README shows text, no image; `demo` prints the report's path and opens nothing.
 
 ## Context
 
