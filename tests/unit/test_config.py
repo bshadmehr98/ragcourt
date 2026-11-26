@@ -1,6 +1,7 @@
 """Reading ragcourt.toml (design §3.3, §11.4, D-039)."""
 
 import os
+import sys
 from pathlib import Path
 
 import pytest
@@ -121,7 +122,7 @@ def test_a_file_that_is_not_utf8_says_so(tmp_path: Path) -> None:
         load_config(tmp_path)
 
 
-@pytest.mark.skipif(os.geteuid() == 0, reason="root reads every file")
+@pytest.mark.skipif(sys.platform == "win32" or os.geteuid() == 0, reason="this user reads every file")
 def test_a_file_that_cannot_be_read_says_so(tmp_path: Path) -> None:
     config = write(tmp_path, 'stages_dir = "s"\n')
     config.chmod(0)

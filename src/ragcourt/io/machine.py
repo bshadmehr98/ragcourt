@@ -9,10 +9,13 @@ from __future__ import annotations
 import os
 import shutil
 import subprocess
+import sys
 
 
 def ram_gb() -> float:
     """Physical memory in GB (0 when the OS does not say)."""
+    if sys.platform == "win32":  # no sysconf there
+        return 0.0
     try:
         return os.sysconf("SC_PAGE_SIZE") * os.sysconf("SC_PHYS_PAGES") / 1e9
     except (ValueError, OSError, AttributeError):

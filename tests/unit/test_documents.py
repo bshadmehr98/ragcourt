@@ -1,6 +1,7 @@
 """Loading documents (design §4.1)."""
 
 import os
+import sys
 from pathlib import Path
 
 import pytest
@@ -67,7 +68,7 @@ def test_a_byte_order_mark_is_dropped(tmp_path: Path) -> None:
     assert load_documents(tmp_path).documents[0].text == "# Title\n"
 
 
-@pytest.mark.skipif(os.geteuid() == 0, reason="root reads every file")
+@pytest.mark.skipif(sys.platform == "win32" or os.geteuid() == 0, reason="this user reads every file")
 def test_an_unreadable_file_is_skipped_with_its_reason(tmp_path: Path) -> None:
     write(tmp_path / "ok.md", "fine")
     write(tmp_path / "locked.md", "secret")
