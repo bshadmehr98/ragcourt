@@ -161,8 +161,8 @@ Short reference: [docs/](https://github.com/bshadmehr98/ragcourt/tree/main/docs/
 
 ## Status
 
-0.1, alpha, not yet on PyPI. Developed and tested on Linux with Ollama; Windows and macOS are not yet
-proven. If ragcourt finds
+0.1, alpha, not yet on PyPI. The test suite runs on Linux, macOS and Windows; real models have been run
+only on Linux so far. If ragcourt finds
 something in your documents, or gets something wrong, please
 [open an issue](https://github.com/bshadmehr98/ragcourt/issues). A star helps other people find it.
 
