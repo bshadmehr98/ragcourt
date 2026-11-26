@@ -7,9 +7,13 @@
   uses it by default; nothing is sent to the internet.
 
 ```text
-pip install ragcourt
+pip install git+https://github.com/bshadmehr98/ragcourt
 ragcourt setup
 ```
+
+(Until the first release is on PyPI; from then on it is `pip install ragcourt`, and an extra such as
+`pdf` is `pip install 'ragcourt[pdf]'`. From the repository an extra is
+`pip install 'ragcourt[pdf] @ git+https://github.com/bshadmehr98/ragcourt'`.)
 
 `setup` does this, once per machine:
 

@@ -6,9 +6,11 @@ caused each miss.
 See it in a minute, with no model and no network:
 
 ```text
-pip install ragcourt
+pip install git+https://github.com/bshadmehr98/ragcourt
 ragcourt demo
 ```
+
+(ragcourt 0.1 is not on PyPI yet; from its first release this is `pip install ragcourt`.)
 
 `demo` audits a small bundled set of documents on the spot, then replays a real run recorded with local
 models on a laptop. A few lines of what it prints:
@@ -63,7 +65,7 @@ ragcourt report             # the same as one HTML file
 ```
 
 Already have a retrieval system? Wrap it in one function and `ragcourt rank docs/ --pipeline mine` scores
-it on the same questions and explains its misses. PDFs: `pip install 'ragcourt[pdf]'`. Also: change any model with `ragcourt models set`, add your own chunker in one file, let `ragcourt
+it on the same questions and explains its misses. PDFs: the extra `pdf` ([docs/pdf.md](https://github.com/bshadmehr98/ragcourt/blob/main/docs/pdf.md)). Also: change any model with `ragcourt models set`, add your own chunker in one file, let `ragcourt
 doctor` suggest one, bring your own questions, resume long runs, set time and money budgets.
 
 ## Learn it

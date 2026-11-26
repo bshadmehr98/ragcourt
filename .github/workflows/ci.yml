@@ -26,6 +26,8 @@ jobs:
       - run: uv sync --all-extras --no-extra local --frozen
       - run: uv run ruff check .
       - run: uv run ruff format --check .
+      - run: uv run python scripts/check_layers.py
+      - run: uv run python scripts/check_simple.py
       - run: uv run pyright
       # Default suite only: pyproject's addopts deselect the real_model marker.
       - run: uv run pytest --cov --cov-fail-under=90
@@ -44,6 +46,8 @@ jobs:
           if [ "${#SOURCES[@]}" -gt 0 ]; then uv pip install --python "$RUNNER_TEMP/smoke/bin/python" "${SOURCES[@]}"; fi
           uv pip install --python "$RUNNER_TEMP/smoke/bin/python" dist/*.whl
           "$RUNNER_TEMP/smoke/bin/python" -c "import ragcourt; print(ragcourt.__version__)"
+          # the recording and the bundled corpus are in the wheel
+          (cd "$RUNNER_TEMP" && "$RUNNER_TEMP/smoke/bin/ragcourt" demo -q > /dev/null && test -f .ragcourt/demo/report.html)
           if [ -f examples/quickstart.py ]; then   # the README quickstart, with only the wheel installed
             cd "$RUNNER_TEMP" && "$RUNNER_TEMP/smoke/bin/python" "$GITHUB_WORKSPACE/examples/quickstart.py"
           fi

@@ -91,4 +91,5 @@ docs/  examples/       the short reference and runnable examples, both executed 
    corpus, fixed seeds; real models only in `tests/real/` (marker `real_model`). Never commit a user's
    documents, keys or results.
 10. **Git**: Conventional Commits, small commits; AI-written commits end with a `Co-Authored-By:` line.
-    The repository is local only for now: never push, tag or publish unless the maintainer asks.
+    Changes reach `main` only through pull requests. Push a branch only when the user says so; never push
+    to `main`, tag or publish unless the maintainer asks.

@@ -16,6 +16,8 @@ argument-hint: "<version>"
    If the results format, the bundled corpus or a default model changed since the recording in
    `src/ragcourt/demo/` was made (`recording.json` has its date and command), record it again with real
    models, as design §13.1 says.
+   For the first release on PyPI: the install lines in `README.md` and
+   `tutorial/02-install-and-first-run.md` become `pip install ragcourt`, and their notes about PyPI go.
 5. `verify-before-done` (with `real-model-tests` run, or the reason they were not), then `open-pr`
    (claude[bot] reviews it). The maintainer merges.
 6. After the merge, on `main`: `git tag -a v<version> -m "ragcourt <version>"`. **Ask the maintainer

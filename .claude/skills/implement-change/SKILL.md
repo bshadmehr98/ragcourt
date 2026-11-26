@@ -24,5 +24,4 @@ description: Build an accepted change record or a small change test-first, then 
 5. Commit each green step as a small Conventional Commit; the body says why.
 6. Run `sync-docs`, then `verify-before-done`.
 7. Report to the user: what changed, which tests prove it, anything left open. Then wait for
-   "push" / "ship it" / "I'm happy", which starts `open-pr` (or, while the repository is local only, the
-   maintainer's merge).
+   "push" / "ship it" / "I'm happy", which starts `open-pr`.

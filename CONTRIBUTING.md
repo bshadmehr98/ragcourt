@@ -190,8 +190,7 @@ Smaller implementation choices that need no change record go into
 
 - One branch per change, named `<type>/<short-name>` after the Conventional Commit types
   (`feat/budget-recall`).
-- While the repository is local only, the maintainer merges finished branches into `main`.
-- Once published: fill in [`.github/pull_request_template.md`](.github/pull_request_template.md); claude[bot]
+- Fill in [`.github/pull_request_template.md`](.github/pull_request_template.md); claude[bot]
   reviews every pull request ([`.github/workflows/claude-review.yml`](.github/workflows/claude-review.yml));
   answer each thread; `main` accepts changes only through pull requests with CI green and every review
   thread resolved; the maintainer merges.

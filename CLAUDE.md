@@ -7,12 +7,6 @@ Every task follows one flow. Each step is a skill in `.claude/skills/`:
 ```text
 new task      -> start-task (branch) -> design change? plan-change, then wait for approval
               -> implement-change (tests first) -> sync-docs -> verify-before-done
-done          -> the maintainer merges the branch into main (local git only for now)
-```
-
-The GitHub part of the flow is kept for when the repository is published (it is local git only today):
-
-```text
 "push" / "ship it" / "I'm happy"
               -> open-pr -> claude[bot] reviews it on GitHub
 answers on GitHub -> address-review -> push -> claude[bot] reviews the new commits
@@ -22,15 +16,16 @@ merged        -> finish-task
 - Never edit on `main`: `.claude/hooks/guard-main.sh` blocks the Edit/Write tools on this repository's
   files there (`RAGCOURT_ALLOW_MAIN=1` overrides it). Shell edits and commits are not blocked, so start
   every task with `start-task`.
-- Once published, reviews run only on GitHub: `.github/workflows/claude-review.yml` has claude[bot]
+- Reviews run on GitHub: `.github/workflows/claude-review.yml` has claude[bot]
   follow `.github/claude-review.md` with the reviewer agents on every push to a pull request. A branch
   pushed without a pull request gets a reminder from `.claude/hooks/after-push.sh`.
 - Write all code with `keep-it-simple` (CONTRIBUTING.md "Keep it simple"); `scripts/check_simple.py` and
   ruff enforce most of it, the `simplicity-reviewer` agent the rest.
 - More skills: `debug-failure`, `add-example`, `add-stage`, `deprecate-and-migrate`,
   `real-model-tests`, `triage-issue`, `learn-from-reviews`, and `release` (only when the maintainer asks).
-- Reviewer agents in `.claude/agents/`: `pr-reviewer`, `test-auditor`, `simplicity-reviewer`. Until
-  the GitHub flow exists, run them locally on a finished branch (give each the branch's commit range).
+- Reviewer agents in `.claude/agents/`: `pr-reviewer`, `test-auditor`, `simplicity-reviewer`.
+  claude[bot] runs them on every pull request; run them locally only when the user asks (give each the
+  branch's commit range).
 - Recommended plugins, enabled in `.claude/settings.json`; install them once with
   `/plugin install pyright-lsp@claude-plugins-official` and
   `/plugin install pr-review-toolkit@claude-plugins-official`.
