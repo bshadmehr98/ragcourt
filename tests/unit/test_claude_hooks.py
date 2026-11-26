@@ -34,6 +34,7 @@ def run_hook(
         env={
             **{k: v for k, v in os.environ.items() if k != "RAGCOURT_ALLOW_MAIN"},
             "CLAUDE_PROJECT_DIR": str(project),
+            "UV_NO_SYNC": "1",  # a hook's `uv run` must not rebuild the environment the tests run in
             **env,
         },
         check=False,
