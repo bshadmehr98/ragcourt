@@ -15,6 +15,8 @@ def test_a_second_ragcourt_is_refused_and_a_stale_lock_is_taken_over(tmp_path: P
         with pytest.raises(ConfigError, match="Another ragcourt"), workdir_lock(tmp_path):
             pass  # pragma: no cover
     assert not (tmp_path / LOCK).exists()
+    if os.name != "posix":  # there a lock's process cannot be asked whether it runs: it is never taken over
+        return
     (tmp_path / LOCK).write_text("999999999")  # no such process
     with workdir_lock(tmp_path):
         assert (tmp_path / LOCK).read_text() == str(os.getpid())

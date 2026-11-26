@@ -10,6 +10,8 @@ concurrency:
 jobs:
   test:
     runs-on: ${{ matrix.os }}
+    env:
+      PYTHONUTF8: "1"   # the tests read and write their files as UTF-8, also on Windows
     strategy:
       fail-fast: false
       matrix:
