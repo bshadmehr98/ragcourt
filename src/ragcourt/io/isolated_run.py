@@ -56,12 +56,12 @@ def _run(
 ) -> int:
     """Start the runner in its own process group, so a timeout stops everything it started."""
     process = subprocess.Popen(  # noqa: S603 (the interpreter itself, on code the user approved)
-        [sys.executable, "-I", "-c", RUNNER, *args],
+        [sys.executable, "-I", "-X", "utf8", "-c", RUNNER, *args],  # the document is read as UTF-8 everywhere
         stdin=subprocess.PIPE,
         stdout=streams[0],
         stderr=streams[1],
         cwd=folder,
-        env={"PATH": os.defpath},
+        env=_bare_environment(),
         start_new_session=os.name == "posix",
     )
     try:
@@ -75,6 +75,12 @@ def _run(
         _stop(process)
         raise
     return process.returncode
+
+
+def _bare_environment() -> dict[str, str]:
+    """No key and no proxy; on Windows also the system folder, without which Python does not start."""
+    kept = {name: os.environ[name] for name in ("SYSTEMROOT",) if name in os.environ}
+    return {"PATH": os.defpath, **kept}
 
 
 def _stop(process: subprocess.Popen[bytes]) -> None:

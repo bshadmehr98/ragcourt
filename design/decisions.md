@@ -712,3 +712,21 @@ the designer's, open to the owner's review. Code comments refer to entries by nu
   layout change of its own); a run's `cost_usd` is what ragcourt spent, and says nothing of what the
   user's own system costs; the pipeline step is outside the time budget, as the plan says.
 - **Status:** designer's choice.
+
+## D-063: What the first CI run on Windows and macOS changed  (2026-11-26)
+
+- **Question:** the suite had only ever run on Linux. The first run on GitHub passed on macOS and failed on
+  Windows.
+- **Changed:**
+  1. **A model-written chunker did not start on Windows:** its bare environment lacked `SYSTEMROOT`, which
+     Python needs there. It is passed on when it exists; it holds a folder name, not a key. The child now
+     runs with `-X utf8`, so the document on its input is read as UTF-8 on every system.
+  2. `ram_gb` returns 0 ("the OS does not say") on Windows, where `os.sysconf` does not exist.
+  3. `.gitattributes` gives every checkout LF line endings: offsets and the corpus hash are over the files
+     as committed.
+  4. Tests: CI sets `PYTHONUTF8=1` (the tests write their own files with the default encoding); the bash
+     hooks' tests and the take-over of a stale lock are skipped where they cannot run.
+- **Left as it is:** on Windows a lock left by a killed ragcourt is never taken over (asking whether a
+  process runs would stop it there); the message says which file to delete. RAM is unknown there, so
+  `setup` cannot size models by it.
+- **Status:** designer's choice.
